@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHAI 代码执行测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        .test-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background-color 0.2s;
+        }
+        .test-button:hover {
+            background: #218838;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .preview-area {
+            min-height: 100px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8f9fa;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 NHAI 代码执行测试</h1>
+            <p>测试 NHAIObjectFactory 是否正确暴露到全局作用域</p>
+        </div>
+        
+        <div class="content">
+            <div class="test-section">
+                <h2>📋 测试步骤</h2>
+                <ol>
+                    <li>确保开发服务器正在运行 (http://localhost:3001)</li>
+                    <li>打开浏览器开发者工具的控制台</li>
+                    <li>点击下面的测试按钮</li>
+                    <li>查看控制台输出和预览区域</li>
+                </ol>
+            </div>
+            
+            <div class="test-section">
+                <h2>🧪 测试代码</h2>
+                <div class="code-block">
+// 测试代码
+console.log('开始测试 NHAIObjectFactory...');
+
+// 检查 NHAIObjectFactory 是否可用
+if (typeof NHAIObjectFactory !== 'undefined') {
+    console.log('✅ NHAIObjectFactory 已定义');
+    
+    // 创建容器
+    const container = NHAIObjectFactory.createContainer();
+    console.log('✅ 容器创建成功:', container);
+    
+    // 创建按钮
+    const button = NHAIObjectFactory.createButton('测试按钮');
+    button.setVariant('primary');
+    button.setOnClick(() => {
+        console.log('✅ 按钮点击事件触发');
+        alert('测试成功！NHAIObjectFactory 工作正常');
+    });
+    
+    // 添加到容器
+    container.addChild(button);
+    console.log('✅ 按钮添加到容器');
+    
+    // 渲染
+    const element = container.render();
+    console.log('✅ 渲染成功:', element);
+    
+    // 添加到预览区域
+    const previewArea = document.querySelector('.preview-area');
+    if (previewArea) {
+        previewArea.appendChild(element);
+        console.log('✅ 组件已添加到预览区域');
+    }
+    
+    console.log('🎉 所有测试通过！');
+} else {
+    console.error('❌ NHAIObjectFactory 未定义');
+}
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🎯 执行测试</h2>
+                <button class="test-button" onclick="runTest()">运行测试</button>
+                <button class="test-button" onclick="clearPreview()">清空预览</button>
+                
+                <div id="status" class="status" style="display: none;"></div>
+                
+                <div class="preview-area" id="preview-area">
+                    <p style="text-align: center; color: #6c757d; margin: 0;">
+                        预览区域 - 测试结果将显示在这里
+                    </p>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>📊 预期结果</h2>
+                <ul>
+                    <li>✅ 控制台显示 "NHAIObjectFactory 已定义"</li>
+                    <li>✅ 控制台显示 "容器创建成功"</li>
+                    <li>✅ 控制台显示 "按钮添加到容器"</li>
+                    <li>✅ 控制台显示 "渲染成功"</li>
+                    <li>✅ 控制台显示 "组件已添加到预览区域"</li>
+                    <li>✅ 控制台显示 "所有测试通过！"</li>
+                    <li>✅ 预览区域显示一个蓝色的按钮</li>
+                    <li>✅ 点击按钮弹出 "测试成功！" 的提示</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function runTest() {
+            const statusDiv = document.getElementById('status');
+            const previewArea = document.getElementById('preview-area');
+            
+            // 清空预览区域
+            previewArea.innerHTML = '';
+            
+            try {
+                console.log('开始测试 NHAIObjectFactory...');
+                
+                // 检查 NHAIObjectFactory 是否可用
+                if (typeof NHAIObjectFactory !== 'undefined') {
+                    console.log('✅ NHAIObjectFactory 已定义');
+                    
+                    // 创建容器
+                    const container = NHAIObjectFactory.createContainer();
+                    console.log('✅ 容器创建成功:', container);
+                    
+                    // 创建按钮
+                    const button = NHAIObjectFactory.createButton('测试按钮');
+                    button.setVariant('primary');
+                    button.setOnClick(() => {
+                        console.log('✅ 按钮点击事件触发');
+                        alert('测试成功！NHAIObjectFactory 工作正常');
+                    });
+                    
+                    // 添加到容器
+                    container.addChild(button);
+                    console.log('✅ 按钮添加到容器');
+                    
+                    // 渲染
+                    const element = container.render();
+                    console.log('✅ 渲染成功:', element);
+                    
+                    // 添加到预览区域
+                    previewArea.appendChild(element);
+                    console.log('✅ 组件已添加到预览区域');
+                    
+                    console.log('🎉 所有测试通过！');
+                    
+                    // 显示成功状态
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ 测试成功！NHAIObjectFactory 工作正常';
+                    statusDiv.style.display = 'block';
+                    
+                } else {
+                    console.error('❌ NHAIObjectFactory 未定义');
+                    
+                    // 显示错误状态
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = '❌ 测试失败！NHAIObjectFactory 未定义';
+                    statusDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('❌ 测试过程中发生错误:', error);
+                
+                // 显示错误状态
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ 测试失败！错误: ' + error.message;
+                statusDiv.style.display = 'block';
+            }
+        }
+        
+        function clearPreview() {
+            const previewArea = document.getElementById('preview-area');
+            previewArea.innerHTML = '<p style="text-align: center; color: #6c757d; margin: 0;">预览区域 - 测试结果将显示在这里</p>';
+            
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

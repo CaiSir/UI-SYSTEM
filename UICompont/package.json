@@ -1,0 +1,24 @@
+{
+  "name": "vue-typescript-project",
+  "version": "1.0.0",
+  "description": "A Vue 3 + TypeScript project",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@monaco-editor/loader": "^1.6.0",
+    "monaco-editor": "^0.54.0",
+    "nhai-framework": "file:../nhai-framework",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.0",
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "vue-tsc": "^1.8.0"
+  }
+}

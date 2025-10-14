@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHAI包集成测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-title {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .demo-area {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            margin-top: 10px;
+            min-height: 100px;
+            background-color: #fafafa;
+        }
+    </style>
+</head>
+<body>
+    <h1>NHAI包集成测试</h1>
+    
+    <div class="test-container">
+        <h2 class="test-title">1. 包导入测试</h2>
+        <div id="import-test" class="test-result">测试中...</div>
+    </div>
+    
+    <div class="test-container">
+        <h2 class="test-title">2. 适配器注册测试</h2>
+        <div id="adapter-test" class="test-result">测试中...</div>
+    </div>
+    
+    <div class="test-container">
+        <h2 class="test-title">3. 组件创建测试</h2>
+        <div id="component-test" class="test-result">测试中...</div>
+    </div>
+    
+    <div class="test-container">
+        <h2 class="test-title">4. 组件渲染测试</h2>
+        <div id="render-test" class="test-result">测试中...</div>
+        <div id="demo-area" class="demo-area">演示区域</div>
+    </div>
+
+    <script type="module">
+        // 测试NHAI包的集成
+        async function runTests() {
+            try {
+                // 测试1: 包导入
+                console.log('开始测试NHAI包导入...')
+                const { 
+                    NHAIFrameworkRegistry, 
+                    VanillaAdapter, 
+                    nhaiFactory,
+                    NHAIButton,
+                    NHAILabel
+                } = await import('nhai-framework')
+                
+                document.getElementById('import-test').innerHTML = 
+                    '<div class="success">✓ NHAI包导入成功</div>'
+                console.log('✓ NHAI包导入成功')
+                
+                // 测试2: 适配器注册
+                console.log('开始测试适配器注册...')
+                NHAIFrameworkRegistry.register(new VanillaAdapter())
+                NHAIFrameworkRegistry.use('vanilla')
+                
+                const currentAdapter = NHAIFrameworkRegistry.getCurrent()
+                if (currentAdapter && currentAdapter.name === 'vanilla') {
+                    document.getElementById('adapter-test').innerHTML = 
+                        '<div class="success">✓ Vanilla适配器注册成功</div>'
+                    console.log('✓ Vanilla适配器注册成功')
+                } else {
+                    throw new Error('适配器注册失败')
+                }
+                
+                // 测试3: 组件创建
+                console.log('开始测试组件创建...')
+                const button = nhaiFactory.createButton('测试按钮')
+                const label = nhaiFactory.createLabel('测试标签')
+                
+                if (button && label) {
+                    document.getElementById('component-test').innerHTML = 
+                        '<div class="success">✓ 组件创建成功</div>'
+                    console.log('✓ 组件创建成功')
+                } else {
+                    throw new Error('组件创建失败')
+                }
+                
+                // 测试4: 组件渲染
+                console.log('开始测试组件渲染...')
+                button.setVariant('primary')
+                button.setStyle({
+                    margin: '10px',
+                    padding: '10px 20px',
+                    borderRadius: '4px'
+                })
+                button.setOnClick(() => alert('按钮被点击！'))
+                
+                label.setStyle({
+                    margin: '10px',
+                    fontSize: '16px',
+                    color: '#2c3e50'
+                })
+                
+                const demoArea = document.getElementById('demo-area')
+                const buttonElement = button.render()
+                const labelElement = label.render()
+                
+                demoArea.appendChild(labelElement)
+                demoArea.appendChild(buttonElement)
+                
+                document.getElementById('render-test').innerHTML = 
+                    '<div class="success">✓ 组件渲染成功</div>'
+                console.log('✓ 组件渲染成功')
+                
+                console.log('所有测试通过！NHAI包集成成功！')
+                
+            } catch (error) {
+                console.error('测试失败:', error)
+                
+                // 显示错误信息
+                const errorDiv = `<div class="error">✗ 测试失败: ${error.message}</div>`
+                document.getElementById('import-test').innerHTML = errorDiv
+                document.getElementById('adapter-test').innerHTML = errorDiv
+                document.getElementById('component-test').innerHTML = errorDiv
+                document.getElementById('render-test').innerHTML = errorDiv
+            }
+        }
+        
+        // 运行测试
+        runTests()
+    </script>
+</body>
+</html>

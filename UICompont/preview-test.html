@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHAI 实时预览测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        .test-button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background-color 0.2s;
+        }
+        .test-button:hover {
+            background: #218838;
+        }
+        .preview-area {
+            min-height: 200px;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8f9fa;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .instructions {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 NHAI 实时预览测试</h1>
+            <p>测试修复后的实时预览功能</p>
+        </div>
+        
+        <div class="content">
+            <div class="instructions">
+                <h3>📋 测试说明</h3>
+                <p>请按照以下步骤测试实时预览功能：</p>
+                <ol>
+                    <li>确保开发服务器正在运行 (http://localhost:3001)</li>
+                    <li>打开浏览器开发者工具的控制台</li>
+                    <li>访问 http://localhost:3001 并选择"在线编辑"模式</li>
+                    <li>运行默认的测试代码</li>
+                    <li>查看控制台输出和预览区域</li>
+                </ol>
+            </div>
+            
+            <div class="test-section">
+                <h2>🧪 测试代码</h2>
+                <div class="code-block">
+// 最简单的测试
+console.log('开始测试...');
+
+// 检查 NHAIObjectFactory
+console.log('NHAIObjectFactory:', typeof NHAIObjectFactory);
+
+if (typeof NHAIObjectFactory !== 'undefined') {
+  // 创建按钮
+  const button = NHAIObjectFactory.createButton('测试按钮');
+  console.log('按钮创建成功:', button);
+  
+  // 设置样式
+  button.setVariant('primary');
+  
+  // 渲染
+  const element = button.render();
+  console.log('渲染结果:', element);
+  
+  // 添加到预览区域
+  const previewArea = document.querySelector('.preview-area');
+  console.log('预览区域:', previewArea);
+  
+  if (previewArea) {
+    previewArea.appendChild(element);
+    console.log('组件已添加');
+  } else {
+    console.error('找不到预览区域');
+  }
+} else {
+  console.error('NHAIObjectFactory 未定义');
+}
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h2>🎯 预期结果</h2>
+                <ul>
+                    <li>✅ 控制台显示 "开始测试..."</li>
+                    <li>✅ 控制台显示 "NHAIObjectFactory: function"</li>
+                    <li>✅ 控制台显示 "按钮创建成功" 和按钮对象</li>
+                    <li>✅ 控制台显示 "渲染结果" 和 DOM 元素</li>
+                    <li>✅ 控制台显示 "预览区域" 和 DOM 元素</li>
+                    <li>✅ 控制台显示 "组件已添加"</li>
+                    <li>✅ 预览区域显示一个蓝色的按钮</li>
+                </ul>
+            </div>
+            
+            <div class="test-section">
+                <h2>🔧 修复内容</h2>
+                <ul>
+                    <li>✅ 移除了双重代码包装问题</li>
+                    <li>✅ 简化了代码执行流程</li>
+                    <li>✅ 添加了详细的调试日志</li>
+                    <li>✅ 确保预览区域正确传递</li>
+                    <li>✅ 优化了错误处理机制</li>
+                </ul>
+            </div>
+            
+            <div class="test-section">
+                <h2>📊 测试状态</h2>
+                <div id="status" class="status" style="display: none;"></div>
+                
+                <div class="preview-area" id="preview-area">
+                    <p style="text-align: center; color: #6c757d; margin: 0;">
+                        预览区域 - 组件将显示在这里
+                    </p>
+                </div>
+                
+                <button class="test-button" onclick="runDirectTest()">直接测试</button>
+                <button class="test-button" onclick="clearPreview()">清空预览</button>
+            </div>
+            
+            <div class="test-section">
+                <h2>🎉 成功标志</h2>
+                <p>如果修复成功，您应该能够：</p>
+                <ul>
+                    <li>在在线编辑器中看到代码执行</li>
+                    <li>在预览区域看到渲染的组件</li>
+                    <li>在控制台看到详细的调试信息</li>
+                    <li>点击按钮触发交互事件</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function runDirectTest() {
+            const statusDiv = document.getElementById('status');
+            const previewArea = document.getElementById('preview-area');
+            
+            // 清空预览区域
+            previewArea.innerHTML = '<p style="text-align: center; color: #6c757d; margin: 0;">预览区域 - 组件将显示在这里</p>';
+            
+            try {
+                console.log('开始测试...');
+                
+                // 检查 NHAIObjectFactory 是否可用
+                if (typeof NHAIObjectFactory === 'undefined') {
+                    console.error('NHAIObjectFactory 未定义');
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = '❌ 测试失败！NHAIObjectFactory 未定义';
+                    statusDiv.style.display = 'block';
+                    return;
+                }
+                
+                console.log('NHAIObjectFactory:', typeof NHAIObjectFactory);
+                
+                // 创建按钮
+                const button = NHAIObjectFactory.createButton('测试按钮');
+                console.log('按钮创建成功:', button);
+                
+                // 设置样式
+                button.setVariant('primary');
+                
+                // 渲染
+                const element = button.render();
+                console.log('渲染结果:', element);
+                
+                // 添加到预览区域
+                const previewAreaElement = document.querySelector('.preview-area');
+                console.log('预览区域:', previewAreaElement);
+                
+                if (previewAreaElement) {
+                    previewAreaElement.appendChild(element);
+                    console.log('组件已添加');
+                    
+                    // 显示成功状态
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ 测试成功！组件已渲染到预览区域';
+                    statusDiv.style.display = 'block';
+                    
+                } else {
+                    console.error('找不到预览区域');
+                    
+                    // 显示错误状态
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = '❌ 测试失败！找不到预览区域';
+                    statusDiv.style.display = 'block';
+                }
+                
+            } catch (error) {
+                console.error('测试过程中发生错误:', error);
+                
+                // 显示错误状态
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ 测试失败！错误: ' + error.message;
+                statusDiv.style.display = 'block';
+            }
+        }
+        
+        function clearPreview() {
+            const previewArea = document.getElementById('preview-area');
+            previewArea.innerHTML = '<p style="text-align: center; color: #6c757d; margin: 0;">预览区域 - 组件将显示在这里</p>';
+            
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

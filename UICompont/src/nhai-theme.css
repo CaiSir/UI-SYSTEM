@@ -1,0 +1,257 @@
+/**
+ * NHAI主题CSS变量定义
+ * 为NHAI组件系统提供统一的样式变量
+ */
+
+:root {
+  /* 颜色系统 */
+  --nhai-primary: #007bff;
+  --nhai-secondary: #6c757d;
+  --nhai-success: #28a745;
+  --nhai-danger: #dc3545;
+  --nhai-warning: #ffc107;
+  --nhai-info: #17a2b8;
+  
+  /* 文本颜色 */
+  --nhai-text: #333333;
+  --nhai-text-secondary: #666666;
+  --nhai-text-muted: #999999;
+  --nhai-text-inverse: #ffffff;
+  
+  /* 背景颜色 */
+  --nhai-background: #ffffff;
+  --nhai-surface: #f8f9fa;
+  --nhai-surface-hover: #e9ecef;
+  --nhai-dark: #343a40;
+  
+  /* 边框颜色 */
+  --nhai-border: #dee2e6;
+  --nhai-border-light: #e9ecef;
+  --nhai-border-dark: #adb5bd;
+  
+  /* 间距系统 */
+  --nhai-spacing-xs: 4px;
+  --nhai-spacing-sm: 8px;
+  --nhai-spacing-md: 16px;
+  --nhai-spacing-lg: 24px;
+  --nhai-spacing-xl: 32px;
+  --nhai-spacing-xxl: 48px;
+  
+  /* 字体大小 */
+  --nhai-font-size-xs: 12px;
+  --nhai-font-size-sm: 14px;
+  --nhai-font-size-base: 16px;
+  --nhai-font-size-lg: 18px;
+  --nhai-font-size-xl: 20px;
+  --nhai-font-size-xxl: 24px;
+  
+  /* 字体粗细 */
+  --nhai-font-weight-light: 300;
+  --nhai-font-weight-normal: 400;
+  --nhai-font-weight-medium: 500;
+  --nhai-font-weight-semibold: 600;
+  --nhai-font-weight-bold: 700;
+  
+  /* 行高 */
+  --nhai-line-height-tight: 1.25;
+  --nhai-line-height-normal: 1.5;
+  --nhai-line-height-relaxed: 1.75;
+  
+  /* 边框圆角 */
+  --nhai-border-radius-sm: 4px;
+  --nhai-border-radius-md: 6px;
+  --nhai-border-radius-lg: 8px;
+  --nhai-border-radius-xl: 12px;
+  --nhai-border-radius-full: 50%;
+  
+  /* 阴影 */
+  --nhai-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --nhai-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --nhai-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --nhai-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  
+  /* 过渡动画 */
+  --nhai-transition-fast: 0.15s ease-in-out;
+  --nhai-transition-normal: 0.3s ease-in-out;
+  --nhai-transition-slow: 0.5s ease-in-out;
+  
+  /* Z-index层级 */
+  --nhai-z-dropdown: 1000;
+  --nhai-z-sticky: 1020;
+  --nhai-z-fixed: 1030;
+  --nhai-z-modal-backdrop: 1040;
+  --nhai-z-modal: 1050;
+  --nhai-z-popover: 1060;
+  --nhai-z-tooltip: 1070;
+}
+
+/* NHAI组件基础样式 */
+.nhai-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--nhai-border-radius-md);
+  font-weight: var(--nhai-font-weight-medium);
+  cursor: pointer;
+  transition: var(--nhai-transition-normal);
+  text-decoration: none;
+  outline: none;
+  user-select: none;
+}
+
+.nhai-button:focus {
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.nhai-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 按钮变体样式 */
+.nhai-button--primary {
+  background-color: var(--nhai-primary);
+  color: var(--nhai-text-inverse);
+}
+
+.nhai-button--primary:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+.nhai-button--secondary {
+  background-color: var(--nhai-secondary);
+  color: var(--nhai-text-inverse);
+}
+
+.nhai-button--secondary:hover:not(:disabled) {
+  background-color: #545b62;
+}
+
+.nhai-button--success {
+  background-color: var(--nhai-success);
+  color: var(--nhai-text-inverse);
+}
+
+.nhai-button--success:hover:not(:disabled) {
+  background-color: #1e7e34;
+}
+
+.nhai-button--danger {
+  background-color: var(--nhai-danger);
+  color: var(--nhai-text-inverse);
+}
+
+.nhai-button--danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.nhai-button--warning {
+  background-color: var(--nhai-warning);
+  color: var(--nhai-dark);
+}
+
+.nhai-button--warning:hover:not(:disabled) {
+  background-color: #e0a800;
+}
+
+.nhai-button--info {
+  background-color: var(--nhai-info);
+  color: var(--nhai-text-inverse);
+}
+
+.nhai-button--info:hover:not(:disabled) {
+  background-color: #138496;
+}
+
+/* 按钮尺寸样式 */
+.nhai-button--small {
+  padding: var(--nhai-spacing-xs) var(--nhai-spacing-sm);
+  font-size: var(--nhai-font-size-xs);
+  min-height: 28px;
+}
+
+.nhai-button--medium {
+  padding: var(--nhai-spacing-sm) var(--nhai-spacing-md);
+  font-size: var(--nhai-font-size-sm);
+  min-height: 36px;
+}
+
+.nhai-button--large {
+  padding: var(--nhai-spacing-md) var(--nhai-spacing-lg);
+  font-size: var(--nhai-font-size-base);
+  min-height: 44px;
+}
+
+/* 标签样式 */
+.nhai-label {
+  display: block;
+  margin-bottom: var(--nhai-spacing-xs);
+  color: var(--nhai-text);
+}
+
+/* 输入框样式 */
+.nhai-input {
+  display: block;
+  width: 100%;
+  padding: var(--nhai-spacing-sm) var(--nhai-spacing-md);
+  border: 1px solid var(--nhai-border);
+  border-radius: var(--nhai-border-radius-md);
+  font-size: var(--nhai-font-size-sm);
+  line-height: var(--nhai-line-height-normal);
+  color: var(--nhai-text);
+  background-color: var(--nhai-surface);
+  transition: var(--nhai-transition-normal);
+}
+
+.nhai-input:focus {
+  outline: none;
+  border-color: var(--nhai-primary);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.nhai-input::placeholder {
+  color: var(--nhai-text-muted);
+}
+
+/* 卡片样式 */
+.nhai-card {
+  background-color: var(--nhai-surface);
+  border: 1px solid var(--nhai-border);
+  border-radius: var(--nhai-border-radius-lg);
+  box-shadow: var(--nhai-shadow-sm);
+  padding: var(--nhai-spacing-lg);
+  transition: var(--nhai-transition-normal);
+}
+
+.nhai-card:hover {
+  box-shadow: var(--nhai-shadow-md);
+}
+
+/* 容器样式 */
+.nhai-container {
+  position: relative;
+}
+
+/* 窗口样式 */
+.nhai-window {
+  background-color: var(--nhai-surface);
+  border: 1px solid var(--nhai-border);
+  border-radius: var(--nhai-border-radius-lg);
+  box-shadow: var(--nhai-shadow-lg);
+  padding: var(--nhai-spacing-lg);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  :root {
+    --nhai-spacing-md: 12px;
+    --nhai-spacing-lg: 16px;
+    --nhai-spacing-xl: 24px;
+  }
+  
+  .nhai-button--large {
+    padding: var(--nhai-spacing-sm) var(--nhai-spacing-md);
+    font-size: var(--nhai-font-size-sm);
+  }
+}
