@@ -21,24 +21,6 @@ export type {
   NHAIRenderContext
 } from './core/NHAICore'
 
-// 导出组件
-export {
-  NHAIButton,
-  NHAILabel,
-  NHAIInput,
-  NHAICard,
-  NHAIContainer,
-  NHAIWindow
-} from './components/NHAIComponents'
-
-// 导出布局
-export {
-  NHAILayout,
-  NHAIVBoxLayout,
-  NHAIHBoxLayout,
-  NHAIGridLayout
-} from './components/NHAILayouts'
-
 // 导出工厂
 export type { NHAIObjectFactory } from './factory/NHAIFactory'
 export { nhaiFactory } from './factory/NHAIFactory'
@@ -56,8 +38,8 @@ import { VanillaAdapter } from './adapters/VanillaAdapter'
 import { VueAdapter } from './adapters/VueAdapter'
 import { ReactAdapter } from './adapters/ReactAdapter'
 import { SvelteAdapter } from './adapters/SvelteAdapter'
-import { NHAIButton, NHAILabel, NHAIInput, NHAICard, NHAIContainer, NHAIWindow } from './components/NHAIComponents'
-import { NHAIVBoxLayout, NHAIHBoxLayout, NHAIGridLayout } from './components/NHAILayouts'
+import { NHAIVBoxLayout, NHAIHBoxLayout, NHAIGridLayout } from './components/NHAILayouts/NHAILayouts'
+import { NHAIButton, NHAITextButton, NHAILabel, NHAIInput, NHAICard, NHAIContainer, NHAIWindow } from './components/NHAIComponents'
 
 export default {
   // 核心API
@@ -79,6 +61,7 @@ export default {
   // 组件
   Components: {
     Button: NHAIButton,
+    TextButton: NHAITextButton,
     Label: NHAILabel,
     Input: NHAIInput,
     Card: NHAICard,

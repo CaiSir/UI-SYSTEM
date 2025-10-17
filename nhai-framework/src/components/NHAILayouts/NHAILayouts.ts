@@ -2,8 +2,8 @@
  * NHAI框架无关的布局组件实现
  */
 
-import { NHAIObject, NHAIRenderContext } from '../core/NHAICore'
-import { NHAIFrameworkRegistry } from '../core/NHAICore'
+import { NHAIObject, NHAIRenderContext } from '../../core/NHAICore'
+import { NHAIFrameworkRegistry } from '../../core/NHAICore'
 
 // 基础布局类
 export abstract class NHAILayout extends NHAIObject {

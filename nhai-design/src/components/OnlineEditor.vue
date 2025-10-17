@@ -134,24 +134,127 @@ const runCode = async () => {
           console.log('开始自动检测组件...')
           
           // 检查常见的组件变量名
-          const componentVars = ['button', 'label', 'input', 'container', 'window', 'card', 'vbox', 'hbox', 'grid']
+          const componentVars = [
+            'button', 'label', 'input', 'container', 'window', 'card', 'vbox', 'hbox', 'grid',
+            'primaryButton', 'secondaryButton', 'successButton', 'warningButton', 'dangerButton',
+            'smallButton', 'mediumButton', 'largeButton', 'normalButton', 'disabledButton', 'loadingButton',
+            'textButton1', 'textButton2', 'textButton3', 'smallTextButton', 'mediumTextButton', 'largeTextButton',
+            'linkButton1', 'linkButton2', 'linkButton3', 'smallLinkButton', 'largeLinkButton',
+            'basicLabel', 'titleLabel', 'subtitleLabel', 'bodyLabel', 'captionLabel',
+            'leftLabel', 'centerLabel', 'rightLabel',
+            'basicInput', 'textInput', 'emailInput', 'passwordInput', 'numberInput',
+            'normalInput', 'disabledInput', 'readonlyInput',
+            'hbox1', 'hbox2', 'hbox3', 'vbox1', 'vbox2'
+          ]
           let renderedCount = 0
+          let mainContainer = null
+          let allComponents = []
           
+          // 收集所有 NHAI 组件
           for (const varName of componentVars) {
             try {
               if (typeof eval(varName) !== 'undefined') {
                 const component = eval(varName)
-                console.log(\`找到 \${varName} 组件:\`, component)
+                console.log(\`找到组件 \${varName}:\`, component)
                 
-                if (component && typeof component.render === 'function') {
-                  const element = component.render()
-                  previewArea.appendChild(element)
-                  renderedCount++
-                  console.log(\`\${varName} 已自动渲染到预览区域\`)
+                // 检查是否是 NHAI 组件
+                if (component && 
+                    typeof component.render === 'function' && 
+                    component.constructor && 
+                    component.constructor.name && 
+                    component.constructor.name.startsWith('NHAI')) {
+                  allComponents.push({ name: varName, component: component })
+                  console.log(\`\${varName} 是有效的 NHAI 组件\`)
+                  
+                  // 如果是容器组件，显示子元素数量
+                  if (component._children) {
+                    console.log(\`\${varName} 有 \${component._children.length} 个子元素\`)
+                  }
                 }
               }
             } catch (e) {
               // 变量不存在，继续检查下一个
+            }
+          }
+          
+          console.log(\`找到 \${allComponents.length} 个 NHAI 组件\`)
+          
+          // 查找主容器（优先级：container > window > card > vbox > hbox）
+          const containerPriority = ['container', 'window', 'card', 'vbox', 'hbox']
+          for (const containerName of containerPriority) {
+            const found = allComponents.find(c => c.name === containerName)
+            if (found) {
+              mainContainer = found.component
+              console.log(\`使用 \${found.name} 作为主容器\`)
+              break
+            }
+          }
+          
+          // 如果找到主容器，直接渲染它
+          if (mainContainer) {
+            const element = mainContainer.render()
+            previewArea.appendChild(element)
+            renderedCount++
+            console.log(\`主容器已渲染到预览区域\`)
+            
+            // 检查主容器的子元素数量
+            if (mainContainer._children) {
+              console.log(\`主容器包含 \${mainContainer._children.length} 个子元素\`)
+            }
+          } else {
+            // 如果没有找到容器，尝试自动构建布局
+            console.log('没有找到主容器，尝试自动构建布局...')
+            
+            // 查找所有布局组件
+            const layoutComponents = allComponents.filter(c => 
+              c.name.includes('vbox') || c.name.includes('hbox') || c.name.includes('container')
+            )
+            
+            if (layoutComponents.length > 0) {
+              // 使用第一个布局组件作为主容器
+              const layout = layoutComponents[0]
+              console.log(\`使用 \${layout.name} 作为布局容器\`)
+              const element = layout.component.render()
+              previewArea.appendChild(element)
+              renderedCount++
+            } else {
+              // 如果没有布局组件，尝试渲染单个组件
+              for (const comp of allComponents) {
+                const element = comp.component.render()
+                previewArea.appendChild(element)
+                renderedCount++
+                console.log(\`\${comp.name} 已自动渲染到预览区域\`)
+              }
+            }
+          }
+          
+          // 如果仍然没有渲染任何内容，尝试查找所有可能的 NHAI 组件
+          if (renderedCount === 0) {
+            console.log('尝试查找所有可能的 NHAI 组件...')
+            
+            // 获取当前作用域中的所有变量
+            const scopeVars = Object.keys(window).concat(Object.keys(globalThis))
+            for (const varName of scopeVars) {
+              try {
+                if (typeof eval(varName) !== 'undefined') {
+                  const component = eval(varName)
+                  
+                  // 检查是否是 NHAI 组件
+                  if (component && 
+                      typeof component.render === 'function' && 
+                      component.constructor && 
+                      component.constructor.name && 
+                      component.constructor.name.startsWith('NHAI')) {
+                    console.log(\`找到 NHAI 组件 \${varName}:\`, component)
+                    const element = component.render()
+                    previewArea.appendChild(element)
+                    renderedCount++
+                    console.log(\`\${varName} 已渲染到预览区域\`)
+                  }
+                }
+              } catch (e) {
+                // 忽略错误，继续检查下一个
+              }
             }
           }
           

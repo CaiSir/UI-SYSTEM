@@ -4,16 +4,21 @@
 
 import { NHAIObject } from '../core/NHAICore'
 import { 
-  NHAIButton, NHAILabel, NHAIInput, NHAICard, NHAIContainer, NHAIWindow 
+  NHAIButton, NHAITextButton, NHAILabel, NHAIInput, NHAICard, NHAIContainer, NHAIWindow 
 } from '../components/NHAIComponents'
 import { 
   NHAIVBoxLayout, NHAIHBoxLayout, NHAIGridLayout 
-} from '../components/NHAILayouts'
+} from '../components/NHAILayouts/NHAILayouts'
 
 export class NHAIObjectFactory {
   // 创建按钮
   static createButton(text: string = '', parent?: NHAIObject): NHAIButton {
     return new NHAIButton(text, parent)
+  }
+
+  // 创建文本按钮
+  static createTextButton(text: string = '', parent?: NHAIObject): NHAITextButton {
+    return new NHAITextButton(text, parent)
   }
 
   // 创建标签
