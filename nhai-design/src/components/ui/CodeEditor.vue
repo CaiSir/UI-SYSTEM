@@ -29,7 +29,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as monaco from 'monaco-editor'
-import { SyntaxChecker } from '../utils/SyntaxChecker'
+import { SyntaxChecker } from '../../lib/utils/SyntaxChecker'
 
 // Props
 interface Props {

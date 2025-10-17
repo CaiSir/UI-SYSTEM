@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { SyntaxChecker } from '../utils/SyntaxChecker'
+import { SyntaxChecker } from '../../lib/utils/SyntaxChecker'
 
 // Props
 interface Props {

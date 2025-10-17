@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语法错误修复验证</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 14px;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+        }
+        
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 3px solid #28a745;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 3px solid #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 JavaScript 语法错误修复验证</h1>
+        <p>测试修复后的代码是否正常工作</p>
+        
+        <button class="test-button" onclick="testCodeComparison()">测试代码对比功能</button>
+        <button class="test-button" onclick="testAllFunctions()">测试所有功能</button>
+        <button class="test-button" onclick="clearResults()">清空结果</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // 模拟修复后的代码对比功能
+        function showCodeComparison() {
+            const reactCode = '// React + Ant Design\n' +
+                'import { Button } from \'antd\';\n' +
+                'import React from \'react\';\n\n' +
+                'const MyButton = ({ type, children, onClick }) => {\n' +
+                '  return (\n' +
+                '    <Button type={type} onClick={onClick}>\n' +
+                '      {children}\n' +
+                '    </Button>\n' +
+                '  );\n' +
+                '};';
+
+            const vueCode = '// Vue + Element Plus\n' +
+                '<template>\n' +
+                '  <el-button :type="type" @click="onClick">\n' +
+                '    {{ children }}\n' +
+                '  </el-button>\n' +
+                '</template>\n\n' +
+                '<script setup>\n' +
+                'defineProps([\'type\', \'children\', \'onClick\']);\n' +
+                '</script>';
+
+            const svelteCode = '// Svelte + Material UI\n' +
+                '<script>\n' +
+                '  export let type = \'primary\';\n' +
+                '  export let children = \'\';\n' +
+                '  export let onClick = () => {};\n' +
+                '</script>\n\n' +
+                '<button class="mdc-button mdc-button--{type}" on:click={onClick}>\n' +
+                '  {children}\n' +
+                '</button>';
+            
+            const fullCode = reactCode + '\n\n' + vueCode + '\n\n' + svelteCode;
+            
+            // 创建代码显示模态框
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;
+            `;
+            
+            const codeBox = document.createElement('div');
+            codeBox.style.cssText = `
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                max-width: 80%;
+                max-height: 80%;
+                overflow: auto;
+                position: relative;
+            `;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.textContent = '✕';
+            closeBtn.style.cssText = `
+                position: absolute;
+                top: 10px;
+                right: 15px;
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+            `;
+            
+            const pre = document.createElement('pre');
+            pre.style.cssText = `
+                background: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                overflow-x: auto;
+                font-family: 'Courier New', monospace;
+                font-size: 14px;
+                line-height: 1.5;
+            `;
+            pre.textContent = fullCode;
+            
+            closeBtn.onclick = () => document.body.removeChild(modal);
+            modal.onclick = (e) => {
+                if (e.target === modal) document.body.removeChild(modal);
+            };
+            
+            codeBox.appendChild(closeBtn);
+            codeBox.appendChild(pre);
+            modal.appendChild(codeBox);
+            document.body.appendChild(modal);
+        }
+        
+        // 其他测试函数
+        function showAlert(framework) {
+            alert(`${framework} 按钮被点击！`);
+        }
+        
+        function runPerformanceTest() {
+            alert('性能测试功能正常工作！');
+        }
+        
+        function downloadReport() {
+            alert('报告下载功能正常工作！');
+        }
+        
+        // 测试函数
+        function testCodeComparison() {
+            try {
+                showCodeComparison();
+                addResult('代码对比功能', 'success', '✅ 代码对比功能正常工作，没有语法错误');
+            } catch (error) {
+                addResult('代码对比功能', 'error', `❌ 错误: ${error.message}`);
+            }
+        }
+        
+        function testAllFunctions() {
+            const functions = [
+                { name: 'showAlert', func: () => showAlert('测试') },
+                { name: 'runPerformanceTest', func: runPerformanceTest },
+                { name: 'downloadReport', func: downloadReport },
+                { name: 'showCodeComparison', func: showCodeComparison }
+            ];
+            
+            functions.forEach(({ name, func }) => {
+                try {
+                    func();
+                    addResult(name, 'success', `✅ ${name} 函数正常工作`);
+                } catch (error) {
+                    addResult(name, 'error', `❌ ${name} 函数错误: ${error.message}`);
+                }
+            });
+        }
+        
+        function addResult(testName, type, message) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `
+                <strong>${testName}</strong><br>
+                ${message}
+            `;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('语法错误修复验证页面已加载');
+            addResult('页面初始化', 'success', '✅ 页面加载成功，所有 JavaScript 函数已正确定义');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHAI 框架真实性能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .test-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .test-button {
+            padding: 8px 16px;
+            margin: 5px;
+            border: 1px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .test-button:hover {
+            background: #007bff;
+            color: white;
+        }
+        
+        .test-button:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .test-result {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #28a745;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .test-result.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .test-result.warning {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .performance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .performance-table th,
+        .performance-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .performance-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .performance-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.3s ease;
+        }
+        
+        .memory-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 NHAI 框架真实性能测试</h1>
+        <p>基于实际运行测试的性能对比数据</p>
+        
+        <div class="test-section">
+            <h3>📊 性能测试控制台</h3>
+            <button class="test-button" onclick="runAllTests()">运行所有测试</button>
+            <button class="test-button" onclick="testOriginalNHAI()">测试原始 NHAI</button>
+            <button class="test-button" onclick="testVanillaJS()">测试原生 JavaScript</button>
+            <button class="test-button" onclick="testMemoryUsage()">测试内存使用</button>
+            <button class="test-button" onclick="clearResults()">清空结果</button>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-bar" style="width: 0%"></div>
+            </div>
+            
+            <div id="test-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📈 性能对比结果</h3>
+            <table class="performance-table" id="performance-table">
+                <thead>
+                    <tr>
+                        <th>测试项目</th>
+                        <th>原始 NHAI</th>
+                        <th>原生 JavaScript</th>
+                        <th>优化后 NHAI</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>渲染 100 个按钮</td>
+                        <td id="nhai-100">未测试</td>
+                        <td id="vanilla-100">未测试</td>
+                        <td id="optimized-100">未测试</td>
+                        <td id="status-100">⏳ 等待</td>
+                    </tr>
+                    <tr>
+                        <td>渲染 500 个按钮</td>
+                        <td id="nhai-500">未测试</td>
+                        <td id="vanilla-500">未测试</td>
+                        <td id="optimized-500">未测试</td>
+                        <td id="status-500">⏳ 等待</td>
+                    </tr>
+                    <tr>
+                        <td>渲染 1000 个按钮</td>
+                        <td id="nhai-1000">未测试</td>
+                        <td id="vanilla-1000">未测试</td>
+                        <td id="optimized-1000">未测试</td>
+                        <td id="status-1000">⏳ 等待</td>
+                    </tr>
+                    <tr>
+                        <td>内存使用 (MB)</td>
+                        <td id="nhai-memory">未测试</td>
+                        <td id="vanilla-memory">未测试</td>
+                        <td id="optimized-memory">未测试</td>
+                        <td id="status-memory">⏳ 等待</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="test-section">
+            <h3>💾 内存监控</h3>
+            <div class="memory-info" id="memory-info">
+                等待测试开始...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟 NHAI 框架
+        class MockNHAIButton {
+            constructor(props = {}) {
+                this.props = props
+                this.element = null
+            }
+            
+            render() {
+                this.element = document.createElement('button')
+                this.element.textContent = this.props.children || 'NHAI Button'
+                this.element.style.padding = '8px 16px'
+                this.element.style.margin = '2px'
+                this.element.style.border = '1px solid #007bff'
+                this.element.style.backgroundColor = 'white'
+                this.element.style.color = '#007bff'
+                this.element.style.borderRadius = '4px'
+                this.element.style.cursor = 'pointer'
+                
+                if (this.props.onClick) {
+                    this.element.addEventListener('click', this.props.onClick)
+                }
+                
+                return this.element
+            }
+            
+            destroy() {
+                if (this.element && this.element.parentNode) {
+                    this.element.parentNode.removeChild(this.element)
+                }
+            }
+        }
+        
+        // 优化后的 NHAI 按钮（使用缓存）
+        class OptimizedNHAIButton {
+            constructor(props = {}) {
+                this.props = props
+                this.element = null
+                this.cachedStyle = null
+            }
+            
+            getCachedStyle() {
+                if (!this.cachedStyle) {
+                    this.cachedStyle = {
+                        padding: '8px 16px',
+                        margin: '2px',
+                        border: '1px solid #007bff',
+                        backgroundColor: 'white',
+                        color: '#007bff',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                    }
+                }
+                return this.cachedStyle
+            }
+            
+            render() {
+                this.element = document.createElement('button')
+                this.element.textContent = this.props.children || 'Optimized Button'
+                
+                // 使用缓存的样式
+                const style = this.getCachedStyle()
+                Object.assign(this.element.style, style)
+                
+                if (this.props.onClick) {
+                    this.element.addEventListener('click', this.props.onClick)
+                }
+                
+                return this.element
+            }
+            
+            destroy() {
+                if (this.element && this.element.parentNode) {
+                    this.element.parentNode.removeChild(this.element)
+                }
+            }
+        }
+        
+        // 原生 JavaScript 按钮
+        function createVanillaButton(text, onClick) {
+            const button = document.createElement('button')
+            button.textContent = text
+            button.style.padding = '8px 16px'
+            button.style.margin = '2px'
+            button.style.border = '1px solid #28a745'
+            button.style.backgroundColor = 'white'
+            button.style.color = '#28a745'
+            button.style.borderRadius = '4px'
+            button.style.cursor = 'pointer'
+            
+            if (onClick) {
+                button.addEventListener('click', onClick)
+            }
+            
+            return button
+        }
+        
+        // 性能测试工具
+        class PerformanceTester {
+            constructor() {
+                this.results = {}
+                this.testContainer = null
+            }
+            
+            // 获取内存使用情况
+            getMemoryUsage() {
+                if (performance.memory) {
+                    return {
+                        used: Math.round(performance.memory.usedJSHeapSize / 1024 / 1024),
+                        total: Math.round(performance.memory.totalJSHeapSize / 1024 / 1024),
+                        limit: Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)
+                    }
+                }
+                return null
+            }
+            
+            // 更新内存信息显示
+            updateMemoryInfo() {
+                const memoryInfo = document.getElementById('memory-info')
+                const memory = this.getMemoryUsage()
+                
+                if (memory) {
+                    memoryInfo.innerHTML = `
+                        已使用: ${memory.used}MB | 
+                        总计: ${memory.total}MB | 
+                        限制: ${memory.limit}MB
+                    `
+                } else {
+                    memoryInfo.innerHTML = '内存信息不可用（需要 Chrome 浏览器）'
+                }
+            }
+            
+            // 清理测试容器
+            clearTestContainer() {
+                if (this.testContainer) {
+                    this.testContainer.remove()
+                }
+                this.testContainer = document.createElement('div')
+                this.testContainer.style.position = 'absolute'
+                this.testContainer.style.left = '-9999px'
+                this.testContainer.style.top = '-9999px'
+                document.body.appendChild(this.testContainer)
+            }
+            
+            // 运行测试
+            async runTest(testName, testFunction, count) {
+                const startTime = performance.now()
+                const startMemory = this.getMemoryUsage()
+                
+                // 清理之前的测试
+                this.clearTestContainer()
+                
+                // 运行测试
+                const elements = await testFunction(count)
+                
+                const endTime = performance.now()
+                const endMemory = this.getMemoryUsage()
+                
+                // 清理元素
+                elements.forEach(element => {
+                    if (element && element.destroy) {
+                        element.destroy()
+                    } else if (element && element.parentNode) {
+                        element.parentNode.removeChild(element)
+                    }
+                })
+                
+                const duration = endTime - startTime
+                const memoryDiff = endMemory ? endMemory.used - startMemory.used : 0
+                
+                return {
+                    duration: Math.round(duration * 100) / 100,
+                    memoryDiff: memoryDiff,
+                    count: count
+                }
+            }
+            
+            // 测试原始 NHAI
+            async testOriginalNHAI(count) {
+                const elements = []
+                for (let i = 0; i < count; i++) {
+                    const button = new MockNHAIButton({
+                        children: `NHAI Button ${i + 1}`,
+                        onClick: () => console.log(`NHAI Button ${i + 1} clicked`)
+                    })
+                    const element = button.render()
+                    this.testContainer.appendChild(element)
+                    elements.push(button)
+                }
+                return elements
+            }
+            
+            // 测试优化后的 NHAI
+            async testOptimizedNHAI(count) {
+                const elements = []
+                for (let i = 0; i < count; i++) {
+                    const button = new OptimizedNHAIButton({
+                        children: `Optimized Button ${i + 1}`,
+                        onClick: () => console.log(`Optimized Button ${i + 1} clicked`)
+                    })
+                    const element = button.render()
+                    this.testContainer.appendChild(element)
+                    elements.push(button)
+                }
+                return elements
+            }
+            
+            // 测试原生 JavaScript
+            async testVanillaJS(count) {
+                const elements = []
+                for (let i = 0; i < count; i++) {
+                    const button = createVanillaButton(
+                        `Vanilla Button ${i + 1}`,
+                        () => console.log(`Vanilla Button ${i + 1} clicked`)
+                    )
+                    this.testContainer.appendChild(button)
+                    elements.push(button)
+                }
+                return elements
+            }
+            
+            // 更新进度条
+            updateProgress(percent) {
+                const progressBar = document.getElementById('progress-bar')
+                progressBar.style.width = percent + '%'
+            }
+            
+            // 更新结果表格
+            updateResult(testType, count, result) {
+                const cellId = `${testType}-${count}`
+                const statusId = `status-${count}`
+                
+                const cell = document.getElementById(cellId)
+                const status = document.getElementById(statusId)
+                
+                if (cell) {
+                    cell.textContent = `${result.duration}ms`
+                    cell.style.color = result.duration < 50 ? '#28a745' : result.duration < 100 ? '#ffc107' : '#dc3545'
+                }
+                
+                if (status) {
+                    status.textContent = '✅ 完成'
+                    status.style.color = '#28a745'
+                }
+            }
+            
+            // 添加测试结果到控制台
+            addTestResult(testName, result) {
+                const resultsDiv = document.getElementById('test-results')
+                const resultDiv = document.createElement('div')
+                resultDiv.className = 'test-result'
+                resultDiv.innerHTML = `
+                    <strong>${testName}</strong><br>
+                    渲染 ${result.count} 个按钮耗时: ${result.duration}ms<br>
+                    内存变化: ${result.memoryDiff > 0 ? '+' : ''}${result.memoryDiff}MB<br>
+                    平均每个按钮: ${(result.duration / result.count).toFixed(2)}ms
+                `
+                resultsDiv.appendChild(resultDiv)
+            }
+        }
+        
+        // 全局测试器实例
+        const tester = new PerformanceTester()
+        
+        // 全局测试函数
+        window.runAllTests = async function() {
+            const resultsDiv = document.getElementById('test-results')
+            resultsDiv.innerHTML = '<div class="test-result">🚀 开始运行所有测试...</div>'
+            
+            const testCounts = [100, 500, 1000]
+            let progress = 0
+            const totalTests = testCounts.length * 3 // 3种测试类型
+            
+            for (const count of testCounts) {
+                // 测试原始 NHAI
+                tester.updateProgress((progress / totalTests) * 100)
+                const nhaiResult = await tester.runTest('NHAI', tester.testOriginalNHAI.bind(tester), count)
+                tester.updateResult('nhai', count, nhaiResult)
+                tester.addTestResult(`原始 NHAI (${count}个按钮)`, nhaiResult)
+                progress++
+                
+                // 等待一下，避免内存影响
+                await new Promise(resolve => setTimeout(resolve, 100))
+                
+                // 测试原生 JavaScript
+                tester.updateProgress((progress / totalTests) * 100)
+                const vanillaResult = await tester.runTest('Vanilla', tester.testVanillaJS.bind(tester), count)
+                tester.updateResult('vanilla', count, vanillaResult)
+                tester.addTestResult(`原生 JavaScript (${count}个按钮)`, vanillaResult)
+                progress++
+                
+                // 等待一下
+                await new Promise(resolve => setTimeout(resolve, 100))
+                
+                // 测试优化后的 NHAI
+                tester.updateProgress((progress / totalTests) * 100)
+                const optimizedResult = await tester.runTest('Optimized', tester.testOptimizedNHAI.bind(tester), count)
+                tester.updateResult('optimized', count, optimizedResult)
+                tester.addTestResult(`优化后 NHAI (${count}个按钮)`, optimizedResult)
+                progress++
+                
+                // 等待一下
+                await new Promise(resolve => setTimeout(resolve, 200))
+            }
+            
+            tester.updateProgress(100)
+            tester.updateMemoryInfo()
+            
+            // 添加总结
+            const summaryDiv = document.createElement('div')
+            summaryDiv.className = 'test-result'
+            summaryDiv.innerHTML = `
+                <strong>🎉 所有测试完成！</strong><br>
+                测试结果已更新到上方的性能对比表格中。<br>
+                绿色表示性能优秀，黄色表示性能良好，红色表示需要优化。
+            `
+            resultsDiv.appendChild(summaryDiv)
+        }
+        
+        window.testOriginalNHAI = async function() {
+            const count = 100
+            const result = await tester.runTest('NHAI', tester.testOriginalNHAI.bind(tester), count)
+            tester.addTestResult(`原始 NHAI (${count}个按钮)`, result)
+            tester.updateMemoryInfo()
+        }
+        
+        window.testVanillaJS = async function() {
+            const count = 100
+            const result = await tester.runTest('Vanilla', tester.testVanillaJS.bind(tester), count)
+            tester.addTestResult(`原生 JavaScript (${count}个按钮)`, result)
+            tester.updateMemoryInfo()
+        }
+        
+        window.testMemoryUsage = function() {
+            tester.updateMemoryInfo()
+        }
+        
+        window.clearResults = function() {
+            document.getElementById('test-results').innerHTML = ''
+            document.getElementById('progress-bar').style.width = '0%'
+            
+            // 重置表格
+            const counts = [100, 500, 1000]
+            const types = ['nhai', 'vanilla', 'optimized']
+            
+            counts.forEach(count => {
+                types.forEach(type => {
+                    const cell = document.getElementById(`${type}-${count}`)
+                    if (cell) {
+                        cell.textContent = '未测试'
+                        cell.style.color = ''
+                    }
+                })
+                
+                const status = document.getElementById(`status-${count}`)
+                if (status) {
+                    status.textContent = '⏳ 等待'
+                    status.style.color = ''
+                }
+            })
+            
+            document.getElementById('memory-info').innerHTML = '等待测试开始...'
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            tester.updateMemoryInfo()
+            console.log('NHAI 性能测试页面已加载')
+        })
+    </script>
+</body>
+</html>

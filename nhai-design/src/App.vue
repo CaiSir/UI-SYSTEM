@@ -153,9 +153,10 @@ import {
   VueAdapter, 
   ReactAdapter, 
   SvelteAdapter,
-  nhaiFactory as NHAIObjectFactory
+  nhaiFactory as NHAIObjectFactory,
+  ModernNHAIButton
 } from 'nhai-framework'
-import OnlineEditor from './components/OnlineEditor.vue'
+import OnlineEditor from './components/ui/OnlineEditor.vue'
 
 // 响应式变量
 const currentFramework = ref('vanilla')
@@ -462,7 +463,7 @@ const createMethodsDemo = () => {
     let clickCount = 0
     button.setOnClick(() => {
       clickCount++
-      button.setText(`点击了 ${clickCount} 次`)
+      button.setText('点击了 ' + clickCount + ' 次')
       button.setStyle({
         backgroundColor: clickCount % 2 === 0 ? '#ffc107' : '#fd7e14'
       })
@@ -1271,6 +1272,225 @@ const createTextButtonDemo = () => {
   }
 }
 
+const createModernButtonDemo = () => {
+  if (!demoArea.value) return
+
+  try {
+    // 检查 ModernNHAIButton 是否可用
+    if (typeof ModernNHAIButton === 'undefined') {
+      demoArea.value.innerHTML = `
+        <div style="padding: 20px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; color: #856404;">
+          <h4>⚠️ ModernNHAIButton 未加载</h4>
+          <p>ModernNHAIButton 组件需要从 nhai-framework 中导入。</p>
+          <p>请确保已正确导入：</p>
+          <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin: 10px 0;">
+import { ModernNHAIButton } from 'nhai-framework'
+          </pre>
+          <p>或者使用传统按钮组件进行演示。</p>
+        </div>
+      `
+      return
+    }
+
+    // 清空演示区域
+    demoArea.value.innerHTML = ''
+    
+    // 创建演示容器
+    const demoContainer = document.createElement('div')
+    demoContainer.style.cssText = `
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    `
+    
+    // 创建 ModernNHAIButton 实例
+    const primaryButton = new ModernNHAIButton({
+      type: 'primary',
+      size: 'middle',
+      children: '主要按钮',
+      onClick: () => alert('Primary Button 被点击！')
+    })
+
+    const defaultButton = new ModernNHAIButton({
+      type: 'default',
+      size: 'middle',
+      children: '默认按钮',
+      onClick: () => alert('Default Button 被点击！')
+    })
+
+    const dashedButton = new ModernNHAIButton({
+      type: 'dashed',
+      size: 'middle',
+      children: '虚线按钮',
+      onClick: () => alert('Dashed Button 被点击！')
+    })
+
+    const textButton = new ModernNHAIButton({
+      type: 'text',
+      size: 'middle',
+      children: '文本按钮',
+      onClick: () => alert('Text Button 被点击！')
+    })
+
+    const linkButton = new ModernNHAIButton({
+      type: 'link',
+      size: 'middle',
+      children: '链接按钮',
+      onClick: () => alert('Link Button 被点击！')
+    })
+
+    // 不同尺寸
+    const smallButton = new ModernNHAIButton({
+      type: 'primary',
+      size: 'small',
+      children: '小按钮',
+      onClick: () => alert('Small Button 被点击！')
+    })
+
+    const largeButton = new ModernNHAIButton({
+      type: 'primary',
+      size: 'large',
+      children: '大按钮',
+      onClick: () => alert('Large Button 被点击！')
+    })
+
+    // 状态按钮
+    const disabledButton = new ModernNHAIButton({
+      type: 'primary',
+      size: 'middle',
+      children: '禁用按钮',
+      disabled: true
+    })
+
+    const loadingButton = new ModernNHAIButton({
+      type: 'primary',
+      size: 'middle',
+      children: '加载按钮',
+      loading: true
+    })
+
+    // 链接功能
+    const externalLinkButton = new ModernNHAIButton({
+      type: 'primary',
+      size: 'middle',
+      children: '外部链接',
+      href: 'https://www.baidu.com',
+      target: '_blank'
+    })
+
+    const routerButton = new ModernNHAIButton({
+      type: 'primary',
+      size: 'middle',
+      children: '路由按钮',
+      href: '/home',
+      router: (path) => alert('路由到: ' + path)
+    })
+
+    // 创建按钮组
+    const buttonGroups = [
+      {
+        title: '基础类型按钮',
+        buttons: [primaryButton, defaultButton, dashedButton, textButton, linkButton]
+      },
+      {
+        title: '尺寸按钮',
+        buttons: [smallButton, largeButton]
+      },
+      {
+        title: '状态按钮',
+        buttons: [disabledButton, loadingButton]
+      },
+      {
+        title: '链接功能按钮',
+        buttons: [externalLinkButton, routerButton]
+      }
+    ]
+
+    // 渲染按钮组
+    buttonGroups.forEach(group => {
+      const groupDiv = document.createElement('div')
+      groupDiv.style.cssText = `
+        margin-bottom: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      `
+      
+      const title = document.createElement('h4')
+      title.textContent = group.title
+      title.style.cssText = `
+        margin: 0 0 15px 0;
+        color: #333;
+        font-size: 16px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
+      `
+      
+      const buttonContainer = document.createElement('div')
+      buttonContainer.style.cssText = `
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      `
+      
+      group.buttons.forEach(button => {
+        const buttonElement = button.render()
+        if (buttonElement.tag) {
+          // 创建实际的 DOM 元素
+          const element = document.createElement(buttonElement.tag)
+          
+          // 设置属性
+          if (buttonElement.props) {
+            Object.keys(buttonElement.props).forEach(key => {
+              if (key === 'style' && typeof buttonElement.props[key] === 'object') {
+                Object.assign(element.style, buttonElement.props[key])
+              } else if (key === 'onClick') {
+                element.addEventListener('click', buttonElement.props[key])
+              } else {
+                element.setAttribute(key, buttonElement.props[key])
+              }
+            })
+          }
+          
+          // 设置内容
+          if (buttonElement.children) {
+            element.textContent = buttonElement.children
+          }
+          
+          buttonContainer.appendChild(element)
+        }
+      })
+      
+      groupDiv.appendChild(title)
+      groupDiv.appendChild(buttonContainer)
+      demoContainer.appendChild(groupDiv)
+    })
+
+    // 添加到演示区域
+    demoArea.value.appendChild(demoContainer)
+    
+  } catch (error) {
+    console.error('创建 ModernNHAIButton 演示时出错:', error)
+    demoArea.value.innerHTML = `
+      <div style="color: red; padding: 20px;">
+        演示创建失败: ${error.message}
+        <br><br>
+        <strong>可能的解决方案：</strong>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+          <li>确保已正确导入 ModernNHAIButton</li>
+          <li>检查 nhai-framework 是否正确加载</li>
+          <li>查看浏览器控制台获取详细错误信息</li>
+        </ul>
+      </div>
+    `
+  }
+}
+
 const createLinkButtonDemo = () => {
   if (!demoArea.value) return
 
@@ -1541,6 +1761,129 @@ vbox.addChild(hbox1)
 vbox.addChild(hbox2)
 vbox.addChild(hbox3)`,
             createDemo: createTextButtonDemo
+          },
+          {
+            id: 'modern-button',
+            title: 'ModernNHAIButton',
+            description: '现代化声明式按钮组件，支持多种类型、尺寸和交互方式',
+            code: `// ModernNHAIButton 示例
+// 注意：需要先导入 ModernNHAIButton
+// import { ModernNHAIButton } from 'nhai-framework'
+
+// 1. 基础按钮类型
+const primaryButton = new ModernNHAIButton({
+  type: 'primary',
+  size: 'middle',
+  children: '主要按钮',
+  onClick: () => alert('Primary Button 被点击！')
+})
+
+const defaultButton = new ModernNHAIButton({
+  type: 'default',
+  size: 'middle',
+  children: '默认按钮',
+  onClick: () => alert('Default Button 被点击！')
+})
+
+const dashedButton = new ModernNHAIButton({
+  type: 'dashed',
+  size: 'middle',
+  children: '虚线按钮',
+  onClick: () => alert('Dashed Button 被点击！')
+})
+
+const textButton = new ModernNHAIButton({
+  type: 'text',
+  size: 'middle',
+  children: '文本按钮',
+  onClick: () => alert('Text Button 被点击！')
+})
+
+const linkButton = new ModernNHAIButton({
+  type: 'link',
+  size: 'middle',
+  children: '链接按钮',
+  onClick: () => alert('Link Button 被点击！')
+})
+
+// 2. 不同尺寸
+const smallButton = new ModernNHAIButton({
+  type: 'primary',
+  size: 'small',
+  children: '小按钮',
+  onClick: () => alert('Small Button 被点击！')
+})
+
+const largeButton = new ModernNHAIButton({
+  type: 'primary',
+  size: 'large',
+  children: '大按钮',
+  onClick: () => alert('Large Button 被点击！')
+})
+
+// 3. 状态按钮
+const disabledButton = new ModernNHAIButton({
+  type: 'primary',
+  size: 'middle',
+  children: '禁用按钮',
+  disabled: true
+})
+
+const loadingButton = new ModernNHAIButton({
+  type: 'primary',
+  size: 'middle',
+  children: '加载按钮',
+  loading: true
+})
+
+// 4. 链接功能
+const externalLinkButton = new ModernNHAIButton({
+  type: 'primary',
+  size: 'middle',
+  children: '外部链接',
+  href: 'https://www.baidu.com',
+  target: '_blank'
+})
+
+const routerButton = new ModernNHAIButton({
+  type: 'primary',
+  size: 'middle',
+  children: '路由按钮',
+  href: '/home',
+  router: (path) => alert('路由到: ' + path)
+})
+
+// 使用布局组织按钮
+const vbox = NHAIObjectFactory.createVBoxLayout()
+const hbox1 = NHAIObjectFactory.createHBoxLayout()
+const hbox2 = NHAIObjectFactory.createHBoxLayout()
+const hbox3 = NHAIObjectFactory.createHBoxLayout()
+const hbox4 = NHAIObjectFactory.createHBoxLayout()
+
+// 基础类型按钮
+hbox1.addChild(primaryButton.render())
+hbox1.addChild(defaultButton.render())
+hbox1.addChild(dashedButton.render())
+hbox1.addChild(textButton.render())
+hbox1.addChild(linkButton.render())
+
+// 尺寸按钮
+hbox2.addChild(smallButton.render())
+hbox2.addChild(largeButton.render())
+
+// 状态按钮
+hbox3.addChild(disabledButton.render())
+hbox3.addChild(loadingButton.render())
+
+// 链接按钮
+hbox4.addChild(externalLinkButton.render())
+hbox4.addChild(routerButton.render())
+
+vbox.addChild(hbox1)
+vbox.addChild(hbox2)
+vbox.addChild(hbox3)
+vbox.addChild(hbox4)`,
+            createDemo: createModernButtonDemo
           },
           {
             id: 'link-button',
@@ -1908,7 +2251,7 @@ let clickCount = 0
 
 button.setOnClick(() => {
   clickCount++
-  button.setText(\`点击了 \${clickCount} 次\`)
+  button.setText('点击了 ' + clickCount + ' 次')
   button.setStyle({
     backgroundColor: clickCount % 2 === 0 ? '#ffc107' : '#fd7e14'
   })
@@ -1946,7 +2289,7 @@ button2.setStyle({
 // 方法
 const switchFramework = async (framework: string) => {
   try {
-    console.log(`切换到框架: ${framework}`)
+    console.log('切换到框架: ' + framework)
     currentFramework.value = framework
     
     // 根据选择的框架注册对应的适配器
@@ -1980,7 +2323,7 @@ const switchFramework = async (framework: string) => {
         break
         
       default:
-        console.warn(`未知的框架: ${framework}`)
+        console.warn('未知的框架: ' + framework)
         return
     }
     
@@ -2132,9 +2475,10 @@ onMounted(async () => {
     adapterRegistered.value = true
     console.log('✓ 适配器注册成功')
     
-    // 将 NHAIObjectFactory 暴露到全局作用域
+    // 将 NHAIObjectFactory 和 ModernNHAIButton 暴露到全局作用域
     ;(window as any).NHAIObjectFactory = NHAIObjectFactory
-    console.log('✓ NHAIObjectFactory 已暴露到全局作用域')
+    ;(window as any).ModernNHAIButton = ModernNHAIButton
+    console.log('✓ NHAIObjectFactory 和 ModernNHAIButton 已暴露到全局作用域')
     
     // 测试按钮创建
     console.log('测试按钮创建...')

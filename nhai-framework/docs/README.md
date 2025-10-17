@@ -177,6 +177,44 @@ grid.addChild(card1)
 grid.addChild(card2)
 ```
 
+## 📁 项目结构
+
+```
+nhai-framework/
+├── 📁 src/                    # 源代码
+│   ├── 📁 adapters/           # 框架适配器
+│   ├── 📁 components/         # 组件库
+│   ├── 📁 core/               # 核心系统
+│   ├── 📁 examples/            # 示例代码
+│   └── 📁 factory/             # 工厂模式
+├── 📁 docs/                   # 文档
+├── 📁 demos/                  # 演示页面
+├── 📁 tests/                  # 测试页面
+└── 📁 dist/                   # 构建输出
+```
+
+详细的项目结构说明请查看 [PROJECT-STRUCTURE.md](./PROJECT-STRUCTURE.md)
+
+## 🚀 演示和测试
+
+### 查看演示
+- **动态组件演示**: `demos/dynamic-components-demo.html`
+- **框架封装演示**: `demos/framework-wrapper-demo.html`
+- **框架对比演示**: `demos/react-vue-svelte-comparison.html`
+- **UI框架对比**: `demos/framework-comparison-demo.html`
+
+### 运行测试
+- **性能测试**: `tests/actual-performance-test.html`
+- **快速测试**: `tests/quick-test.html`
+- **功能测试**: `tests/test-page.html`
+
+## 📚 文档
+
+- **性能分析**: [PERFORMANCE-ANALYSIS.md](./PERFORMANCE-ANALYSIS.md)
+- **框架对比**: [REACT-VS-VUE-VS-SVELTE-ANALYSIS.md](./REACT-VS-VUE-VS-SVELTE-ANALYSIS.md)
+- **UI框架封装**: [UIFRAMEWORK-WRAPPER-ANALYSIS.md](./UIFRAMEWORK-WRAPPER-ANALYSIS.md)
+- **组件使用指南**: [NHAITextButton-Links-Guide.md](./NHAITextButton-Links-Guide.md)
+
 ## 构建
 
 ```bash

@@ -31,48 +31,8 @@ export { VueAdapter, vueAdapter, useNHAI as useNHAIVue, NHAIPlugin } from './ada
 export { ReactAdapter, reactAdapter, useNHAI as useNHAIReact, withNHAI } from './adapters/ReactAdapter'
 export { SvelteAdapter, svelteAdapter, createNHAIStore, nhaiAction } from './adapters/SvelteAdapter'
 
-// 默认导出
-import { initNHAI, NHAIFrameworkRegistry, NHAIFrameworkDetector } from './core/NHAICore'
-import { nhaiFactory } from './factory/NHAIFactory'
-import { VanillaAdapter } from './adapters/VanillaAdapter'
-import { VueAdapter } from './adapters/VueAdapter'
-import { ReactAdapter } from './adapters/ReactAdapter'
-import { SvelteAdapter } from './adapters/SvelteAdapter'
-import { NHAIVBoxLayout, NHAIHBoxLayout, NHAIGridLayout } from './components/NHAILayouts/NHAILayouts'
-import { NHAIButton, NHAITextButton, NHAILabel, NHAIInput, NHAICard, NHAIContainer, NHAIWindow } from './components/NHAIComponents'
+// 导出动态组件系统
+export { NHAIDynamicComponents } from './components/DynamicComponents'
 
-export default {
-  // 核心API
-  init: initNHAI,
-  FrameworkRegistry: NHAIFrameworkRegistry,
-  FrameworkDetector: NHAIFrameworkDetector,
-  
-  // 工厂
-  Factory: nhaiFactory,
-  
-  // 适配器
-  Adapters: {
-    VanillaAdapter,
-    VueAdapter,
-    ReactAdapter,
-    SvelteAdapter
-  },
-  
-  // 组件
-  Components: {
-    Button: NHAIButton,
-    TextButton: NHAITextButton,
-    Label: NHAILabel,
-    Input: NHAIInput,
-    Card: NHAICard,
-    Container: NHAIContainer,
-    Window: NHAIWindow
-  },
-  
-  // 布局
-  Layouts: {
-    VBoxLayout: NHAIVBoxLayout,
-    HBoxLayout: NHAIHBoxLayout,
-    GridLayout: NHAIGridLayout
-  }
-}
+// 导出现代化组件
+export { ModernNHAIButton, ModernButtonExample } from './components/ModernNHAIButton'

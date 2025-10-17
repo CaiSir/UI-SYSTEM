@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHAI 动态组件系统演示</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .demo-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+        
+        .demo-section h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .demo-controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .demo-controls button {
+            padding: 8px 16px;
+            border: 1px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .demo-controls button:hover {
+            background: #007bff;
+            color: white;
+        }
+        
+        .demo-controls button.active {
+            background: #007bff;
+            color: white;
+        }
+        
+        .component-area {
+            min-height: 200px;
+            border: 2px dashed #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+        
+        .component-area.has-content {
+            border-style: solid;
+            border-color: #28a745;
+            background: #f8fff8;
+        }
+        
+        .code-example {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            border-left: 3px solid #007bff;
+        }
+        
+        .api-config {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border-left: 3px solid #2196f3;
+        }
+        
+        .api-config pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-indicator.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-indicator.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-indicator.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .user-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            background: #fff;
+            display: inline-block;
+            width: 200px;
+            vertical-align: top;
+        }
+        
+        .user-card img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 15px;
+            float: left;
+        }
+        
+        .user-card h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+        
+        .user-card p {
+            margin: 0 0 15px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .user-card button {
+            padding: 6px 12px;
+            margin-right: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .user-card .edit-btn {
+            background: #007bff;
+            color: white;
+        }
+        
+        .user-card .delete-btn {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .product-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            background: #fff;
+            display: inline-block;
+            width: 200px;
+            vertical-align: top;
+            text-align: center;
+        }
+        
+        .product-card img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        
+        .product-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+        
+        .product-card p {
+            margin: 0 0 15px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .product-card .price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        
+        .product-card button {
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .real-time-data {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 3px solid #28a745;
+        }
+        
+        .role-switcher {
+            margin: 15px 0;
+        }
+        
+        .role-switcher button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            border: 1px solid #6c757d;
+            background: white;
+            color: #6c757d;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .role-switcher button.active {
+            background: #6c757d;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>NHAI 动态组件系统演示</h1>
+        <p>展示如何通过 API 配置动态创建、更新和管理组件</p>
+        
+        <div class="demo-section">
+            <h3>🎯 基础动态组件</h3>
+            <p>通过 API 配置动态创建组件</p>
+            
+            <div class="demo-controls">
+                <button onclick="createBasicComponent()">创建基础组件</button>
+                <button onclick="createFormComponent()">创建表单组件</button>
+                <button onclick="createCardList()">创建卡片列表</button>
+                <button onclick="clearComponents()">清空组件</button>
+            </div>
+            
+            <div id="basic-component-area" class="component-area">
+                <p style="text-align: center; color: #666;">点击上方按钮创建动态组件</p>
+            </div>
+            
+            <div class="api-config">
+                <h4>API 配置示例：</h4>
+                <pre><code>{
+  "type": "button",
+  "props": {
+    "className": "api-button",
+    "onClick": "handleClick"
+  },
+  "children": ["API 按钮"]
+}</code></pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>🔄 实时数据更新</h3>
+            <p>动态组件支持实时数据绑定和更新</p>
+            
+            <div class="demo-controls">
+                <button onclick="startRealTimeUpdate()">开始实时更新</button>
+                <button onclick="stopRealTimeUpdate()">停止更新</button>
+            </div>
+            
+            <div id="realtime-component-area" class="component-area">
+                <div class="real-time-data">
+                    <div><strong>当前时间:</strong> <span id="timestamp">--:--:--</span></div>
+                    <div><strong>更新次数:</strong> <span id="counter">0</span></div>
+                    <div><strong>随机值:</strong> <span id="random-value">0</span></div>
+                </div>
+            </div>
+            
+            <div class="code-example">
+<pre><code>// 实时更新组件
+setInterval(() => {
+  updateComponent('timestamp', {
+    children: new Date().toLocaleTimeString()
+  })
+}, 1000)</code></pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>👤 条件渲染</h3>
+            <p>根据用户角色动态显示不同组件</p>
+            
+            <div class="role-switcher">
+                <button onclick="switchRole('guest')" class="active" id="guest-btn">访客</button>
+                <button onclick="switchRole('user')" id="user-btn">用户</button>
+                <button onclick="switchRole('admin')" id="admin-btn">管理员</button>
+            </div>
+            
+            <div id="conditional-component-area" class="component-area">
+                <div style="padding: 20px; background: #f8f9fa; border-radius: 4px;">
+                    <h4>欢迎使用系统</h4>
+                    <p>当前角色：<span id="current-role">访客</span></p>
+                    <div id="role-specific-content">
+                        <p>访客模式 - 请登录以获取更多功能</p>
+                        <button onclick="alert('登录')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px;">登录</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>🎨 模板系统</h3>
+            <p>使用预定义模板快速创建组件</p>
+            
+            <div class="demo-controls">
+                <button onclick="createUserCards()">创建用户卡片</button>
+                <button onclick="createProductCards()">创建产品卡片</button>
+                <button onclick="clearTemplateComponents()">清空模板组件</button>
+            </div>
+            
+            <div id="template-component-area" class="component-area">
+                <p style="text-align: center; color: #666;">点击上方按钮创建模板组件</p>
+            </div>
+            
+            <div class="api-config">
+                <h4>模板配置示例：</h4>
+                <pre><code>// 用户卡片模板
+{
+  "type": "div",
+  "props": { "className": "user-card" },
+  "children": [
+    {
+      "type": "h3",
+      "children": ["{{name}}"]
+    },
+    {
+      "type": "p", 
+      "children": ["{{email}}"]
+    }
+  ]
+}</code></pre>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>📊 动态组件状态</h3>
+            <div id="component-status">
+                <p><strong>注册组件数量:</strong> <span id="registered-count">0</span></p>
+                <p><strong>当前活跃组件:</strong> <span id="active-count">0</span></p>
+                <p><strong>最后更新时间:</strong> <span id="last-update">--</span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟动态组件系统
+        class MockDynamicComponentSystem {
+            constructor() {
+                this.components = new Map()
+                this.updateInterval = null
+                this.counter = 0
+                this.currentRole = 'guest'
+            }
+            
+            // 创建基础组件
+            createBasicComponent() {
+                const area = document.getElementById('basic-component-area')
+                area.innerHTML = `
+                    <div style="padding: 20px; background: #e3f2fd; border-radius: 4px;">
+                        <h4>API 创建的按钮组件</h4>
+                        <button onclick="alert('API 按钮被点击')" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; margin-right: 10px;">API 按钮</button>
+                        <button onclick="alert('另一个按钮')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px;">另一个按钮</button>
+                    </div>
+                `
+                area.classList.add('has-content')
+                this.updateStatus()
+            }
+            
+            // 创建表单组件
+            createFormComponent() {
+                const area = document.getElementById('basic-component-area')
+                area.innerHTML = `
+                    <div style="padding: 20px; background: #f8f9fa; border-radius: 4px;">
+                        <h4>API 创建的表单组件</h4>
+                        <form>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px;">用户名:</label>
+                                <input type="text" placeholder="请输入用户名" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px;">邮箱:</label>
+                                <input type="email" placeholder="请输入邮箱" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <button type="submit" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px;">提交</button>
+                        </form>
+                    </div>
+                `
+                area.classList.add('has-content')
+                this.updateStatus()
+            }
+            
+            // 创建卡片列表
+            createCardList() {
+                const area = document.getElementById('basic-component-area')
+                area.innerHTML = `
+                    <div style="padding: 20px;">
+                        <h4>API 创建的卡片列表</h4>
+                        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
+                                <h5>卡片标题 1</h5>
+                                <p>这是第一个卡片的内容</p>
+                                <button onclick="alert('卡片 1 被点击')" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px;">查看详情</button>
+                            </div>
+                            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1; min-width: 200px;">
+                                <h5>卡片标题 2</h5>
+                                <p>这是第二个卡片的内容</p>
+                                <button onclick="alert('卡片 2 被点击')" style="padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 4px;">查看详情</button>
+                            </div>
+                        </div>
+                    </div>
+                `
+                area.classList.add('has-content')
+                this.updateStatus()
+            }
+            
+            // 清空组件
+            clearComponents() {
+                const area = document.getElementById('basic-component-area')
+                area.innerHTML = '<p style="text-align: center; color: #666;">点击上方按钮创建动态组件</p>'
+                area.classList.remove('has-content')
+                this.updateStatus()
+            }
+            
+            // 开始实时更新
+            startRealTimeUpdate() {
+                if (this.updateInterval) return
+                
+                this.updateInterval = setInterval(() => {
+                    this.counter++
+                    document.getElementById('timestamp').textContent = new Date().toLocaleTimeString()
+                    document.getElementById('counter').textContent = this.counter
+                    document.getElementById('random-value').textContent = Math.floor(Math.random() * 100)
+                    document.getElementById('last-update').textContent = new Date().toLocaleTimeString()
+                }, 1000)
+            }
+            
+            // 停止实时更新
+            stopRealTimeUpdate() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval)
+                    this.updateInterval = null
+                }
+            }
+            
+            // 切换用户角色
+            switchRole(role) {
+                this.currentRole = role
+                
+                // 更新按钮状态
+                document.querySelectorAll('.role-switcher button').forEach(btn => {
+                    btn.classList.remove('active')
+                })
+                document.getElementById(role + '-btn').classList.add('active')
+                
+                // 更新角色显示
+                document.getElementById('current-role').textContent = role
+                
+                // 更新角色特定内容
+                const contentArea = document.getElementById('role-specific-content')
+                switch(role) {
+                    case 'guest':
+                        contentArea.innerHTML = `
+                            <p>访客模式 - 请登录以获取更多功能</p>
+                            <button onclick="alert('登录')" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px;">登录</button>
+                        `
+                        break
+                    case 'user':
+                        contentArea.innerHTML = `
+                            <p>用户模式 - 您可以编辑个人资料</p>
+                            <button onclick="alert('编辑资料')" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; margin-right: 10px;">编辑资料</button>
+                            <button onclick="alert('查看订单')" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px;">查看订单</button>
+                        `
+                        break
+                    case 'admin':
+                        contentArea.innerHTML = `
+                            <p>管理员模式 - 您可以管理整个系统</p>
+                            <button onclick="alert('用户管理')" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; margin-right: 10px;">用户管理</button>
+                            <button onclick="alert('系统设置')" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; margin-right: 10px;">系统设置</button>
+                            <button onclick="alert('删除用户')" style="padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px;">删除用户</button>
+                        `
+                        break
+                }
+                
+                this.updateStatus()
+            }
+            
+            // 创建用户卡片
+            createUserCards() {
+                const area = document.getElementById('template-component-area')
+                area.innerHTML = `
+                    <div style="padding: 20px;">
+                        <h4>模板创建的用户卡片</h4>
+                        <div class="user-card">
+                            <img src="https://via.placeholder.com/50" alt="用户头像">
+                            <h3>张三</h3>
+                            <p>zhangsan@example.com</p>
+                            <button class="edit-btn" onclick="alert('编辑用户: 张三')">编辑</button>
+                            <button class="delete-btn" onclick="alert('删除用户: 张三')">删除</button>
+                        </div>
+                        <div class="user-card">
+                            <img src="https://via.placeholder.com/50" alt="用户头像">
+                            <h3>李四</h3>
+                            <p>lisi@example.com</p>
+                            <button class="edit-btn" onclick="alert('编辑用户: 李四')">编辑</button>
+                            <button class="delete-btn" onclick="alert('删除用户: 李四')">删除</button>
+                        </div>
+                        <div class="user-card">
+                            <img src="https://via.placeholder.com/50" alt="用户头像">
+                            <h3>王五</h3>
+                            <p>wangwu@example.com</p>
+                            <button class="edit-btn" onclick="alert('编辑用户: 王五')">编辑</button>
+                            <button class="delete-btn" onclick="alert('删除用户: 王五')">删除</button>
+                        </div>
+                    </div>
+                `
+                area.classList.add('has-content')
+                this.updateStatus()
+            }
+            
+            // 创建产品卡片
+            createProductCards() {
+                const area = document.getElementById('template-component-area')
+                area.innerHTML = `
+                    <div style="padding: 20px;">
+                        <h4>模板创建的产品卡片</h4>
+                        <div class="product-card">
+                            <img src="https://via.placeholder.com/200x120" alt="产品图片">
+                            <h3>iPhone 15</h3>
+                            <p>最新款 iPhone</p>
+                            <div class="price">¥5999</div>
+                            <button onclick="alert('添加 iPhone 15 到购物车')">加入购物车</button>
+                        </div>
+                        <div class="product-card">
+                            <img src="https://via.placeholder.com/200x120" alt="产品图片">
+                            <h3>MacBook Pro</h3>
+                            <p>专业级笔记本电脑</p>
+                            <div class="price">¥12999</div>
+                            <button onclick="alert('添加 MacBook Pro 到购物车')">加入购物车</button>
+                        </div>
+                        <div class="product-card">
+                            <img src="https://via.placeholder.com/200x120" alt="产品图片">
+                            <h3>AirPods Pro</h3>
+                            <p>无线降噪耳机</p>
+                            <div class="price">¥1999</div>
+                            <button onclick="alert('添加 AirPods Pro 到购物车')">加入购物车</button>
+                        </div>
+                    </div>
+                `
+                area.classList.add('has-content')
+                this.updateStatus()
+            }
+            
+            // 清空模板组件
+            clearTemplateComponents() {
+                const area = document.getElementById('template-component-area')
+                area.innerHTML = '<p style="text-align: center; color: #666;">点击上方按钮创建模板组件</p>'
+                area.classList.remove('has-content')
+                this.updateStatus()
+            }
+            
+            // 更新状态
+            updateStatus() {
+                const registeredCount = this.components.size + 3 // 模拟注册的组件数量
+                const activeCount = document.querySelectorAll('.component-area.has-content').length
+                
+                document.getElementById('registered-count').textContent = registeredCount
+                document.getElementById('active-count').textContent = activeCount
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString()
+            }
+        }
+        
+        // 创建全局实例
+        const dynamicSystem = new MockDynamicComponentSystem()
+        
+        // 全局函数
+        function createBasicComponent() {
+            dynamicSystem.createBasicComponent()
+        }
+        
+        function createFormComponent() {
+            dynamicSystem.createFormComponent()
+        }
+        
+        function createCardList() {
+            dynamicSystem.createCardList()
+        }
+        
+        function clearComponents() {
+            dynamicSystem.clearComponents()
+        }
+        
+        function startRealTimeUpdate() {
+            dynamicSystem.startRealTimeUpdate()
+        }
+        
+        function stopRealTimeUpdate() {
+            dynamicSystem.stopRealTimeUpdate()
+        }
+        
+        function switchRole(role) {
+            dynamicSystem.switchRole(role)
+        }
+        
+        function createUserCards() {
+            dynamicSystem.createUserCards()
+        }
+        
+        function createProductCards() {
+            dynamicSystem.createProductCards()
+        }
+        
+        function clearTemplateComponents() {
+            dynamicSystem.clearTemplateComponents()
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            dynamicSystem.updateStatus()
+        })
+    </script>
+</body>
+</html>

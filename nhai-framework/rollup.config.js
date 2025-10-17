@@ -8,7 +8,8 @@ const config = [
     output: {
       file: 'dist/index.esm.js',
       format: 'esm',
-      sourcemap: true
+      sourcemap: true,
+      exports: 'named'
     },
     plugins: [
       typescript({

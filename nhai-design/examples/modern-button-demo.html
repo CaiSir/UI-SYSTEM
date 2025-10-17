@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHAI Design - ModernNHAIButton 组件展示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #1890ff;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .demo-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .demo-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-item {
+            padding: 20px;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .demo-item h4 {
+            margin-bottom: 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* ModernNHAIButton 样式 */
+        .nhai-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+            text-decoration: none;
+            font-family: inherit;
+        }
+        
+        .nhai-button--primary {
+            background-color: #1890ff;
+            color: #fff;
+            border: 1px solid #1890ff;
+        }
+        
+        .nhai-button--default {
+            background-color: #fff;
+            color: #000;
+            border: 1px solid #d9d9d9;
+        }
+        
+        .nhai-button--dashed {
+            background-color: #fff;
+            color: #000;
+            border: 1px dashed #d9d9d9;
+        }
+        
+        .nhai-button--text {
+            background-color: transparent;
+            color: #1890ff;
+            border: none;
+        }
+        
+        .nhai-button--link {
+            background-color: transparent;
+            color: #1890ff;
+            border: none;
+            text-decoration: underline;
+        }
+        
+        .nhai-button--small {
+            padding: 4px 8px;
+            font-size: 12px;
+            min-height: 24px;
+        }
+        
+        .nhai-button--middle {
+            padding: 6px 12px;
+            font-size: 14px;
+            min-height: 32px;
+        }
+        
+        .nhai-button--large {
+            padding: 8px 16px;
+            font-size: 16px;
+            min-height: 40px;
+        }
+        
+        .nhai-button--disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .nhai-button--loading {
+            opacity: 0.8;
+            cursor: not-allowed;
+        }
+        
+        .nhai-button:hover:not(.nhai-button--disabled):not(.nhai-button--loading) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .nhai-button--primary:hover:not(.nhai-button--disabled):not(.nhai-button--loading) {
+            background-color: #40a9ff;
+            border-color: #40a9ff;
+        }
+        
+        .nhai-button--default:hover:not(.nhai-button--disabled):not(.nhai-button--loading) {
+            border-color: #40a9ff;
+            color: #40a9ff;
+        }
+        
+        .code-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        
+        .code-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .api-table th,
+        .api-table td {
+            border: 1px solid #e8e8e8;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .api-table th {
+            background: #fafafa;
+            font-weight: bold;
+        }
+        
+        .api-table tr:nth-child(even) {
+            background: #fafafa;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .feature-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            border-left: 4px solid #1890ff;
+        }
+        
+        .feature-card h4 {
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        
+        .feature-card p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 NHAI Design - ModernNHAIButton</h1>
+            <p>现代化声明式按钮组件，支持多种类型、尺寸和交互方式</p>
+        </div>
+        
+        <!-- 基础展示 -->
+        <div class="demo-section">
+            <h2 class="demo-title">📋 基础展示</h2>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h4>Primary 按钮</h4>
+                    <button class="nhai-button nhai-button--primary nhai-button--middle" onclick="showAlert('Primary Button')">
+                        主要按钮
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>Default 按钮</h4>
+                    <button class="nhai-button nhai-button--default nhai-button--middle" onclick="showAlert('Default Button')">
+                        默认按钮
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>Dashed 按钮</h4>
+                    <button class="nhai-button nhai-button--dashed nhai-button--middle" onclick="showAlert('Dashed Button')">
+                        虚线按钮
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>Text 按钮</h4>
+                    <button class="nhai-button nhai-button--text nhai-button--middle" onclick="showAlert('Text Button')">
+                        文本按钮
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>Link 按钮</h4>
+                    <a href="#" class="nhai-button nhai-button--link nhai-button--middle" onclick="showAlert('Link Button'); return false;">
+                        链接按钮
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 尺寸展示 -->
+        <div class="demo-section">
+            <h2 class="demo-title">📏 尺寸展示</h2>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h4>Small 尺寸</h4>
+                    <button class="nhai-button nhai-button--primary nhai-button--small" onclick="showAlert('Small Button')">
+                        小按钮
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>Middle 尺寸</h4>
+                    <button class="nhai-button nhai-button--primary nhai-button--middle" onclick="showAlert('Middle Button')">
+                        中按钮
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>Large 尺寸</h4>
+                    <button class="nhai-button nhai-button--primary nhai-button--large" onclick="showAlert('Large Button')">
+                        大按钮
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 状态展示 -->
+        <div class="demo-section">
+            <h2 class="demo-title">🔄 状态展示</h2>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h4>正常状态</h4>
+                    <button class="nhai-button nhai-button--primary nhai-button--middle" onclick="showAlert('Normal Button')">
+                        正常按钮
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>禁用状态</h4>
+                    <button class="nhai-button nhai-button--primary nhai-button--middle nhai-button--disabled">
+                        禁用按钮
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>加载状态</h4>
+                    <button class="nhai-button nhai-button--primary nhai-button--middle nhai-button--loading">
+                        Loading...
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 链接功能展示 -->
+        <div class="demo-section">
+            <h2 class="demo-title">🔗 链接功能展示</h2>
+            <div class="demo-grid">
+                <div class="demo-item">
+                    <h4>外部链接</h4>
+                    <a href="https://www.baidu.com" target="_blank" class="nhai-button nhai-button--primary nhai-button--middle">
+                        外部链接
+                    </a>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>内部路由</h4>
+                    <button class="nhai-button nhai-button--primary nhai-button--middle" onclick="handleRouter('/home')">
+                        首页路由
+                    </button>
+                </div>
+                
+                <div class="demo-item">
+                    <h4>文本链接</h4>
+                    <a href="#" class="nhai-button nhai-button--link nhai-button--middle" onclick="showAlert('Text Link'); return false;">
+                        文本链接样式
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 代码示例 -->
+        <div class="demo-section">
+            <h2 class="demo-title">💻 代码示例</h2>
+            
+            <div class="code-section">
+                <div class="code-title">基础使用</div>
+                <pre><code>import { ModernNHAIButton } from 'nhai-framework'
+
+// 创建按钮实例
+const button = new ModernNHAIButton({
+  type: 'primary',
+  size: 'middle',
+  children: '点击我',
+  onClick: () => console.log('clicked')
+})
+
+// 渲染按钮
+const element = button.render()</code></pre>
+            </div>
+            
+            <div class="code-section">
+                <div class="code-title">链接按钮</div>
+                <pre><code>const linkButton = new ModernNHAIButton({
+  type: 'link',
+  href: 'https://example.com',
+  target: '_blank',
+  children: '外部链接'
+})</code></pre>
+            </div>
+            
+            <div class="code-section">
+                <div class="code-title">路由按钮</div>
+                <pre><code>const routerButton = new ModernNHAIButton({
+  type: 'primary',
+  href: '/home',
+  router: (path) => {
+    console.log(`Navigate to: ${path}`)
+  },
+  children: '首页'
+})</code></pre>
+            </div>
+        </div>
+        
+        <!-- API 文档 -->
+        <div class="demo-section">
+            <h2 class="demo-title">📚 API 文档</h2>
+            
+            <table class="api-table">
+                <thead>
+                    <tr>
+                        <th>属性</th>
+                        <th>类型</th>
+                        <th>默认值</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>type</td>
+                        <td>'primary' | 'default' | 'dashed' | 'link' | 'text'</td>
+                        <td>'default'</td>
+                        <td>按钮类型</td>
+                    </tr>
+                    <tr>
+                        <td>size</td>
+                        <td>'small' | 'middle' | 'large'</td>
+                        <td>'middle'</td>
+                        <td>按钮尺寸</td>
+                    </tr>
+                    <tr>
+                        <td>children</td>
+                        <td>string</td>
+                        <td>-</td>
+                        <td>按钮内容</td>
+                    </tr>
+                    <tr>
+                        <td>disabled</td>
+                        <td>boolean</td>
+                        <td>false</td>
+                        <td>是否禁用</td>
+                    </tr>
+                    <tr>
+                        <td>loading</td>
+                        <td>boolean</td>
+                        <td>false</td>
+                        <td>是否加载中</td>
+                    </tr>
+                    <tr>
+                        <td>href</td>
+                        <td>string</td>
+                        <td>-</td>
+                        <td>链接地址</td>
+                    </tr>
+                    <tr>
+                        <td>target</td>
+                        <td>'_blank' | '_self' | '_parent' | '_top'</td>
+                        <td>'_self'</td>
+                        <td>链接打开方式</td>
+                    </tr>
+                    <tr>
+                        <td>onClick</td>
+                        <td>(event: Event) => void</td>
+                        <td>-</td>
+                        <td>点击事件处理</td>
+                    </tr>
+                    <tr>
+                        <td>router</td>
+                        <td>(path: string) => void</td>
+                        <td>-</td>
+                        <td>路由处理函数</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 特性介绍 -->
+        <div class="demo-section">
+            <h2 class="demo-title">✨ 核心特性</h2>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>🎨 声明式 API</h4>
+                    <p>采用声明式设计，通过 props 配置组件行为，使用简单直观</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>⚡ 性能优化</h4>
+                    <p>内置样式缓存机制，避免重复计算，提升渲染性能</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🔗 链接支持</h4>
+                    <p>支持外部链接和内部路由，自动渲染为 a 标签或 button 标签</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>📱 响应式设计</h4>
+                    <p>支持多种尺寸和状态，适配不同设备和场景</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🎯 TypeScript 支持</h4>
+                    <p>完整的类型定义，提供良好的开发体验和类型安全</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h4>🔄 状态管理</h4>
+                    <p>支持禁用、加载等状态，提供丰富的交互反馈</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模拟 ModernNHAIButton 的功能
+        function showAlert(message) {
+            alert(`${message} 被点击！`);
+        }
+        
+        function handleRouter(path) {
+            alert(`路由导航到: ${path}`);
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('NHAI Design - ModernNHAIButton 展示页面已加载');
+            
+            // 添加一些动画效果
+            const demoItems = document.querySelectorAll('.demo-item');
+            demoItems.forEach((item, index) => {
+                item.style.opacity = '0';
+                item.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    item.style.transition = 'all 0.6s ease';
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
