@@ -212,5 +212,96 @@ window.addChild(label)`,
         ]
       }
     ]
+  },
+  {
+    name: '专业控件',
+    expanded: false,
+    children: [
+      {
+        name: '组件组合器',
+        expanded: false,
+        children: [
+          {
+            id: 'component-composer',
+            title: '组件组合器',
+            description: '可视化组件组合和设计工具',
+            code: `// 组件组合器示例
+import { NHAIComponentComposer } from 'nhai-framework'
+
+// 创建组件组合器
+const composer = new NHAIComponentComposer({
+  rootPath: '/components',
+  allowedTypes: ['button', 'input', 'container', 'layout'],
+  enableDragDrop: true,
+  enablePropertyEdit: true,
+  enableTemplateSave: true,
+  enableMultiSelect: true,
+  showToolbar: true,
+  showComponentPalette: true,
+  showPropertyPanel: true,
+  canvasWidth: 800,
+  canvasHeight: 600,
+  gridSize: 20,
+  snapToGrid: true
+})
+
+// 渲染组合器
+const element = composer.render()
+document.body.appendChild(element)
+
+// 监听事件
+composer.on('componentAdded', (data) => {
+  console.log('组件已添加:', data.component)
+})
+
+composer.on('templateSaved', (data) => {
+  console.log('模板已保存:', data.template)
+})`,
+            createDemo: () => {
+              const demoArea = document.querySelector('.demo-area') as HTMLElement
+              if (!demoArea) return
+              
+              try {
+                // 创建组件组合器
+                const composer = new (window as any).NHAIComponentComposer({
+                  rootPath: '/components',
+                  allowedTypes: ['button', 'input', 'container', 'layout'],
+                  enableDragDrop: true,
+                  enablePropertyEdit: true,
+                  enableTemplateSave: true,
+                  enableMultiSelect: true,
+                  showToolbar: true,
+                  showComponentPalette: true,
+                  showPropertyPanel: true,
+                  canvasWidth: 600,
+                  canvasHeight: 400,
+                  gridSize: 20,
+                  snapToGrid: true
+                })
+                
+                // 渲染组合器
+                demoArea.innerHTML = ''
+                const element = composer.render()
+                demoArea.appendChild(element)
+                
+                // 监听事件
+                composer.addEventListener('componentAdded', (data: any) => {
+                  console.log('组件已添加:', data.detail.component)
+                })
+                
+                composer.addEventListener('templateSaved', (data: any) => {
+                  console.log('模板已保存:', data.detail.template)
+                  alert(`模板 "${data.detail.template.name}" 已保存成功！`)
+                })
+                
+              } catch (error) {
+                console.error('创建组件组合器演示时出错:', error)
+                demoArea.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error instanceof Error ? error.message : String(error)}</div>`
+              }
+            }
+          }
+        ]
+      }
+    ]
   }
 ]

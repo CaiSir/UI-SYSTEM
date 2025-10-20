@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NHAI 适配器测试</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .success { background: #f6ffed; border: 1px solid #b7eb8f; color: #52c41a; }
+    .error { background: #fff2f0; border: 1px solid #ffccc7; color: #ff4d4f; }
+    .loading { background: #e6f7ff; border: 1px solid #91d5ff; color: #1890ff; }
+    #test-area {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid #e8e8e8;
+      border-radius: 4px;
+      min-height: 200px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>NHAI 适配器测试</h1>
+    <div id="status" class="status loading">正在加载...</div>
+    <div id="test-area"></div>
+  </div>
+
+  <script type="module">
+    const statusEl = document.getElementById('status')
+    const testAreaEl = document.getElementById('test-area')
+    
+    function updateStatus(message, type = 'loading') {
+      statusEl.textContent = message
+      statusEl.className = `status ${type}`
+    }
+    
+    async function testNHAI() {
+      try {
+        updateStatus('正在导入 NHAI 框架...', 'loading')
+        
+        // 导入 NHAI 框架
+        const { NHAIFrameworkRegistry, VanillaAdapter } = await import('../nhai-framework/dist/index.esm.js')
+        
+        updateStatus('正在注册适配器...', 'loading')
+        
+        // 注册适配器
+        const adapter = new VanillaAdapter()
+        NHAIFrameworkRegistry.register(adapter)
+        
+        updateStatus('正在设置当前适配器...', 'loading')
+        
+        // 设置当前适配器
+        NHAIFrameworkRegistry.use('vanilla')
+        
+        updateStatus('正在测试适配器...', 'loading')
+        
+        // 测试适配器
+        const currentAdapter = NHAIFrameworkRegistry.getCurrent()
+        if (!currentAdapter) {
+          throw new Error('当前适配器为空')
+        }
+        
+        updateStatus('正在创建测试元素...', 'loading')
+        
+        // 创建测试元素
+        const testElement = currentAdapter.createElement('div', {
+          style: {
+            padding: '20px',
+            backgroundColor: '#e6f7ff',
+            border: '1px solid #91d5ff',
+            borderRadius: '4px',
+            color: '#1890ff'
+          }
+        }, ['NHAI 适配器测试成功！'])
+        
+        testAreaEl.appendChild(testElement)
+        
+        updateStatus('✓ NHAI 适配器测试成功！', 'success')
+        
+        console.log('NHAI 适配器测试完成')
+        console.log('当前适配器:', currentAdapter)
+        console.log('可用适配器:', NHAIFrameworkRegistry.getAvailable())
+        
+      } catch (error) {
+        console.error('测试失败:', error)
+        updateStatus(`❌ 测试失败: ${error.message}`, 'error')
+        
+        testAreaEl.innerHTML = `
+          <div style="color: #ff4d4f; padding: 20px;">
+            <h3>测试失败</h3>
+            <p>${error.message}</p>
+            <p>请检查控制台获取详细错误信息</p>
+          </div>
+        `
+      }
+    }
+    
+    // 页面加载完成后启动测试
+    document.addEventListener('DOMContentLoaded', testNHAI)
+  </script>
+</body>
+</html>

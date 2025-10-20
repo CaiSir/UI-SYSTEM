@@ -154,7 +154,8 @@ import {
   ReactAdapter, 
   SvelteAdapter,
   nhaiFactory as NHAIObjectFactory,
-  ModernNHAIButton
+  ModernNHAIButton,
+  NHAIComponentComposer
 } from 'nhai-framework'
 import OnlineEditor from './components/ui/OnlineEditor.vue'
 
@@ -2475,10 +2476,11 @@ onMounted(async () => {
     adapterRegistered.value = true
     console.log('✓ 适配器注册成功')
     
-    // 将 NHAIObjectFactory 和 ModernNHAIButton 暴露到全局作用域
+    // 将 NHAIObjectFactory、ModernNHAIButton 和 NHAIComponentComposer 暴露到全局作用域
     ;(window as any).NHAIObjectFactory = NHAIObjectFactory
     ;(window as any).ModernNHAIButton = ModernNHAIButton
-    console.log('✓ NHAIObjectFactory 和 ModernNHAIButton 已暴露到全局作用域')
+    ;(window as any).NHAIComponentComposer = NHAIComponentComposer
+    console.log('✓ NHAIObjectFactory、ModernNHAIButton 和 NHAIComponentComposer 已暴露到全局作用域')
     
     // 测试按钮创建
     console.log('测试按钮创建...')
