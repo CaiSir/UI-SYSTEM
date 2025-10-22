@@ -66,7 +66,7 @@ class FreeDesignApp {
     if (!this.composer) return
     
     // 查找画布元素
-    const canvas = document.querySelector('.nhai-composer-canvas')
+    const canvas = document.querySelector('.nhai-composer-canvas') as HTMLElement
     if (!canvas) {
       console.warn('画布元素未找到')
       return

@@ -1,76 +1,125 @@
 <template>
   <div id="app">
-    <div class="app-header">
-      <h1>NHAI - 框架无关UI组件系统</h1>
-      <p>支持Vue、React、Svelte、原生JavaScript - 在线编辑预览</p>
-    </div>
+    <!-- 顶部导航栏 -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo">
+          <h1>NHAI</h1>
+          <span class="tagline">框架无关UI组件系统</span>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <div class="mode-tabs">
+          <button 
+            v-for="mode in modes" 
+            :key="mode.value"
+            class="mode-tab"
+            :class="{ active: currentMode === mode.value }"
+            @click="switchMode(mode.value)"
+          >
+            <i :class="mode.icon"></i>
+            {{ mode.label }}
+          </button>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <div class="framework-selector">
+          <select v-model="currentFramework" @change="switchFramework(currentFramework)">
+            <option v-for="framework in frameworks" :key="framework.name" :value="framework.name">
+              {{ framework.label }}
+            </option>
+          </select>
+        </div>
+        <div class="status-indicator" :class="{ active: adapterRegistered }">
+          <i class="status-icon"></i>
+          {{ adapterRegistered ? '已连接' : '未连接' }}
+        </div>
+      </div>
+    </header>
     
-    <div class="main-container">
-      <!-- 左侧树形目录 -->
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <h3>示例目录</h3>
-          <div class="framework-selector">
-            <label>当前框架:</label>
-            <select v-model="currentFramework" @change="switchFramework(currentFramework)">
-              <option v-for="framework in frameworks" :key="framework.name" :value="framework.name">
-                {{ framework.label }}
-              </option>
-            </select>
-          </div>
-          <div class="mode-selector">
-            <label>显示模式:</label>
-            <select v-model="currentMode" @change="switchMode(currentMode)">
-              <option value="examples">示例浏览</option>
-              <option value="editor">在线编辑</option>
-            </select>
-          </div>
+    <div class="main-layout">
+      <!-- 左侧面板 -->
+      <aside class="left-panel" :class="{ collapsed: leftPanelCollapsed }">
+        <div class="panel-header">
+          <h3>组件库</h3>
+          <button class="collapse-btn" @click="leftPanelCollapsed = !leftPanelCollapsed">
+            <i :class="leftPanelCollapsed ? 'icon-expand' : 'icon-collapse'"></i>
+          </button>
         </div>
         
-        <div class="tree-container">
-          <div 
-            v-for="category in treeData" 
-            :key="category.name"
-            class="tree-category"
-          >
+        <div class="panel-content" v-show="!leftPanelCollapsed">
+          <!-- 示例浏览模式的组件树 -->
+          <div v-if="currentMode === 'examples'" class="component-tree">
             <div 
-              class="category-header"
-              @click="toggleCategory(category)"
+              v-for="category in treeData" 
+              :key="category.name"
+              class="tree-category"
             >
-              <span class="expand-icon" :class="{ expanded: category.expanded }">
-                {{ category.expanded ? '▼' : '▶' }}
-              </span>
-              <span class="category-name">{{ category.name }}</span>
-            </div>
-            
-            <div v-if="category.expanded" class="category-items">
               <div 
-                v-for="componentType in category.children" 
-                :key="componentType.name"
-                class="component-type"
+                class="category-header"
+                @click="toggleCategory(category)"
               >
+                <i class="expand-icon" :class="{ expanded: category.expanded }"></i>
+                <span class="category-name">{{ category.name }}</span>
+              </div>
+              
+              <div v-if="category.expanded" class="category-items">
                 <div 
-                  class="component-type-header"
-                  @click="toggleComponentType(componentType)"
+                  v-for="componentType in category.children" 
+                  :key="componentType.name"
+                  class="component-type"
                 >
-                  <span class="expand-icon" :class="{ expanded: componentType.expanded }">
-                    {{ componentType.expanded ? '▼' : '▶' }}
-                  </span>
-                  <span class="component-type-name">{{ componentType.name }}</span>
-                  <span class="component-count">({{ componentType.children.length }})</span>
-                </div>
-                
-                <div v-if="componentType.expanded" class="component-examples">
                   <div 
-                    v-for="subType in componentType.children" 
-                    :key="subType.id"
-                class="tree-item"
-                    :class="{ active: currentExampleId === subType.id }"
-                    @click="selectExample(subType)"
+                    class="component-type-header"
+                    @click="toggleComponentType(componentType)"
                   >
-                    <span class="item-title">{{ subType.title }}</span>
-                    <span class="item-description">{{ subType.description }}</span>
+                    <i class="expand-icon" :class="{ expanded: componentType.expanded }"></i>
+                    <span class="component-type-name">{{ componentType.name }}</span>
+                    <span class="component-count">{{ componentType.children.length }}</span>
                   </div>
+                  
+                  <div v-if="componentType.expanded" class="component-examples">
+                    <div 
+                      v-for="subType in componentType.children" 
+                      :key="subType.id"
+                      class="tree-item"
+                      :class="{ active: currentExampleId === subType.id }"
+                      @click="selectExample(subType)"
+                    >
+                      <span class="item-title">{{ subType.title }}</span>
+                      <span class="item-description">{{ subType.description }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 可视化设计模式的组件调色板 -->
+          <div v-else-if="currentMode === 'freedesign'" class="component-palette">
+            <div 
+              v-for="category in componentLibrary" 
+              :key="category.category"
+              class="palette-section"
+            >
+              <h4>{{ category.category }}</h4>
+              <div class="palette-items">
+                <div 
+                  v-for="component in category.components"
+                  :key="component.id"
+                  class="palette-item"
+                  draggable="true"
+                  :data-component-id="component.id"
+                  :data-factory="component.factory"
+                  :data-props="JSON.stringify(component.defaultProps)"
+                  @dragstart="onDragStart($event, component)"
+                  @dragend="onDragEnd"
+                >
+                  <i :class="component.icon"></i>
+                  <span>{{ component.name }}</span>
+                  <div class="component-description">{{ component.description }}</div>
                 </div>
               </div>
             </div>
@@ -78,69 +127,349 @@
         </div>
       </aside>
 
-      <!-- 右侧内容区 -->
-      <main class="examples-content">
+      <!-- 主工作区 -->
+      <main class="main-workspace">
         <!-- 示例浏览模式 -->
-        <div v-if="currentMode === 'examples'" class="example-mode">
-          <div v-if="currentExampleData" class="example-container">
-            <!-- 示例标题 -->
-            <div class="example-header">
-              <h2>{{ currentExampleData.title }}</h2>
-              <p>{{ currentExampleData.description }}</p>
-            <div class="framework-info">
-              <span class="framework-badge">{{ currentFrameworkLabel }}</span>
-              <span class="framework-status" :class="{ active: adapterRegistered }">
-                {{ adapterRegistered ? '✓ 适配器已注册' : '⚠ 适配器未注册' }}
-              </span>
-            </div>
+        <div v-if="currentMode === 'examples'" class="workspace-content">
+          <div v-if="currentExampleData" class="example-view">
+            <!-- 示例标题栏 -->
+            <div class="example-toolbar">
+              <div class="example-info">
+                <h2>{{ currentExampleData.title }}</h2>
+                <p>{{ currentExampleData.description }}</p>
+              </div>
+              <div class="example-actions">
+                <button @click="copyCode" class="action-btn">
+                  <i class="icon-copy"></i>
+                  复制代码
+                </button>
+                <button @click="loadToEditor" class="action-btn primary">
+                  <i class="icon-edit"></i>
+                  在线编辑
+                </button>
+              </div>
             </div>
 
             <!-- 示例演示区域 -->
-            <div class="example-demo">
-              <h3>演示效果</h3>
+            <div class="demo-section">
+              <div class="demo-header">
+                <h3>演示效果</h3>
+                <div class="framework-badge">{{ currentFrameworkLabel }}</div>
+              </div>
               <div ref="demoArea" class="demo-area"></div>
             </div>
 
             <!-- 代码示例 -->
-            <div class="example-code">
+            <div class="code-section">
               <div class="code-header">
                 <h3>代码示例</h3>
-                <button @click="copyCode" class="copy-button">复制代码</button>
-                <button @click="loadToEditor" class="load-editor-button">在线编辑</button>
               </div>
-              <pre><code>{{ currentExampleData.code }}</code></pre>
+              <div class="code-content">
+                <pre><code>{{ currentExampleData.code }}</code></pre>
+              </div>
             </div>
           </div>
           
-          <div v-else class="welcome-section">
-            <h2>欢迎使用NHAI对象系统</h2>
-            <p>请从左侧目录选择一个示例进行查看，或切换到在线编辑模式</p>
-            <div class="features">
-              <div class="feature-item">
-                <h4>🎯 框架无关</h4>
-                <p>支持Vue、React、Svelte、原生JavaScript</p>
+          <div v-else class="welcome-view">
+            <div class="welcome-content">
+              <!-- Hero Section -->
+              <div class="welcome-hero">
+                <div class="hero-badge">
+                  <span class="badge-icon">✨</span>
+                  <span>Next Generation UI Framework</span>
+                </div>
+                <h1 class="hero-title">
+                  <span class="gradient-text">NHAI</span>
+                  <span class="hero-subtitle">组件系统</span>
+                </h1>
+                <p class="hero-description">
+                  跨框架统一的UI组件库，支持Vue、React、Svelte和原生JavaScript
+                </p>
+                <div class="hero-actions">
+                  <button class="btn-primary" @click="switchMode('examples')">
+                    <i class="icon-play"></i>
+                    开始探索
+                  </button>
+                  <button class="btn-secondary" @click="switchMode('freedesign')">
+                    <i class="icon-design"></i>
+                    可视化设计
+                  </button>
+                </div>
               </div>
-              <div class="feature-item">
-                <h4>🎨 统一API</h4>
-                <p>所有框架使用相同的组件API</p>
+
+              <!-- Features Section -->
+              <div class="features-section">
+                <h3 class="section-title">核心特性</h3>
+                <div class="feature-grid">
+                  <div class="feature-card" @click="switchMode('examples')">
+                    <div class="feature-icon-wrapper">
+                      <div class="feature-icon">🎯</div>
+                      <div class="feature-glow"></div>
+                    </div>
+                    <h4>框架无关</h4>
+                    <p>一套API，多端运行</p>
+                    <div class="feature-tags">
+                      <span class="tag">Vue</span>
+                      <span class="tag">React</span>
+                      <span class="tag">Svelte</span>
+                    </div>
+                  </div>
+                  
+                  <div class="feature-card" @click="switchMode('editor')">
+                    <div class="feature-icon-wrapper">
+                      <div class="feature-icon">💻</div>
+                      <div class="feature-glow"></div>
+                    </div>
+                    <h4>在线编辑</h4>
+                    <p>实时编码，即时预览</p>
+                    <div class="feature-tags">
+                      <span class="tag">TypeScript</span>
+                      <span class="tag">Hot Reload</span>
+                    </div>
+                  </div>
+                  
+                  <div class="feature-card" @click="switchMode('freedesign')">
+                    <div class="feature-icon-wrapper">
+                      <div class="feature-icon">🎨</div>
+                      <div class="feature-glow"></div>
+                    </div>
+                    <h4>可视化设计</h4>
+                    <p>拖拽式设计，专业工具</p>
+                    <div class="feature-tags">
+                      <span class="tag">Drag & Drop</span>
+                      <span class="tag">Property Panel</span>
+                    </div>
+                  </div>
+                  
+                  <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                      <div class="feature-icon">⚡</div>
+                      <div class="feature-glow"></div>
+                    </div>
+                    <h4>高性能</h4>
+                    <p>轻量级，快速渲染</p>
+                    <div class="feature-tags">
+                      <span class="tag">Tree Shaking</span>
+                      <span class="tag">Optimized</span>
+                    </div>
+                  </div>
+                  
+                  <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                      <div class="feature-icon">🔧</div>
+                      <div class="feature-glow"></div>
+                    </div>
+                    <h4>类型安全</h4>
+                    <p>完整的TypeScript支持</p>
+                    <div class="feature-tags">
+                      <span class="tag">TypeScript</span>
+                      <span class="tag">IntelliSense</span>
+                    </div>
+                  </div>
+                  
+                  <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                      <div class="feature-icon">📚</div>
+                      <div class="feature-glow"></div>
+                    </div>
+                    <h4>丰富示例</h4>
+                    <p>涵盖各种使用场景</p>
+                    <div class="feature-tags">
+                      <span class="tag">Examples</span>
+                      <span class="tag">Documentation</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="feature-item">
-                <h4>⚡ 自动检测</h4>
-                <p>自动检测运行环境并选择合适的适配器</p>
-              </div>
-              <div class="feature-item">
-                <h4>💻 在线编辑</h4>
-                <p>实时编辑和预览NHAI组件代码</p>
+
+              <!-- Quick Start Section -->
+              <div class="quick-start-section">
+                <h3 class="section-title">快速开始</h3>
+                <div class="quick-start-grid">
+                  <div class="quick-start-card">
+                    <div class="step-number">1</div>
+                    <h4>选择框架</h4>
+                    <p>从顶部选择您使用的框架</p>
+                  </div>
+                  <div class="quick-start-card">
+                    <div class="step-number">2</div>
+                    <h4>浏览组件</h4>
+                    <p>从左侧面板选择组件示例</p>
+                  </div>
+                  <div class="quick-start-card">
+                    <div class="step-number">3</div>
+                    <h4>开始使用</h4>
+                    <p>复制代码或在线编辑</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <!-- 在线编辑模式 -->
-        <div v-else-if="currentMode === 'editor'" class="editor-mode">
+        <div v-else-if="currentMode === 'editor'" class="workspace-content">
           <OnlineEditor :initial-code="editorCode" />
         </div>
+
+        <!-- 可视化设计模式 -->
+        <div v-else-if="currentMode === 'freedesign'" class="workspace-content" :class="{ 'fullscreen-mode': isFullscreen }">
+          <!-- 全屏工具栏 -->
+          <div v-if="isFullscreen" class="fullscreen-toolbar">
+            <div class="toolbar-left">
+              <h3>可视化设计 - 全屏模式</h3>
+            </div>
+            <div class="toolbar-right">
+              <button class="btn-icon" @click="exitFullscreen" title="退出全屏">
+                <i class="icon-exit-fullscreen"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 普通模式工具栏 -->
+          <div v-else class="design-toolbar">
+            <div class="toolbar-left">
+              <h3>可视化设计</h3>
+            </div>
+            <div class="toolbar-right">
+              <button class="btn-icon" @click="toggleFullscreen" title="全屏编辑">
+                <i class="icon-fullscreen"></i>
+              </button>
+            </div>
+          </div>
+          
+          <FreeDesign ref="freeDesignRef" />
+        </div>
       </main>
+      
+      <!-- 右侧属性面板 -->
+      <aside class="right-panel" v-if="(showRightPanel || currentMode === 'freedesign') && !isFullscreen">
+        <div class="panel-header">
+          <h3>属性面板</h3>
+          <button v-if="currentMode !== 'freedesign'" class="close-btn" @click="showRightPanel = false">
+            <i class="icon-close"></i>
+          </button>
+        </div>
+        <div class="panel-content">
+          <div class="property-section">
+            <h4>组件属性</h4>
+            <div class="property-form">
+              <!-- 属性编辑表单 -->
+              <div v-if="currentMode === 'freedesign'" class="design-properties">
+                <!-- 未选择组件时的提示 -->
+                <div v-if="!selectedComponentType" class="no-selection">
+                  <div class="no-selection-icon">🎯</div>
+                  <p>请从左侧组件库拖拽组件到画布，或点击画布中的组件来编辑属性</p>
+                </div>
+                
+                <!-- 选中组件时的属性编辑 -->
+                <div v-else>
+                  <div class="selected-component-info">
+                    <h5>{{ getCurrentComponentProperties()?.name || selectedComponentType }}</h5>
+                    <span class="component-type">{{ selectedComponentType }}</span>
+                  </div>
+                  
+                  <!-- 缩放控制 -->
+                  <div class="property-group scale-control">
+                    <label>缩放比例</label>
+                    <div class="scale-controls">
+                      <div class="scale-slider">
+                        <input 
+                          type="range" 
+                          min="0.1" 
+                          max="3" 
+                          step="0.1" 
+                          :value="selectedComponent.scale || 1"
+                          @input="updateComponentScale(Number(($event.target as HTMLInputElement).value))"
+                          class="scale-range"
+                        >
+                        <span class="scale-value">{{ ((selectedComponent.scale || 1) * 100).toFixed(0) }}%</span>
+                      </div>
+                      <div class="scale-presets">
+                        <button @click="setScale(0.5)" class="scale-btn">50%</button>
+                        <button @click="setScale(1)" class="scale-btn">100%</button>
+                        <button @click="setScale(1.5)" class="scale-btn">150%</button>
+                        <button @click="setScale(2)" class="scale-btn">200%</button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    v-for="prop in getCurrentComponentProperties()?.properties" 
+                    :key="prop.key"
+                    class="property-group"
+                  >
+                    <label>{{ prop.label }}</label>
+                    
+                    <!-- 文本输入 -->
+                    <input 
+                      v-if="prop.type === 'text'" 
+                      type="text" 
+                      :placeholder="prop.default"
+                      :value="selectedComponent[prop.key] || prop.default"
+                      @input="updateComponentProperty(prop.key, ($event.target as HTMLInputElement).value)"
+                    >
+                    
+                    <!-- 数字输入 -->
+                    <input 
+                      v-else-if="prop.type === 'number'" 
+                      type="number" 
+                      :placeholder="prop.default"
+                      :value="selectedComponent[prop.key] || prop.default"
+                      @input="updateComponentProperty(prop.key, Number(($event.target as HTMLInputElement).value))"
+                    >
+                    
+                    <!-- 颜色选择 -->
+                    <input 
+                      v-else-if="prop.type === 'color'" 
+                      type="color" 
+                      :value="selectedComponent[prop.key] || prop.default"
+                      @input="updateComponentProperty(prop.key, ($event.target as HTMLInputElement).value)"
+                    >
+                    
+                    <!-- 下拉选择 -->
+                    <select 
+                      v-else-if="prop.type === 'select'" 
+                      :value="selectedComponent[prop.key] || prop.default"
+                      @change="updateComponentProperty(prop.key, ($event.target as HTMLSelectElement).value)"
+                    >
+                      <option 
+                        v-for="option in prop.options" 
+                        :key="option" 
+                        :value="option"
+                      >
+                        {{ option }}
+                      </option>
+                    </select>
+                    
+                    <!-- 布尔值选择 -->
+                    <div v-else-if="prop.type === 'boolean'" class="boolean-input">
+                      <label class="switch">
+                        <input 
+                          type="checkbox" 
+                          :checked="selectedComponent[prop.key] || prop.default"
+                          @change="updateComponentProperty(prop.key, ($event.target as HTMLInputElement).checked)"
+                        >
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <!-- 操作按钮 -->
+                  <div class="property-actions">
+                    <button class="action-btn primary" @click="applyProperties">
+                      应用属性
+                    </button>
+                    <button class="action-btn" @click="resetProperties">
+                      重置
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
@@ -158,6 +487,7 @@ import {
   NHAIComponentComposer
 } from 'nhai-framework'
 import OnlineEditor from './components/ui/OnlineEditor.vue'
+import FreeDesign from './components/ui/FreeDesign.vue'
 
 // 响应式变量
 const currentFramework = ref('vanilla')
@@ -166,6 +496,251 @@ const demoArea = ref<HTMLElement>()
 const currentExampleId = ref<string | null>(null)
 const currentExampleData = ref<any>(null)
 const adapterRegistered = ref(false)
+const leftPanelCollapsed = ref(false)
+const showRightPanel = ref(false)
+const selectedComponent = ref<any>(null)
+const selectedComponentType = ref<string>('')
+const selectedComponentId = ref<string>('')
+const freeDesignRef = ref<any>(null)
+const isFullscreen = ref(false)
+
+// 模式配置
+const modes = [
+  { value: 'examples', label: '示例浏览', icon: 'icon-browse' },
+  { value: 'editor', label: '在线编辑', icon: 'icon-code' },
+  { value: 'freedesign', label: '可视化设计', icon: 'icon-design' }
+]
+
+// 统一的组件库数据
+const componentLibrary = [
+  {
+    category: '基础控件',
+    icon: 'icon-basic',
+    components: [
+      {
+        id: 'button',
+        name: '按钮',
+        icon: 'icon-button',
+        description: '可点击的按钮组件',
+        factory: 'createButton',
+        defaultProps: { text: '按钮', variant: 'primary' }
+      },
+      {
+        id: 'text-button',
+        name: '文本按钮',
+        icon: 'icon-text-button',
+        description: '文本样式的按钮',
+        factory: 'createTextButton',
+        defaultProps: { text: '文本按钮', color: '#007bff' }
+      },
+      {
+        id: 'label',
+        name: '标签',
+        icon: 'icon-label',
+        description: '显示文本的标签组件',
+        factory: 'createLabel',
+        defaultProps: { text: '标签文本' }
+      },
+      {
+        id: 'input',
+        name: '输入框',
+        icon: 'icon-input',
+        description: '文本输入组件',
+        factory: 'createInput',
+        defaultProps: { placeholder: '请输入内容' }
+      },
+      {
+        id: 'card',
+        name: '卡片',
+        icon: 'icon-card',
+        description: '内容容器卡片',
+        factory: 'createCard',
+        defaultProps: { title: '卡片标题' }
+      }
+    ]
+  },
+  {
+    category: '容器组件',
+    icon: 'icon-container',
+    components: [
+      {
+        id: 'container',
+        name: '容器',
+        icon: 'icon-container',
+        description: '基础容器组件',
+        factory: 'createContainer',
+        defaultProps: {}
+      },
+      {
+        id: 'window',
+        name: '窗口',
+        icon: 'icon-window',
+        description: '窗口容器组件',
+        factory: 'createWindow',
+        defaultProps: { title: '窗口标题' }
+      }
+    ]
+  },
+  {
+    category: '布局组件',
+    icon: 'icon-layout',
+    components: [
+      {
+        id: 'vbox',
+        name: '垂直布局',
+        icon: 'icon-vbox',
+        description: '垂直排列的布局容器',
+        factory: 'createVBoxLayout',
+        defaultProps: { spacing: 10 }
+      },
+      {
+        id: 'hbox',
+        name: '水平布局',
+        icon: 'icon-hbox',
+        description: '水平排列的布局容器',
+        factory: 'createHBoxLayout',
+        defaultProps: { spacing: 10 }
+      },
+      {
+        id: 'grid',
+        name: '网格布局',
+        icon: 'icon-grid',
+        description: '网格排列的布局容器',
+        factory: 'createGridLayout',
+        defaultProps: { columns: 2, rows: 2 }
+      }
+    ]
+  }
+]
+
+// 组件属性配置
+const componentProperties = {
+  button: {
+    name: '按钮',
+    properties: [
+      { key: 'text', label: '文本内容', type: 'text', default: '按钮' },
+      { key: 'variant', label: '按钮类型', type: 'select', options: ['primary', 'secondary', 'success', 'danger', 'warning', 'info'], default: 'primary' },
+      { key: 'width', label: '宽度', type: 'number', default: 120 },
+      { key: 'height', label: '高度', type: 'number', default: 40 },
+      { key: 'disabled', label: '禁用状态', type: 'boolean', default: false },
+      { key: 'backgroundColor', label: '背景色', type: 'color', default: '#007bff' },
+      { key: 'color', label: '文字颜色', type: 'color', default: '#ffffff' },
+      { key: 'borderRadius', label: '圆角', type: 'text', default: '4px' },
+      { key: 'fontSize', label: '字体大小', type: 'number', default: 14 },
+      { key: 'fontWeight', label: '字体粗细', type: 'select', options: ['normal', 'bold', 'lighter', 'bolder'], default: 'normal' }
+    ]
+  },
+  'text-button': {
+    name: '文本按钮',
+    properties: [
+      { key: 'text', label: '文本内容', type: 'text', default: '文本按钮' },
+      { key: 'color', label: '文字颜色', type: 'color', default: '#007bff' },
+      { key: 'size', label: '尺寸', type: 'select', options: ['small', 'medium', 'large'], default: 'medium' },
+      { key: 'width', label: '宽度', type: 'number', default: 120 },
+      { key: 'height', label: '高度', type: 'number', default: 40 },
+      { key: 'disabled', label: '禁用状态', type: 'boolean', default: false },
+      { key: 'underline', label: '下划线', type: 'boolean', default: false }
+    ]
+  },
+  label: {
+    name: '标签',
+    properties: [
+      { key: 'text', label: '文本内容', type: 'text', default: '标签文本' },
+      { key: 'fontSize', label: '字体大小', type: 'number', default: 16 },
+      { key: 'fontWeight', label: '字体粗细', type: 'select', options: ['normal', 'bold', 'lighter', 'bolder'], default: 'normal' },
+      { key: 'color', label: '文字颜色', type: 'color', default: '#333333' },
+      { key: 'alignment', label: '对齐方式', type: 'select', options: ['left', 'center', 'right'], default: 'left' },
+      { key: 'width', label: '宽度', type: 'number', default: 200 },
+      { key: 'height', label: '高度', type: 'number', default: 30 }
+    ]
+  },
+  input: {
+    name: '输入框',
+    properties: [
+      { key: 'placeholder', label: '占位符', type: 'text', default: '请输入内容' },
+      { key: 'type', label: '输入类型', type: 'select', options: ['text', 'password', 'email', 'number'], default: 'text' },
+      { key: 'width', label: '宽度', type: 'number', default: 200 },
+      { key: 'height', label: '高度', type: 'number', default: 40 },
+      { key: 'disabled', label: '禁用状态', type: 'boolean', default: false },
+      { key: 'readonly', label: '只读状态', type: 'boolean', default: false },
+      { key: 'backgroundColor', label: '背景色', type: 'color', default: '#ffffff' },
+      { key: 'borderColor', label: '边框颜色', type: 'color', default: '#d1d5db' },
+      { key: 'borderRadius', label: '圆角', type: 'text', default: '4px' },
+      { key: 'fontSize', label: '字体大小', type: 'number', default: 14 }
+    ]
+  },
+  card: {
+    name: '卡片',
+    properties: [
+      { key: 'title', label: '标题', type: 'text', default: '卡片标题' },
+      { key: 'subtitle', label: '副标题', type: 'text', default: '卡片副标题' },
+      { key: 'width', label: '宽度', type: 'number', default: 300 },
+      { key: 'height', label: '高度', type: 'number', default: 200 },
+      { key: 'elevation', label: '阴影级别', type: 'number', default: 2 },
+      { key: 'backgroundColor', label: '背景色', type: 'color', default: '#ffffff' },
+      { key: 'borderRadius', label: '圆角', type: 'text', default: '8px' },
+      { key: 'padding', label: '内边距', type: 'text', default: '16px' }
+    ]
+  },
+  container: {
+    name: '容器',
+    properties: [
+      { key: 'width', label: '宽度', type: 'number', default: 300 },
+      { key: 'height', label: '高度', type: 'number', default: 200 },
+      { key: 'backgroundColor', label: '背景色', type: 'color', default: '#f8f9fa' },
+      { key: 'borderRadius', label: '圆角', type: 'text', default: '4px' },
+      { key: 'padding', label: '内边距', type: 'text', default: '16px' },
+      { key: 'margin', label: '外边距', type: 'text', default: '0px' },
+      { key: 'border', label: '边框', type: 'text', default: '1px solid #e5e7eb' }
+    ]
+  },
+  window: {
+    name: '窗口',
+    properties: [
+      { key: 'title', label: '窗口标题', type: 'text', default: '窗口标题' },
+      { key: 'width', label: '宽度', type: 'number', default: 400 },
+      { key: 'height', label: '高度', type: 'number', default: 300 },
+      { key: 'backgroundColor', label: '背景色', type: 'color', default: '#ffffff' },
+      { key: 'borderRadius', label: '圆角', type: 'text', default: '8px' },
+      { key: 'resizable', label: '可调整大小', type: 'boolean', default: true },
+      { key: 'draggable', label: '可拖拽', type: 'boolean', default: true }
+    ]
+  },
+  vbox: {
+    name: '垂直布局',
+    properties: [
+      { key: 'spacing', label: '间距', type: 'number', default: 10 },
+      { key: 'alignment', label: '对齐方式', type: 'select', options: ['start', 'center', 'end', 'stretch'], default: 'start' },
+      { key: 'width', label: '宽度', type: 'number', default: 300 },
+      { key: 'height', label: '高度', type: 'number', default: 200 },
+      { key: 'padding', label: '内边距', type: 'text', default: '16px' },
+      { key: 'backgroundColor', label: '背景色', type: 'color', default: 'transparent' }
+    ]
+  },
+  hbox: {
+    name: '水平布局',
+    properties: [
+      { key: 'spacing', label: '间距', type: 'number', default: 10 },
+      { key: 'alignment', label: '对齐方式', type: 'select', options: ['start', 'center', 'end', 'stretch'], default: 'start' },
+      { key: 'width', label: '宽度', type: 'number', default: 300 },
+      { key: 'height', label: '高度', type: 'number', default: 100 },
+      { key: 'padding', label: '内边距', type: 'text', default: '16px' },
+      { key: 'backgroundColor', label: '背景色', type: 'color', default: 'transparent' }
+    ]
+  },
+  grid: {
+    name: '网格布局',
+    properties: [
+      { key: 'columns', label: '列数', type: 'number', default: 2 },
+      { key: 'rows', label: '行数', type: 'number', default: 2 },
+      { key: 'spacing', label: '间距', type: 'number', default: 10 },
+      { key: 'width', label: '宽度', type: 'number', default: 300 },
+      { key: 'height', label: '高度', type: 'number', default: 200 },
+      { key: 'padding', label: '内边距', type: 'text', default: '16px' },
+      { key: 'backgroundColor', label: '背景色', type: 'color', default: 'transparent' }
+    ]
+  }
+}
 
 // 编辑器相关
 const codeEditor = ref()
@@ -254,7 +829,9 @@ const createButtonDemo = () => {
     
   } catch (error) {
     console.error('创建按钮演示时出错:', error)
-    demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error.message}<br>详细错误: ${error.stack}</div>`
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorStack = error instanceof Error ? error.stack : ''
+    demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${errorMessage}<br>详细错误: ${errorStack}</div>`
   }
 }
 
@@ -294,7 +871,7 @@ const createInputDemo = () => {
     input.setPlaceholder('请输入内容...')
     input.setWidth(300)
     input.setType('text')
-    input.setOnChange((value) => console.log('输入值:', value))
+    input.setOnChange((value: any) => console.log('输入值:', value))
     input.setStyle({
       borderRadius: '4px',
       border: '2px solid #e0e0e0',
@@ -470,9 +1047,11 @@ const createMethodsDemo = () => {
       })
       
       // 重新渲染
-      demoArea.value.innerHTML = ''
-      const element = container.render()
-      demoArea.value.appendChild(element)
+      if (demoArea.value) {
+        demoArea.value.innerHTML = ''
+        const element = container.render()
+        demoArea.value.appendChild(element)
+      }
     })
     
     container.addChild(button)
@@ -999,7 +1578,7 @@ const createComprehensiveInputDemo = () => {
     basicInput.setPlaceholder('基础输入框')
     basicInput.setWidth(200)
     basicInput.setType('text')
-    basicInput.setOnChange((value) => console.log('输入值:', value))
+    basicInput.setOnChange((value: any) => console.log('输入值:', value))
     
     // 输入框类型
     const textInput = NHAIObjectFactory.createInput()
@@ -1387,7 +1966,7 @@ import { ModernNHAIButton } from 'nhai-framework'
       size: 'middle',
       children: '路由按钮',
       href: '/home',
-      router: (path) => alert('路由到: ' + path)
+      router: (path: any) => alert('路由到: ' + path)
     })
 
     // 创建按钮组
@@ -1477,9 +2056,10 @@ import { ModernNHAIButton } from 'nhai-framework'
     
   } catch (error) {
     console.error('创建 ModernNHAIButton 演示时出错:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     demoArea.value.innerHTML = `
       <div style="color: red; padding: 20px;">
-        演示创建失败: ${error.message}
+        演示创建失败: ${errorMessage}
         <br><br>
         <strong>可能的解决方案：</strong>
         <ul style="margin: 10px 0; padding-left: 20px;">
@@ -2434,6 +3014,142 @@ const switchMode = (mode: string) => {
   currentMode.value = mode
 }
 
+// 拖拽事件处理
+const onDragStart = (event: DragEvent, component: any) => {
+  if (!event.dataTransfer) return
+  
+  // 设置文本数据供NHAIComponentComposer使用
+  event.dataTransfer.setData('text/plain', component.id)
+  
+  // 同时设置JSON数据供其他用途
+  event.dataTransfer.setData('application/json', JSON.stringify({
+    componentId: component.id,
+    factory: component.factory,
+    props: component.defaultProps
+  }))
+  
+  event.dataTransfer.effectAllowed = 'copy'
+  
+  // 添加拖拽样式
+  if (event.target instanceof HTMLElement) {
+    event.target.style.opacity = '0.5'
+  }
+  
+  // 选中拖拽的组件
+  selectComponent(component.id, component.defaultProps)
+}
+
+const onDragEnd = (event: DragEvent) => {
+  // 恢复拖拽样式
+  if (event.target instanceof HTMLElement) {
+    event.target.style.opacity = '1'
+  }
+}
+
+// 组件选择处理
+const selectComponent = (componentType: string, componentData?: any) => {
+  selectedComponentType.value = componentType
+  selectedComponent.value = componentData || {}
+  console.log('选中组件:', componentType, componentData)
+}
+
+// 更新组件属性
+const updateComponentProperty = (key: string, value: any) => {
+  if (selectedComponent.value) {
+    // 使用响应式更新方式
+    selectedComponent.value = {
+      ...selectedComponent.value,
+      [key]: value
+    }
+    console.log('更新组件属性:', key, value)
+    console.log('更新后的selectedComponent:', selectedComponent.value)
+  }
+}
+
+// 更新组件缩放
+const updateComponentScale = (scale: number) => {
+  if (selectedComponent.value && selectedComponentId.value) {
+    // 更新selectedComponent中的缩放值
+    selectedComponent.value = {
+      ...selectedComponent.value,
+      scale: scale
+    }
+    
+    // 获取FreeDesign组件的composer实例
+    const composer = freeDesignRef.value?.getComposer()
+    if (composer) {
+      // 更新组件的缩放变换
+      composer.updateComponentTransform(selectedComponentId.value, { scale })
+      console.log('组件缩放已更新:', scale)
+    }
+  }
+}
+
+// 设置预设缩放值
+const setScale = (scale: number) => {
+  updateComponentScale(scale)
+}
+
+// 全屏编辑功能
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+  if (isFullscreen.value) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+}
+
+const exitFullscreen = () => {
+  isFullscreen.value = false
+  document.body.style.overflow = ''
+}
+
+// 获取当前组件的属性配置
+const getCurrentComponentProperties = () => {
+  return componentProperties[selectedComponentType.value as keyof typeof componentProperties] || null
+}
+
+// 应用属性到组件
+const applyProperties = () => {
+  if (selectedComponent.value && selectedComponentType.value && selectedComponentId.value) {
+    console.log('应用属性到组件:', selectedComponentType.value, selectedComponent.value)
+    
+    // 获取FreeDesign组件的composer实例
+    const composer = freeDesignRef.value?.getComposer()
+    if (composer) {
+      console.log('更新组件属性:', selectedComponentId.value, selectedComponent.value)
+      
+      // 调用NHAIComponentComposer的API更新组件属性
+      composer.updateComponentProps(selectedComponentId.value, selectedComponent.value)
+      
+      console.log('✓ 属性已应用到组件')
+    } else {
+      console.error('无法获取composer实例')
+    }
+  } else {
+    console.warn('缺少必要的组件信息:', {
+      selectedComponent: !!selectedComponent.value,
+      selectedComponentType: !!selectedComponentType.value,
+      selectedComponentId: !!selectedComponentId.value
+    })
+  }
+}
+
+// 重置属性
+const resetProperties = () => {
+  if (selectedComponentType.value) {
+    const config = getCurrentComponentProperties()
+    if (config) {
+      selectedComponent.value = {}
+      config.properties.forEach(prop => {
+        selectedComponent.value[prop.key] = prop.default
+      })
+      console.log('属性已重置:', selectedComponent.value)
+    }
+  }
+}
+
 // 加载示例代码到在线编辑器
 const loadToEditor = () => {
   if (currentExampleData.value) {
@@ -2482,6 +3198,44 @@ onMounted(async () => {
     ;(window as any).NHAIComponentComposer = NHAIComponentComposer
     console.log('✓ NHAIObjectFactory、ModernNHAIButton 和 NHAIComponentComposer 已暴露到全局作用域')
     
+    // 监听组件选择事件
+    window.addEventListener('componentSelected', (event: any) => {
+      console.log('App.vue 收到组件选择事件:', event.detail)
+      const { componentId, componentData, component } = event.detail
+      
+      console.log('componentId:', componentId)
+      console.log('componentData:', componentData)
+      console.log('component:', component)
+      console.log('component.id:', component?.id)
+      
+      // 更新属性面板
+      selectedComponentType.value = componentId
+      
+      // 只在第一次选择或选择不同组件时更新selectedComponent
+      if (!selectedComponentId.value || selectedComponentId.value !== component?.id) {
+        selectedComponent.value = { ...componentData }
+        console.log('首次选择组件，更新selectedComponent')
+      } else {
+        console.log('重复选择同一组件，保持selectedComponent不变')
+      }
+      
+      selectedComponentId.value = component?.id || ''
+      
+      console.log('属性面板已更新:', selectedComponentType.value, selectedComponent.value, '组件ID:', selectedComponentId.value)
+    })
+    
+    // 监听组件取消选择事件
+    window.addEventListener('componentDeselected', (event: any) => {
+      console.log('App.vue 收到组件取消选择事件')
+      
+      // 清空属性面板
+      selectedComponentType.value = ''
+      selectedComponent.value = {}
+      selectedComponentId.value = ''
+      
+      console.log('属性面板已清空')
+    })
+    
     // 测试按钮创建
     console.log('测试按钮创建...')
     const testButton = NHAIObjectFactory.createButton('测试按钮')
@@ -2502,439 +3256,1442 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.app-header {
-  text-align: center;
-  padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+/* 全局样式重置 */
+* {
+  box-sizing: border-box;
 }
 
-.app-header h1 {
-  margin: 0 0 10px 0;
-  font-size: 2.5rem;
-  font-weight: bold;
-}
-
-.app-header p {
-  margin: 0;
-  font-size: 1.2rem;
-  opacity: 0.9;
-}
-
-.main-container {
-  display: flex;
-  min-height: calc(100vh - 120px);
-}
-
-.sidebar {
-  width: 300px;
-  background: #f8f9fa;
-  border-right: 1px solid #e9ecef;
-  overflow-y: auto;
-}
-
-.sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.sidebar-header h3 {
-  margin: 0 0 15px 0;
-  color: #2c3e50;
-  font-size: 1.2rem;
-}
-
-.framework-selector {
+#app {
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.framework-selector label {
+/* 顶部导航栏 */
+.app-header {
+  height: 60px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.header-left .logo h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header-left .logo .tagline {
   font-size: 12px;
-  color: #666;
+  color: #6b7280;
+  margin-left: 8px;
+}
+
+.header-center .mode-tabs {
+  display: flex;
+  gap: 4px;
+  background: #f3f4f6;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.mode-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 500;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.mode-tab:hover {
+  color: #374151;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.mode-tab.active {
+  background: #ffffff;
+  color: #1f2937;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .framework-selector select {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   font-size: 14px;
   background: white;
+  color: #374151;
 }
 
-.tree-container {
-  padding: 10px 0;
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.status-indicator.active {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.status-icon::before {
+  content: '●';
+  font-size: 8px;
+}
+
+/* 主布局 */
+.main-layout {
+  flex: 1;
+  display: flex;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+/* 左侧面板 */
+.left-panel {
+  width: 280px;
+  background: #f9fafb;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+.left-panel.collapsed {
+  width: 60px;
+  transition: width 0.3s ease;
+}
+
+.left-panel.collapsed .panel-header {
+  padding: 0 14px;
+  justify-content: center;
+}
+
+.left-panel.collapsed .panel-header h3 {
+  display: none;
+}
+
+.left-panel.collapsed .collapse-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+.panel-header {
+  height: 56px;
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.panel-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.3) 50%, transparent 100%);
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-header h3::before {
+  content: '🧩';
+  font-size: 16px;
+}
+
+.collapse-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.collapse-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.collapse-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.collapse-btn:hover::before {
+  left: 100%;
+}
+
+.collapse-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  position: relative;
+}
+
+.panel-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(59, 130, 246, 0.1) 50%, transparent 100%);
+}
+
+/* 组件树样式 */
+.component-tree {
+  font-size: 15px;
 }
 
 .tree-category {
-  margin-bottom: 5px;
+  margin-bottom: 10px;
 }
 
 .category-header {
   display: flex;
   align-items: center;
-  padding: 10px 20px;
+  padding: 10px 14px;
   cursor: pointer;
+  border-radius: 8px;
   transition: background-color 0.2s;
 }
 
 .category-header:hover {
-  background: #e9ecef;
+  background: #f3f4f6;
 }
 
 .expand-icon {
-  margin-right: 8px;
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 12px;
-  color: #666;
+  color: #6b7280;
   transition: transform 0.2s;
 }
 
-.expand-icon.expanded {
-  transform: rotate(0deg);
+.expand-icon::before {
+  content: '▶';
+}
+
+.expand-icon.expanded::before {
+  content: '▼';
 }
 
 .category-name {
-  font-weight: 600;
-  color: #2c3e50;
+  font-weight: 700;
+  color: #374151;
   font-size: 14px;
 }
 
 .category-items {
-  background: white;
-}
-
-.component-type {
-  margin-bottom: 2px;
+  margin-left: 18px;
+  margin-top: 6px;
 }
 
 .component-type-header {
   display: flex;
   align-items: center;
-  padding: 8px 20px 8px 40px;
+  padding: 8px 14px;
   cursor: pointer;
+  border-radius: 6px;
   transition: background-color 0.2s;
-  background: #f8f9fa;
-  border-left: 2px solid transparent;
+  font-size: 13px;
 }
 
 .component-type-header:hover {
-  background: #e9ecef;
-  border-left-color: #667eea;
+  background: #f3f4f6;
 }
 
 .component-type-name {
-  font-weight: 500;
-  color: #495057;
-  font-size: 13px;
-  margin-right: 8px;
+  font-weight: 600;
+  color: #4b5563;
+  margin-right: 10px;
 }
 
 .component-count {
-  font-size: 11px;
-  color: #6c757d;
-  background: #e9ecef;
-  padding: 2px 6px;
-  border-radius: 10px;
+  font-size: 12px;
+  color: #9ca3af;
+  background: #f3f4f6;
+  padding: 3px 8px;
+  border-radius: 12px;
 }
 
 .component-examples {
-  background: white;
+  margin-left: 18px;
+  margin-top: 6px;
 }
 
 .tree-item {
-  padding: 10px 20px 10px 60px;
+  padding: 10px 14px;
   cursor: pointer;
-  border-left: 3px solid transparent;
+  border-radius: 8px;
   transition: all 0.2s;
+  margin-bottom: 3px;
 }
 
 .tree-item:hover {
-  background: #f8f9fa;
-  border-left-color: #667eea;
+  background: #f3f4f6;
 }
 
 .tree-item.active {
-  background: #e3f2fd;
-  border-left-color: #2196f3;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .item-title {
   display: block;
-  font-weight: 500;
-  color: #2c3e50;
-  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
   margin-bottom: 3px;
+  font-size: 14px;
 }
 
 .item-description {
   display: block;
-  font-size: 11px;
-  color: #666;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+/* 组件调色板 */
+.component-palette {
+  font-size: 15px;
+}
+
+.palette-section {
+  margin-bottom: 24px;
+}
+
+.palette-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.1);
+}
+
+.palette-section h4::before {
+  content: '📦';
+  font-size: 14px;
+}
+
+.palette-items {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.palette-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  cursor: grab;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.palette-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.palette-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.palette-item:hover::before {
+  opacity: 1;
+}
+
+.palette-item:active {
+  cursor: grabbing;
+  transform: translateY(0);
+}
+
+.palette-item i {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 8px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.palette-item span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
   line-height: 1.3;
+  position: relative;
+  z-index: 2;
 }
 
-.examples-content {
+.component-description {
+  font-size: 11px;
+  color: #9ca3af;
+  line-height: 1.3;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 主工作区 */
+.main-workspace {
   flex: 1;
-  padding: 20px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  overflow: hidden;
 }
 
-.example-container {
-  max-width: 1000px;
+.workspace-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* 示例视图 */
+.example-view {
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.example-header {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 2px solid #e9ecef;
+.example-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.example-header h2 {
-  margin: 0 0 10px 0;
-  color: #2c3e50;
-  font-size: 2rem;
+.example-info h2 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
 }
 
-.example-header p {
-  margin: 0 0 15px 0;
-  color: #666;
-  font-size: 1.1rem;
+.example-info p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
 }
 
-.framework-info {
+.example-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  border-color: #9ca3af;
+  background: #f9fafb;
+}
+
+.action-btn.primary {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.demo-section {
+  margin-bottom: 32px;
+}
+
+.demo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.demo-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
 .framework-badge {
-  background: #667eea;
+  background: #3b82f6;
   color: white;
   padding: 4px 12px;
-  border-radius: 20px;
+  border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
 }
 
-.framework-status {
-  background: #dc3545;
-  color: white;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.framework-status.active {
-  background: #28a745;
-}
-
-.example-demo {
-  margin-bottom: 30px;
-}
-
-.example-demo h3 {
-  margin: 0 0 15px 0;
-  color: #2c3e50;
-  font-size: 1.3rem;
-}
-
 .demo-area {
   min-height: 200px;
-  border: 2px dashed #dee2e6;
+  border: 2px dashed #d1d5db;
   border-radius: 8px;
-  padding: 20px;
-  background: #f8f9fa;
+  padding: 24px;
+  background: #f9fafb;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.example-code {
-  margin-bottom: 30px;
-}
-
-.code-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+.code-section {
+  margin-bottom: 32px;
 }
 
 .code-header h3 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.3rem;
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-.copy-button {
-  background: #28a745;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.copy-button:hover {
-  background: #218838;
-}
-
-.example-code pre {
-  background: #2d3748;
-  color: #e2e8f0;
+.code-content pre {
+  background: #1f2937;
+  color: #f9fafb;
   padding: 20px;
   border-radius: 8px;
   overflow-x: auto;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 14px;
+  font-size: 13px;
   line-height: 1.5;
   margin: 0;
 }
 
-.welcome-section {
+/* 欢迎视图 */
+.welcome-view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-view::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  opacity: 0.3;
+}
+
+.welcome-content {
   text-align: center;
-  padding: 60px 20px;
+  max-width: 1200px;
+  padding: 40px 20px;
+  position: relative;
+  z-index: 1;
 }
 
-.welcome-section h2 {
-  margin: 0 0 20px 0;
-  color: #2c3e50;
-  font-size: 2.5rem;
+/* Hero Section */
+.welcome-hero {
+  margin-bottom: 80px;
 }
 
-.welcome-section p {
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+}
+
+.badge-icon {
+  font-size: 16px;
+}
+
+.hero-title {
+  margin: 0 0 16px 0;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #e0f2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.hero-subtitle {
+  display: block;
+  font-size: 24px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 8px;
+}
+
+.hero-description {
   margin: 0 0 40px 0;
-  color: #666;
-  font-size: 1.2rem;
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.features {
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary, .btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 32px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Features Section */
+.features-section {
+  margin-bottom: 80px;
+}
+
+.section-title {
+  margin: 0 0 48px 0;
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+}
+
+.feature-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  justify-content: center;
+}
+
+.feature-card {
+  flex: 0 0 calc(33.333% - 16px);
+  min-width: 280px;
+  max-width: 320px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.feature-icon-wrapper {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.feature-icon {
+  font-size: 40px;
+  margin-bottom: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.feature-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.feature-card:hover .feature-glow {
+  opacity: 1;
+}
+
+.feature-card h4 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+.feature-card p {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+.feature-tags {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.tag {
+  padding: 4px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Quick Start Section */
+.quick-start-section {
+  margin-bottom: 40px;
+}
+
+.quick-start-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 30px;
-  max-width: 800px;
-  margin: 0 auto;
+  gap: 24px;
 }
 
-.feature-item {
-  padding: 30px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+.quick-start-card {
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  text-align: center;
+  backdrop-filter: blur(10px);
 }
 
-.feature-item:hover {
-  transform: translateY(-5px);
-}
-
-.feature-item h4 {
-  margin: 0 0 15px 0;
-  color: #2c3e50;
-  font-size: 1.3rem;
-}
-
-.feature-item p {
-  margin: 0;
-  color: #666;
-  line-height: 1.6;
-}
-
-/* 编辑器模式样式 */
-.editor-mode {
-  height: 100%;
-}
-
-.editor-layout {
+.step-number {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border-radius: 50%;
   display: flex;
-  height: calc(100vh - 120px);
-  gap: 1px;
-  background: #e9ecef;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  margin: 0 auto 16px auto;
 }
 
-.editor-panel {
-  flex: 1;
-  min-width: 0;
+.quick-start-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
 }
 
-.preview-panel {
-  flex: 1;
-  min-width: 0;
+.quick-start-card p {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
 }
 
-.mode-selector {
+/* 右侧面板 */
+.right-panel {
+  width: 300px;
+  background: #f9fafb;
+  border-left: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-top: 10px;
 }
 
-.mode-selector label {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
-
-.mode-selector select {
-  padding: 8px;
-  border: 1px solid #ddd;
+.close-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 4px;
+  color: #6b7280;
+}
+
+.close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* 属性面板内容 */
+.property-section {
+  padding: 16px;
+}
+
+.property-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.design-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.property-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.property-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.property-group input,
+.property-group select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
   font-size: 14px;
   background: white;
+  color: #374151;
+  transition: border-color 0.2s;
 }
 
-.load-editor-button {
-  background: #17a2b8;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
+.property-group input:focus,
+.property-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.property-group input[type="color"] {
+  height: 40px;
+  padding: 4px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-  margin-left: 8px;
 }
 
-.load-editor-button:hover {
-  background: #138496;
+.property-group input[type="number"] {
+  text-align: right;
+}
+
+/* 未选择组件时的提示 */
+.no-selection {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7280;
+}
+
+.no-selection-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.no-selection p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 选中组件信息 */
+.selected-component-info {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.selected-component-info h5 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.component-type {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* 布尔值输入样式 */
+.boolean-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #3b82f6;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* 属性操作按钮 */
+.property-actions {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 8px;
+}
+
+.property-actions .action-btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .left-panel {
+    width: 240px;
+  }
+  
+  .right-panel {
+    width: 280px;
+  }
 }
 
 @media (max-width: 768px) {
-  .main-container {
+  .app-header {
+    padding: 0 16px;
+  }
+  
+  .header-center .mode-tabs {
+    gap: 2px;
+  }
+  
+  .mode-tab {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .left-panel {
+    width: 200px;
+  }
+  
+  .workspace-content {
+    padding: 16px;
+  }
+  
+  .example-toolbar {
+    flex-direction: column;
+    gap: 16px;
+    align-items: stretch;
+  }
+  
+  .example-actions {
+    justify-content: flex-end;
+  }
+  
+  .feature-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .feature-card {
+    flex: none;
+    width: 100%;
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 640px) {
+  .main-layout {
     flex-direction: column;
   }
   
-  .sidebar {
+  .left-panel {
     width: 100%;
     height: auto;
+    max-height: 200px;
   }
   
-  .app-header h1 {
-    font-size: 2rem;
+  .left-panel.collapsed {
+    width: 100%;
+    height: 60px;
   }
   
-  .app-header p {
-    font-size: 1rem;
+  .panel-content {
+    padding: 12px;
   }
   
-  .features {
-    grid-template-columns: 1fr;
+  .palette-items {
+    grid-template-columns: repeat(4, 1fr);
   }
-  
-  .editor-layout {
-    flex-direction: column;
-    height: auto;
-  }
-  
-  .editor-panel,
-  .preview-panel {
-    height: 400px;
-  }
+}
+
+/* 图标样式 */
+.icon-play::before { 
+  content: '▶'; 
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.icon-design::before { 
+  content: '🎨'; 
+  font-size: 16px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.icon-code::before { 
+  content: '💻'; 
+  font-size: 16px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.icon-component::before { 
+  content: '🧩'; 
+  font-size: 16px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+.icon-collapse::before { 
+  content: '◀'; 
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.icon-expand::before { 
+  content: '▶'; 
+  font-size: 12px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.icon-close::before { 
+  content: '✕'; 
+  font-size: 14px;
+  font-weight: bold;
+  color: #6b7280;
+  transition: all 0.3s ease;
+}
+
+/* 图标悬停效果 */
+.icon-close:hover::before {
+  color: #ef4444;
+  transform: scale(1.1);
+}
+
+.icon-collapse:hover::before,
+.icon-expand:hover::before {
+  transform: scale(1.1);
+}
+
+/* 图标动画效果 */
+@keyframes iconPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.icon-design:hover::before,
+.icon-code:hover::before,
+.icon-component:hover::before {
+  animation: iconPulse 0.6s ease-in-out;
+}
+
+/* 缩放控制样式 */
+.scale-control {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.scale-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scale-slider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scale-range {
+  flex: 1;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.scale-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #1890ff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.scale-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #1890ff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.scale-value {
+  min-width: 50px;
+  text-align: center;
+  font-weight: 600;
+  color: #1890ff;
+  font-size: 14px;
+}
+
+.scale-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.scale-btn {
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scale-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.scale-btn:active {
+  background: #e5e7eb;
+  transform: translateY(1px);
+}
+
+.scale-btn.active {
+  background: #1890ff;
+  color: #fff;
+  border-color: #1890ff;
+}
+
+/* 全屏编辑样式 */
+.fullscreen-mode {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+}
+
+.fullscreen-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 10000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fullscreen-toolbar h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.design-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.design-toolbar h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d9d9d9;
+  background: white;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #666;
+}
+
+.btn-icon:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+  background: #f0f8ff;
+}
+
+.btn-icon i {
+  font-size: 16px;
+}
+
+/* 全屏模式下的FreeDesign组件 */
+.fullscreen-mode .free-design-container {
+  margin-top: 60px;
+  height: calc(100vh - 60px) !important;
+}
+
+/* 图标样式 */
+.icon-fullscreen::before {
+  content: '⛶';
+}
+
+.icon-exit-fullscreen::before {
+  content: '⛷';
 }
 </style>

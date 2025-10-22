@@ -121,6 +121,24 @@ export class NHAIComponentComposer extends NHAIWidget {
   private selectedComponents: Set<string> = new Set()
   private components: Map<string, ComponentInstance> = new Map()
   
+  // 拖拽状态
+  private isDragging: boolean = false
+  private dragComponentId: string | null = null
+  private dragStartPosition: Position = { x: 0, y: 0 }
+  private dragOffset: Position = { x: 0, y: 0 }
+  
+  // 调整大小状态
+  private isResizing: boolean = false
+  private resizeComponentId: string | null = null
+  private resizeDirection: string | null = null
+  private resizeStartPosition: Position = { x: 0, y: 0 }
+  private resizeStartSize: Size = { width: 0, height: 0 }
+  private resizeStartComponentPosition: Position = { x: 0, y: 0 }
+  
+  // 鼠标状态
+  private mouseDownPosition: Position | null = null
+  private mouseDownTime: number = 0
+  
   constructor(config: ComposerConfig, parent?: NHAIObject) {
     super(parent)
     this.config = config
@@ -410,6 +428,356 @@ export class NHAIComponentComposer extends NHAIWidget {
       },
       children: []
     })
+
+    // 文本按钮组件
+    this.componentRegistry.registerComponent({
+      id: 'text-button',
+      name: '文本按钮',
+      type: 'NHAITextButton',
+      category: '基础组件',
+      icon: '🔤',
+      description: '文本样式的按钮',
+      defaultProps: {
+        text: '文本按钮',
+        color: '#007bff',
+        size: 'medium',
+        disabled: false,
+        underline: false
+      },
+      propSchema: {
+        text: {
+          type: 'string',
+          default: '文本按钮',
+          required: true,
+          description: '按钮文本'
+        },
+        color: {
+          type: 'string',
+          default: '#007bff',
+          required: false,
+          description: '文字颜色'
+        },
+        size: {
+          type: 'string',
+          default: 'medium',
+          required: false,
+          description: '按钮大小',
+          options: ['small', 'medium', 'large']
+        },
+        disabled: {
+          type: 'boolean',
+          default: false,
+          required: false,
+          description: '是否禁用'
+        },
+        underline: {
+          type: 'boolean',
+          default: false,
+          required: false,
+          description: '是否显示下划线'
+        }
+      },
+      eventSchema: {
+        onClick: {
+          description: '点击事件',
+          parameters: []
+        }
+      },
+      styleSchema: {
+        color: {
+          type: 'color',
+          default: '#007bff',
+          description: '文字颜色'
+        }
+      },
+      children: []
+    })
+
+    // 标签组件
+    this.componentRegistry.registerComponent({
+      id: 'label',
+      name: '标签',
+      type: 'NHAILabel',
+      category: '基础组件',
+      icon: '🏷️',
+      description: '显示文本的标签组件',
+      defaultProps: {
+        text: '标签文本',
+        fontSize: 16,
+        fontWeight: 'normal',
+        color: '#333333',
+        alignment: 'left'
+      },
+      propSchema: {
+        text: {
+          type: 'string',
+          default: '标签文本',
+          required: true,
+          description: '标签文本'
+        },
+        fontSize: {
+          type: 'number',
+          default: 16,
+          required: false,
+          description: '字体大小'
+        },
+        fontWeight: {
+          type: 'string',
+          default: 'normal',
+          required: false,
+          description: '字体粗细',
+          options: ['normal', 'bold', 'lighter', 'bolder']
+        },
+        color: {
+          type: 'string',
+          default: '#333333',
+          required: false,
+          description: '文字颜色'
+        },
+        alignment: {
+          type: 'string',
+          default: 'left',
+          required: false,
+          description: '对齐方式',
+          options: ['left', 'center', 'right']
+        }
+      },
+      eventSchema: {},
+      styleSchema: {
+        color: {
+          type: 'color',
+          default: '#333333',
+          description: '文字颜色'
+        }
+      },
+      children: []
+    })
+
+    // 卡片组件
+    this.componentRegistry.registerComponent({
+      id: 'card',
+      name: '卡片',
+      type: 'NHAICard',
+      category: '容器组件',
+      icon: '🃏',
+      description: '内容容器卡片',
+      defaultProps: {
+        title: '卡片标题',
+        subtitle: '卡片副标题',
+        width: 300,
+        height: 200,
+        elevation: 2
+      },
+      propSchema: {
+        title: {
+          type: 'string',
+          default: '卡片标题',
+          required: false,
+          description: '卡片标题'
+        },
+        subtitle: {
+          type: 'string',
+          default: '卡片副标题',
+          required: false,
+          description: '卡片副标题'
+        },
+        width: {
+          type: 'number',
+          default: 300,
+          required: false,
+          description: '卡片宽度'
+        },
+        height: {
+          type: 'number',
+          default: 200,
+          required: false,
+          description: '卡片高度'
+        },
+        elevation: {
+          type: 'number',
+          default: 2,
+          required: false,
+          description: '阴影级别'
+        }
+      },
+      eventSchema: {},
+      styleSchema: {
+        backgroundColor: {
+          type: 'color',
+          default: '#ffffff',
+          description: '背景颜色'
+        }
+      },
+      children: []
+    })
+
+    // 窗口组件
+    this.componentRegistry.registerComponent({
+      id: 'window',
+      name: '窗口',
+      type: 'NHAIWindow',
+      category: '容器组件',
+      icon: '🪟',
+      description: '窗口容器组件',
+      defaultProps: {
+        title: '窗口标题',
+        width: 400,
+        height: 300,
+        resizable: true,
+        draggable: true
+      },
+      propSchema: {
+        title: {
+          type: 'string',
+          default: '窗口标题',
+          required: false,
+          description: '窗口标题'
+        },
+        width: {
+          type: 'number',
+          default: 400,
+          required: false,
+          description: '窗口宽度'
+        },
+        height: {
+          type: 'number',
+          default: 300,
+          required: false,
+          description: '窗口高度'
+        },
+        resizable: {
+          type: 'boolean',
+          default: true,
+          required: false,
+          description: '是否可调整大小'
+        },
+        draggable: {
+          type: 'boolean',
+          default: true,
+          required: false,
+          description: '是否可拖拽'
+        }
+      },
+      eventSchema: {},
+      styleSchema: {
+        backgroundColor: {
+          type: 'color',
+          default: '#ffffff',
+          description: '背景颜色'
+        }
+      },
+      children: []
+    })
+
+    // 水平布局组件
+    this.componentRegistry.registerComponent({
+      id: 'hbox',
+      name: '水平布局',
+      type: 'NHAIHBoxLayout',
+      category: '布局组件',
+      icon: '↔️',
+      description: '水平排列的布局容器',
+      defaultProps: {
+        spacing: 10,
+        alignment: 'start',
+        width: 300,
+        height: 100
+      },
+      propSchema: {
+        spacing: {
+          type: 'number',
+          default: 10,
+          required: false,
+          description: '子组件间距'
+        },
+        alignment: {
+          type: 'string',
+          default: 'start',
+          required: false,
+          description: '对齐方式',
+          options: ['start', 'center', 'end', 'stretch']
+        },
+        width: {
+          type: 'number',
+          default: 300,
+          required: false,
+          description: '布局宽度'
+        },
+        height: {
+          type: 'number',
+          default: 100,
+          required: false,
+          description: '布局高度'
+        }
+      },
+      eventSchema: {},
+      styleSchema: {
+        backgroundColor: {
+          type: 'color',
+          default: 'transparent',
+          description: '背景颜色'
+        }
+      },
+      children: []
+    })
+
+    // 网格布局组件
+    this.componentRegistry.registerComponent({
+      id: 'grid',
+      name: '网格布局',
+      type: 'NHAIGridLayout',
+      category: '布局组件',
+      icon: '⊞',
+      description: '网格排列的布局容器',
+      defaultProps: {
+        columns: 2,
+        rows: 2,
+        spacing: 10,
+        width: 300,
+        height: 200
+      },
+      propSchema: {
+        columns: {
+          type: 'number',
+          default: 2,
+          required: false,
+          description: '列数'
+        },
+        rows: {
+          type: 'number',
+          default: 2,
+          required: false,
+          description: '行数'
+        },
+        spacing: {
+          type: 'number',
+          default: 10,
+          required: false,
+          description: '网格间距'
+        },
+        width: {
+          type: 'number',
+          default: 300,
+          required: false,
+          description: '网格宽度'
+        },
+        height: {
+          type: 'number',
+          default: 200,
+          required: false,
+          description: '网格高度'
+        }
+      },
+      eventSchema: {},
+      styleSchema: {
+        backgroundColor: {
+          type: 'color',
+          default: 'transparent',
+          description: '背景颜色'
+        }
+      },
+      children: []
+    })
   }
   
   // 添加组件
@@ -440,6 +808,11 @@ export class NHAIComponentComposer extends NHAIWidget {
     
     // 触发组件添加事件
     this.emit('componentAdded', { component: instance })
+    
+    // 自动选中新添加的组件
+    this.selectedComponents.clear()
+    this.selectedComponents.add(instance.id)
+    this.emit('selectionChanged', Array.from(this.selectedComponents))
     
     // 触发重新渲染事件
     this.emit('renderUpdate', { components: Array.from(this.components.values()) })
@@ -475,11 +848,31 @@ export class NHAIComponentComposer extends NHAIWidget {
     const component = this.components.get(componentId)
     if (!component) return
     
+    console.log('updateComponentProps - 更新前:', component.props)
+    console.log('updateComponentProps - 新属性:', props)
+    
     component.props = { ...component.props, ...props }
+    
+    // 同步更新组件尺寸
+    if (props.width !== undefined) {
+      component.size.width = props.width
+      console.log('同步更新组件宽度:', props.width)
+    }
+    if (props.height !== undefined) {
+      component.size.height = props.height
+      console.log('同步更新组件高度:', props.height)
+    }
+    
+    console.log('updateComponentProps - 更新后:', component.props)
+    console.log('updateComponentProps - 组件尺寸:', component.size)
+    
     this.render()
     
     // 触发属性更新事件
     this.emit('componentPropsUpdated', { component, props })
+    
+    // 触发重新渲染事件
+    this.emit('renderUpdate', { components: Array.from(this.components.values()) })
   }
   
   // 更新组件样式
@@ -492,6 +885,33 @@ export class NHAIComponentComposer extends NHAIWidget {
     
     // 触发样式更新事件
     this.emit('componentStylesUpdated', { component, styles })
+    
+    // 触发重新渲染事件
+    this.emit('renderUpdate', { components: Array.from(this.components.values()) })
+  }
+  
+  // 更新组件变换（缩放、旋转等）
+  updateComponentTransform(componentId: string, transform: { scale?: number, rotate?: number }): void {
+    const component = this.components.get(componentId)
+    if (!component) return
+    
+    // 更新组件的变换属性
+    if (transform.scale !== undefined) {
+      component.props.scale = transform.scale
+    }
+    if (transform.rotate !== undefined) {
+      component.props.rotate = transform.rotate
+    }
+    
+    this.render()
+    
+    // 触发变换更新事件
+    this.emit('componentTransformUpdated', { component, transform })
+    
+    // 触发重新渲染事件
+    this.emit('renderUpdate', { components: Array.from(this.components.values()) })
+    
+    console.log('组件变换已更新:', componentId, transform)
   }
   
   // 移动组件
@@ -504,6 +924,111 @@ export class NHAIComponentComposer extends NHAIWidget {
     
     // 触发组件移动事件
     this.emit('componentMoved', { component, position })
+  }
+  
+  // 开始拖拽移动
+  private startDragMove(componentId: string, e: MouseEvent): void {
+    const component = this.components.get(componentId)
+    if (!component) return
+    
+    // 记录初始状态
+    this.mouseDownPosition = { x: e.clientX, y: e.clientY }
+    this.mouseDownTime = Date.now()
+    this.dragComponentId = componentId
+    this.dragOffset = {
+      x: e.clientX - component.position.x,
+      y: e.clientY - component.position.y
+    }
+    
+    // 添加全局事件监听器
+    document.addEventListener('mousemove', this.handleDragMove)
+    document.addEventListener('mouseup', this.handleDragEnd)
+    
+    // 选中组件
+    this.selectComponent(componentId, false)
+    
+    console.log('准备拖拽组件:', componentId)
+  }
+  
+  // 处理拖拽移动
+  private handleDragMove = (e: MouseEvent): void => {
+    if (!this.dragComponentId) return
+    
+    // 检查是否已经开始拖拽
+    if (!this.isDragging) {
+      if (!this.mouseDownPosition) return
+      
+      const distance = Math.sqrt(
+        Math.pow(e.clientX - this.mouseDownPosition.x, 2) + 
+        Math.pow(e.clientY - this.mouseDownPosition.y, 2)
+      )
+      
+      // 如果鼠标移动距离超过5px，开始拖拽
+      if (distance > 5) {
+        this.isDragging = true
+        e.preventDefault()
+        console.log('开始拖拽移动')
+      } else {
+        return // 距离不够，不开始拖拽
+      }
+    }
+    
+    const component = this.components.get(this.dragComponentId)
+    if (!component) return
+    
+    // 计算新位置
+    const newPosition = {
+      x: e.clientX - this.dragOffset.x,
+      y: e.clientY - this.dragOffset.y
+    }
+    
+    // 网格对齐
+    if (this.config.snapToGrid) {
+      newPosition.x = Math.round(newPosition.x / this.config.gridSize) * this.config.gridSize
+      newPosition.y = Math.round(newPosition.y / this.config.gridSize) * this.config.gridSize
+    }
+    
+    // 取消边界检查 - 支持在整个画布上拖动
+    // newPosition.x = Math.max(0, Math.min(newPosition.x, this.config.canvasWidth - component.size.width - 50))
+    // newPosition.y = Math.max(0, Math.min(newPosition.y, this.config.canvasHeight - component.size.height))
+    
+    // 更新组件位置
+    component.position = newPosition
+    this.render()
+    
+    // 触发重新渲染事件，确保DOM更新
+    this.emit('renderUpdate', { components: Array.from(this.components.values()) })
+  }
+  
+  // 处理拖拽结束
+  private handleDragEnd = (e: MouseEvent): void => {
+    if (!this.dragComponentId) return
+    
+    const component = this.components.get(this.dragComponentId)
+    if (component) {
+      if (this.isDragging) {
+        // 触发组件移动事件
+        this.emit('componentMoved', { component, position: component.position })
+        console.log('拖拽结束，组件位置:', component.position)
+        
+        // 重新触发选择改变事件，确保属性面板更新
+        this.emit('selectionChanged', Array.from(this.selectedComponents))
+        console.log('拖拽后重新触发选择事件:', Array.from(this.selectedComponents))
+      } else {
+        // 如果没有拖拽，这是一个点击事件
+        console.log('组件点击事件')
+      }
+    }
+    
+    // 清理拖拽状态
+    this.isDragging = false
+    this.dragComponentId = null
+    this.mouseDownPosition = null
+    this.mouseDownTime = 0
+    
+    // 移除全局事件监听器
+    document.removeEventListener('mousemove', this.handleDragMove)
+    document.removeEventListener('mouseup', this.handleDragEnd)
   }
   
   // 调整组件大小
@@ -534,6 +1059,141 @@ export class NHAIComponentComposer extends NHAIWidget {
     
     // 触发选择改变事件
     this.emit('selectionChanged', Array.from(this.selectedComponents))
+  }
+  
+  // 获取选中的组件ID列表
+  getSelectedComponentIds(): string[] {
+    return Array.from(this.selectedComponents)
+  }
+  
+  // 开始调整大小
+  private startResize(componentId: string, direction: string, e: MouseEvent): void {
+    const component = this.components.get(componentId)
+    if (!component) return
+    
+    this.isResizing = true
+    this.resizeComponentId = componentId
+    this.resizeDirection = direction
+    this.resizeStartPosition = { x: e.clientX, y: e.clientY }
+    this.resizeStartSize = { ...component.size }
+    this.resizeStartComponentPosition = { ...component.position }
+    
+    // 添加全局事件监听器
+    document.addEventListener('mousemove', this.handleResizeMove)
+    document.addEventListener('mouseup', this.handleResizeEnd)
+    
+    console.log('开始调整大小:', componentId, direction)
+  }
+  
+  // 处理调整大小移动
+  private handleResizeMove = (e: MouseEvent): void => {
+    if (!this.isResizing || !this.resizeComponentId || !this.resizeDirection) return
+    
+    const component = this.components.get(this.resizeComponentId)
+    if (!component) return
+    
+    const deltaX = e.clientX - this.resizeStartPosition.x
+    const deltaY = e.clientY - this.resizeStartPosition.y
+    
+    let newSize = { ...this.resizeStartSize }
+    let newPosition = { ...component.position }
+    
+    // 根据调整方向计算新尺寸和位置
+    switch (this.resizeDirection) {
+      case 'nw': // 左上 - 以右下角为固定点缩放
+        newSize.width = Math.max(20, this.resizeStartSize.width - deltaX)
+        newSize.height = Math.max(20, this.resizeStartSize.height - deltaY)
+        // 以右下角为固定点，计算新位置
+        const nwRightX = this.resizeStartComponentPosition.x + this.resizeStartSize.width
+        const nwBottomY = this.resizeStartComponentPosition.y + this.resizeStartSize.height
+        newPosition.x = nwRightX - newSize.width
+        newPosition.y = nwBottomY - newSize.height
+        break
+      case 'n': // 上 - 以下边为固定边
+        newSize.height = Math.max(20, this.resizeStartSize.height - deltaY)
+        // 保持下边位置不变
+        newPosition.y = this.resizeStartComponentPosition.y + (this.resizeStartSize.height - newSize.height)
+        break
+      case 'ne': // 右上 - 以左下角为固定点缩放
+        newSize.width = Math.max(20, this.resizeStartSize.width + deltaX)
+        newSize.height = Math.max(20, this.resizeStartSize.height - deltaY)
+        // 以左下角为固定点，计算新位置
+        const neLeftX = this.resizeStartComponentPosition.x
+        const neBottomY = this.resizeStartComponentPosition.y + this.resizeStartSize.height
+        newPosition.x = neLeftX
+        newPosition.y = neBottomY - newSize.height
+        break
+      case 'e': // 右 - 以左边为固定边
+        newSize.width = Math.max(20, this.resizeStartSize.width + deltaX)
+        // 位置不变
+        break
+      case 'se': // 右下 - 以左上角为固定点缩放
+        newSize.width = Math.max(20, this.resizeStartSize.width + deltaX)
+        newSize.height = Math.max(20, this.resizeStartSize.height + deltaY)
+        // 以左上角为固定点，位置不变
+        break
+      case 's': // 下 - 以上边为固定边
+        newSize.height = Math.max(20, this.resizeStartSize.height + deltaY)
+        // 位置不变
+        break
+      case 'sw': // 左下 - 以右上角为固定点缩放
+        newSize.width = Math.max(20, this.resizeStartSize.width - deltaX)
+        newSize.height = Math.max(20, this.resizeStartSize.height + deltaY)
+        // 以右上角为固定点，计算新位置
+        const swRightX = this.resizeStartComponentPosition.x + this.resizeStartSize.width
+        const swTopY = this.resizeStartComponentPosition.y
+        newPosition.x = swRightX - newSize.width
+        newPosition.y = swTopY
+        break
+      case 'w': // 左 - 以右边为固定边
+        newSize.width = Math.max(20, this.resizeStartSize.width - deltaX)
+        // 保持右边位置不变
+        newPosition.x = this.resizeStartComponentPosition.x + (this.resizeStartSize.width - newSize.width)
+        break
+    }
+    
+    // 取消边界检查 - 支持在整个画布上调整大小
+    // newPosition.x = Math.max(0, Math.min(newPosition.x, this.config.canvasWidth - newSize.width - 50))
+    // newPosition.y = Math.max(0, Math.min(newPosition.y, this.config.canvasHeight - newSize.height))
+    
+    // 更新组件尺寸和位置
+    component.size = newSize
+    component.position = newPosition
+    
+    // 同步更新props中的尺寸
+    component.props.width = newSize.width
+    component.props.height = newSize.height
+    
+    this.render()
+    
+    // 触发重新渲染事件，确保DOM更新
+    this.emit('renderUpdate', { components: Array.from(this.components.values()) })
+  }
+  
+  // 处理调整大小结束
+  private handleResizeEnd = (): void => {
+    if (!this.isResizing || !this.resizeComponentId) return
+    
+    const component = this.components.get(this.resizeComponentId)
+    if (component) {
+      // 触发组件尺寸改变事件
+      this.emit('componentResized', { component, size: component.size })
+      console.log('调整大小结束，组件尺寸:', component.size)
+      
+      // 重新触发选择改变事件，确保属性面板更新
+      this.emit('selectionChanged', Array.from(this.selectedComponents))
+    }
+    
+    // 清理调整大小状态
+    this.isResizing = false
+    this.resizeComponentId = null
+    this.resizeDirection = null
+    this.resizeStartPosition = { x: 0, y: 0 }
+    this.resizeStartSize = { width: 0, height: 0 }
+    
+    // 移除全局事件监听器
+    document.removeEventListener('mousemove', this.handleResizeMove)
+    document.removeEventListener('mouseup', this.handleResizeEnd)
   }
   
   // 保存模板
@@ -837,6 +1497,52 @@ export class NHAIComponentComposer extends NHAIWidget {
     return adapter.createElement('div', canvasProps, children)
   }
   
+  // 创建调整大小句柄
+  private createResizeHandles(adapter: any, component: ComponentInstance): any[] {
+    const handles: any[] = []
+    const handleSize = 8
+    const halfHandle = handleSize / 2
+    
+    // 8个调整大小句柄的位置
+    const handlePositions = [
+      { position: 'nw', x: -halfHandle, y: -halfHandle, cursor: 'nw-resize' }, // 左上
+      { position: 'n', x: component.size.width / 2 - halfHandle, y: -halfHandle, cursor: 'n-resize' }, // 上
+      { position: 'ne', x: component.size.width - halfHandle, y: -halfHandle, cursor: 'ne-resize' }, // 右上
+      { position: 'e', x: component.size.width - halfHandle, y: component.size.height / 2 - halfHandle, cursor: 'e-resize' }, // 右
+      { position: 'se', x: component.size.width - halfHandle, y: component.size.height - halfHandle, cursor: 'se-resize' }, // 右下
+      { position: 's', x: component.size.width / 2 - halfHandle, y: component.size.height - halfHandle, cursor: 's-resize' }, // 下
+      { position: 'sw', x: -halfHandle, y: component.size.height - halfHandle, cursor: 'sw-resize' }, // 左下
+      { position: 'w', x: -halfHandle, y: component.size.height / 2 - halfHandle, cursor: 'w-resize' } // 左
+    ]
+    
+    handlePositions.forEach(({ position, x, y, cursor }) => {
+      const handle = adapter.createElement('div', {
+        className: `resize-handle resize-handle-${position}`,
+        style: {
+          position: 'absolute',
+          left: `${x}px`,
+          top: `${y}px`,
+          width: `${handleSize}px`,
+          height: `${handleSize}px`,
+          background: '#1890ff',
+          border: '1px solid #fff',
+          borderRadius: '50%',
+          cursor: cursor,
+          zIndex: 1000,
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+        },
+        onMouseDown: (e: MouseEvent) => {
+          e.stopPropagation()
+          e.preventDefault()
+          this.startResize(component.id, position, e)
+        }
+      })
+      handles.push(handle)
+    })
+    
+    return handles
+  }
+
   // 渲染组件
   private renderComponent(adapter: any, component: ComponentInstance): any {
     const isSelected = this.selectedComponents.has(component.id)
@@ -852,7 +1558,10 @@ export class NHAIComponentComposer extends NHAIWidget {
         border: isSelected ? '2px solid #1890ff' : '1px solid #d9d9d9',
         borderRadius: '4px',
         background: '#fff',
-        cursor: 'pointer',
+        cursor: 'move',
+        // 添加变换支持
+        transform: `scale(${component.props.scale || 1})`,
+        transformOrigin: 'center center',
         ...component.styles
       },
       onClick: (e: MouseEvent) => {
@@ -862,10 +1571,37 @@ export class NHAIComponentComposer extends NHAIWidget {
       onDoubleClick: () => {
         // 双击编辑属性
         this.editComponentProperties(component)
+      },
+      onMouseDown: (e: MouseEvent) => {
+        e.stopPropagation()
+        
+        // 记录鼠标按下位置，用于区分拖拽和点击
+        this.mouseDownPosition = { x: e.clientX, y: e.clientY }
+        this.mouseDownTime = Date.now()
+        this.dragComponentId = component.id
+        this.dragOffset = {
+          x: e.clientX - component.position.x,
+          y: e.clientY - component.position.y
+        }
+        
+        // 添加全局事件监听器
+        document.addEventListener('mousemove', this.handleDragMove)
+        document.addEventListener('mouseup', this.handleDragEnd)
+        
+        // 选中组件
+        this.selectComponent(component.id, false)
+        
+        console.log('准备拖拽组件:', component.id)
       }
     }
     
     const children: any[] = []
+    
+    // 如果组件被选中，添加调整大小句柄
+    if (isSelected) {
+      const resizeHandles = this.createResizeHandles(adapter, component)
+      children.push(...resizeHandles)
+    }
     
     // 根据组件类型渲染内容
     switch (component.definition.type) {
@@ -882,14 +1618,33 @@ export class NHAIComponentComposer extends NHAIWidget {
         children.push(button)
         break
         
+      case 'NHAITextButton':
+        console.log('渲染NHAITextButton:', component.id, component.props)
+        const textButton = adapter.createElement('button', {
+          style: {
+            width: component.props.width ? `${component.props.width}px` : '100%',
+            height: component.props.height ? `${component.props.height}px` : '100%',
+            border: 'none',
+            background: 'transparent',
+            cursor: 'pointer',
+            color: component.props.color || '#007bff',
+            fontSize: component.props.size === 'small' ? '12px' : component.props.size === 'large' ? '18px' : '14px',
+            fontWeight: 'normal',
+            textDecoration: component.props.underline ? 'underline' : 'none',
+            opacity: component.props.disabled ? 0.5 : 1
+          }
+        }, [component.props.text || '文本按钮'])
+        children.push(textButton)
+        break
+        
       case 'NHAIInput':
         const input = adapter.createElement('input', {
           type: 'text',
           placeholder: component.props.placeholder || '请输入内容',
           value: component.props.value || '',
           style: {
-            width: '100%',
-            height: '100%',
+            width: component.props.width ? `${component.props.width}px` : '100%',
+            height: component.props.height ? `${component.props.height}px` : '100%',
             border: 'none',
             background: 'transparent',
             padding: '4px'
@@ -901,8 +1656,8 @@ export class NHAIComponentComposer extends NHAIWidget {
       case 'NHAIVBoxLayout':
         const vbox = adapter.createElement('div', {
           style: {
-            width: '100%',
-            height: '100%',
+            width: component.props.width ? `${component.props.width}px` : '100%',
+            height: component.props.height ? `${component.props.height}px` : '100%',
             display: 'flex',
             flexDirection: 'column',
             gap: `${component.props.spacing || 8}px`,
@@ -915,8 +1670,8 @@ export class NHAIComponentComposer extends NHAIWidget {
       case 'NHAIHBoxLayout':
         const hbox = adapter.createElement('div', {
           style: {
-            width: '100%',
-            height: '100%',
+            width: component.props.width ? `${component.props.width}px` : '100%',
+            height: component.props.height ? `${component.props.height}px` : '100%',
             display: 'flex',
             flexDirection: 'row',
             gap: `${component.props.spacing || 8}px`,
@@ -929,8 +1684,8 @@ export class NHAIComponentComposer extends NHAIWidget {
       case 'NHAIContainer':
         const container = adapter.createElement('div', {
           style: {
-            width: '100%',
-            height: '100%',
+            width: component.props.width ? `${component.props.width}px` : '100%',
+            height: component.props.height ? `${component.props.height}px` : '100%',
             border: '1px solid #d9d9d9',
             borderRadius: '4px',
             padding: '8px'
@@ -952,6 +1707,108 @@ export class NHAIComponentComposer extends NHAIWidget {
           }, [])
         ])
         children.push(container)
+        break
+        
+      case 'NHAILabel':
+        const label = adapter.createElement('div', {
+          style: {
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            fontSize: `${component.props.fontSize || 16}px`,
+            fontWeight: component.props.fontWeight || 'normal',
+            color: component.props.color || '#333333',
+            textAlign: component.props.alignment || 'left',
+            padding: '4px'
+          }
+        }, [component.props.text || '标签文本'])
+        children.push(label)
+        break
+        
+      case 'NHAICard':
+        const card = adapter.createElement('div', {
+          style: {
+            width: '100%',
+            height: '100%',
+            border: '1px solid #d9d9d9',
+            borderRadius: '8px',
+            padding: '12px',
+            background: '#fff',
+            boxShadow: `0 ${component.props.elevation || 2}px 4px rgba(0,0,0,0.1)`
+          }
+        }, [
+          component.props.title ? 
+            adapter.createElement('div', {
+              style: {
+                fontSize: '16px',
+                fontWeight: 'bold',
+                marginBottom: '8px',
+                color: '#333'
+              }
+            }, [component.props.title]) : null,
+          component.props.subtitle ? 
+            adapter.createElement('div', {
+              style: {
+                fontSize: '14px',
+                color: '#666',
+                marginBottom: '8px'
+              }
+            }, [component.props.subtitle]) : null,
+          adapter.createElement('div', {
+            style: {
+              flex: 1,
+              color: '#666'
+            }
+          }, ['卡片内容'])
+        ])
+        children.push(card)
+        break
+        
+      case 'NHAIWindow':
+        const window = adapter.createElement('div', {
+          style: {
+            width: '100%',
+            height: '100%',
+            border: '1px solid #d9d9d9',
+            borderRadius: '4px',
+            background: '#fff',
+            display: 'flex',
+            flexDirection: 'column'
+          }
+        }, [
+          adapter.createElement('div', {
+            style: {
+              padding: '8px',
+              borderBottom: '1px solid #f0f0f0',
+              background: '#fafafa',
+              fontWeight: 'bold',
+              fontSize: '14px'
+            }
+          }, [component.props.title || '窗口标题']),
+          adapter.createElement('div', {
+            style: {
+              flex: 1,
+              padding: '8px'
+            }
+          }, ['窗口内容'])
+        ])
+        children.push(window)
+        break
+        
+      case 'NHAIGridLayout':
+        const grid = adapter.createElement('div', {
+          style: {
+            width: '100%',
+            height: '100%',
+            display: 'grid',
+            gridTemplateColumns: `repeat(${component.props.columns || 2}, 1fr)`,
+            gridTemplateRows: `repeat(${component.props.rows || 2}, 1fr)`,
+            gap: `${component.props.spacing || 10}px`,
+            padding: '8px'
+          }
+        }, [])
+        children.push(grid)
         break
         
       default:
