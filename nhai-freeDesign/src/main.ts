@@ -59,12 +59,10 @@ class FreeDesignApp {
     }
     
     // 测试菜单栏功能
-    if (menuBar && typeof (menuBar as any).addMenuItem === 'function') {
+    if (menuBar && typeof (menuBar as any).addItem === 'function') {
       console.log('开始配置菜单栏...')
-      const menuBar = NHAIObjectFactory.createMaterialMenuBar();
-
+      
       menuBar.horizontal();
-      menuBar.setWidth('100%');
       menuBar.setBackgroundColor('#ffffff');
       menuBar.setShadow(true);
       menuBar.setHeight(60);
@@ -87,9 +85,9 @@ class FreeDesignApp {
         { id: 'paste', type: MenuItemType.ITEM, label: '粘贴', shortcut: 'Ctrl+V', onClick: () => console.log('粘贴内容') }
       ]);
       
-      menuBar.addMenuItem('view', '视图', () => console.log('视图菜单'));
+      menuBar.addItem({ id: 'view', type: MenuItemType.ITEM, label: '视图', onClick: () => console.log('视图菜单') });
       // menuBar.addSeparator('sep1');
-      menuBar.addMenuItem('help', '帮助', () => console.log('帮助菜单'));
+      menuBar.addItem({ id: 'help', type: MenuItemType.ITEM, label: '帮助', onClick: () => console.log('帮助菜单') });
 
       console.log('菜单栏:', menuBar) 
 
@@ -98,9 +96,9 @@ class FreeDesignApp {
       // 渲染菜单栏到页面
       this.renderMenuBar(menuBar)
     } else {
-      console.error('❌ menuBar 对象无效或 addMenuItem 方法不存在')
+      console.error('❌ menuBar 对象无效或 addItem 方法不存在')
       console.log('menuBar:', menuBar)
-      console.log('addMenuItem 方法:', typeof (menuBar as any)?.addMenuItem)
+      console.log('addItem 方法:', typeof (menuBar as any)?.addItem)
       console.log('menuBar 类型:', typeof menuBar)
       if (menuBar) {
         console.log('menuBar 的方法:', Object.getOwnPropertyNames(Object.getPrototypeOf(menuBar)))

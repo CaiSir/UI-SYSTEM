@@ -45,13 +45,13 @@ export class MenuBarStyles {
 
       /* 子菜单项基础样式 */
       .nhai-submenu-item {
-        border-radius: 6px;
-        margin: 1px 4px;
-        padding: 8px 12px;
+        border-radius: 4px;
+        margin: 1px 2px;
+        padding: 6px 8px;
         border-bottom: none;
         font-size: 13px;
         font-weight: 400;
-        min-height: 32px;
+        min-height: 28px;
         height: auto;
         transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         color: #1a1a1a;
@@ -69,11 +69,17 @@ export class MenuBarStyles {
         transform: translateX(4px);
       }
 
+      /* 子菜单父容器样式 */
+      .nhai-submenu {
+        position: relative;
+        display: inline-block;
+      }
+
       /* 子菜单容器样式 */
       .nhai-submenu-container {
         position: absolute;
         top: 100%;
-        left: 10px;
+        left: 0;
         background-color: #ffffff;
         border: 1px solid rgba(0, 0, 0, 0.08);
         border-radius: 12px;
@@ -82,7 +88,7 @@ export class MenuBarStyles {
         width: auto;
         z-index: 9999;
         display: block;
-        padding: 8px 0;
+        padding: 4px 0;
         backdrop-filter: blur(20px);
         background: rgba(255, 255, 255, 0.98);
         margin-top: 8px;
@@ -133,13 +139,13 @@ export class MenuBarStyles {
         border: none;
         border-radius: 0;
         width: 100%;
-        height: 60px;
+        height: 50px;
         box-sizing: border-box;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        padding: 0 0 0 10px !important;
+        padding: 0 0 0 8px !important;
         background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
-        min-height: 60px;
+        min-height: 50px;
         user-select: none;
         position: relative;
         z-index: 1000;
@@ -155,25 +161,25 @@ export class MenuBarStyles {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0 8px;
+        padding: 0 4px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        border-radius: 8px;
-        margin: 0 2px;
+        border-radius: 6px;
+        margin: 0 1px;
         position: relative;
         font-weight: 500;
-        font-size: 15px;
-        letter-spacing: 0.02em;
+        font-size: 14px;
+        letter-spacing: 0.01em;
         background: transparent;
         border: none;
         white-space: nowrap;
-        min-height: 40px;
+        min-height: 36px;
         text-align: center;
         color: #1a1a1a;
-        height: 40px;
+        height: 36px;
         flex: 0 0 auto;
-        min-width: 80px;
-        max-width: 160px;
+        min-width: 60px;
+        max-width: 120px;
         overflow: visible;
       }
 
@@ -219,7 +225,7 @@ export class MenuBarStyles {
       }
 
       /* 子菜单展开时箭头旋转 */
-      .menu-submenu.nhai-submenu-visible .menu-submenu-arrow {
+      .nhai-submenu.nhai-submenu-visible .menu-submenu-arrow {
         transform: rotate(90deg) !important;
         opacity: 1 !important;
       }
