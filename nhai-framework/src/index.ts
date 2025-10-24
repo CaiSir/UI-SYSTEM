@@ -81,6 +81,4 @@ export {
 } from './components/cusComponents/professional/NHAIComponentComposer'
 
 // 导出 Material 组件
-export { MaterialMenuBar } from './components/materialComponents/menubar'
-export { MenuItemType } from './components/materialComponents/menubar'
-export type { MenuBarConfig, MenuBarLayoutType } from './components/materialComponents/menubar'
+export * from './components/materialComponents'
