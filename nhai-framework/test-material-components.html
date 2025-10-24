@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material UI Components 测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            color: #1976d2;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .component-demo {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Material UI Components 测试页面</h1>
+    
+    <div class="test-section">
+        <div class="test-title">基础交互组件测试</div>
+        <div id="basic-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">数据展示组件测试</div>
+        <div id="data-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">布局容器组件测试</div>
+        <div id="layout-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">导航组件测试</div>
+        <div id="navigation-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">反馈组件测试</div>
+        <div id="feedback-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">工具组件测试</div>
+        <div id="utility-components"></div>
+    </div>
+
+    <script type="module">
+        // 导入 NHAI Framework
+        import { NHAIObjectFactory, NHAIFrameworkRegistry } from './dist/index.esm.js'
+        
+        // 注册框架适配器
+        NHAIFrameworkRegistry.register('vanilla', {
+            createElement: (tag, props, children) => {
+                const element = document.createElement(tag)
+                if (props) {
+                    Object.assign(element, props)
+                }
+                if (children) {
+                    children.forEach(child => {
+                        if (typeof child === 'string') {
+                            element.appendChild(document.createTextNode(child))
+                        } else if (child instanceof HTMLElement) {
+                            element.appendChild(child)
+                        }
+                    })
+                }
+                return element
+            }
+        })
+        
+        // 设置默认框架
+        NHAIFrameworkRegistry.setDefaultFramework('vanilla')
+        
+        // 测试基础交互组件
+        function testBasicComponents() {
+            const container = document.getElementById('basic-components')
+            
+            // 测试按钮
+            const button = NHAIObjectFactory.createMaterialButton('测试按钮')
+            button.setOnClick(() => alert('按钮被点击了！'))
+            const buttonElement = button.render()
+            container.appendChild(buttonElement)
+            
+            // 测试输入框
+            const input = NHAIObjectFactory.createMaterialInput('请输入内容')
+            input.setPlaceholder('这是一个输入框')
+            const inputElement = input.render()
+            container.appendChild(inputElement)
+            
+            // 测试开关
+            const switchComponent = NHAIObjectFactory.createMaterialSwitch()
+            switchComponent.setLabel('开关测试')
+            const switchElement = switchComponent.render()
+            container.appendChild(switchElement)
+        }
+        
+        // 测试数据展示组件
+        function testDataComponents() {
+            const container = document.getElementById('data-components')
+            
+            // 测试卡片
+            const card = NHAIObjectFactory.createMaterialCard()
+            card.setTitle('测试卡片')
+            card.setContent('这是一个测试卡片的内容')
+            const cardElement = card.render()
+            container.appendChild(cardElement)
+            
+            // 测试标签
+            const tag = NHAIObjectFactory.createMaterialTag('测试标签')
+            tag.setColor('primary')
+            const tagElement = tag.render()
+            container.appendChild(tagElement)
+            
+            // 测试徽章
+            const badge = NHAIObjectFactory.createMaterialBadge()
+            badge.setBadgeContent('99+')
+            badge.setColor('error')
+            const badgeElement = badge.render()
+            container.appendChild(badgeElement)
+        }
+        
+        // 测试布局容器组件
+        function testLayoutComponents() {
+            const container = document.getElementById('layout-components')
+            
+            // 测试容器
+            const containerComponent = NHAIObjectFactory.createMaterialContainer()
+            containerComponent.setMaxWidth('md')
+            const containerElement = containerComponent.render()
+            container.appendChild(containerElement)
+            
+            // 测试栅格
+            const grid = NHAIObjectFactory.createMaterialGrid()
+            grid.setSpacing(2)
+            const gridElement = grid.render()
+            container.appendChild(gridElement)
+        }
+        
+        // 测试导航组件
+        function testNavigationComponents() {
+            const container = document.getElementById('navigation-components')
+            
+            // 测试标签页
+            const tabs = NHAIObjectFactory.createMaterialTabs()
+            tabs.addTab('标签1', '内容1')
+            tabs.addTab('标签2', '内容2')
+            const tabsElement = tabs.render()
+            container.appendChild(tabsElement)
+            
+            // 测试面包屑
+            const breadcrumb = NHAIObjectFactory.createMaterialBreadcrumb()
+            breadcrumb.addItem('首页', '/')
+            breadcrumb.addItem('产品', '/products')
+            breadcrumb.addItem('详情', '/products/1')
+            const breadcrumbElement = breadcrumb.render()
+            container.appendChild(breadcrumbElement)
+        }
+        
+        // 测试反馈组件
+        function testFeedbackComponents() {
+            const container = document.getElementById('feedback-components')
+            
+            // 测试加载
+            const loading = NHAIObjectFactory.createMaterialLoading()
+            loading.setType('circular')
+            loading.setColor('primary')
+            const loadingElement = loading.render()
+            container.appendChild(loadingElement)
+            
+            // 测试消息提示
+            const message = NHAIObjectFactory.createMaterialMessage()
+            message.show('这是一个测试消息', 'success')
+            const messageElement = message.render()
+            container.appendChild(messageElement)
+        }
+        
+        // 测试工具组件
+        function testUtilityComponents() {
+            const container = document.getElementById('utility-components')
+            
+            // 测试工具提示
+            const tooltip = NHAIObjectFactory.createMaterialTooltip()
+            tooltip.setTitle('这是一个工具提示')
+            tooltip.setPlacement('top')
+            const tooltipElement = tooltip.render()
+            container.appendChild(tooltipElement)
+            
+            // 测试颜色选择器
+            const colorPicker = NHAIObjectFactory.createMaterialColorPicker()
+            colorPicker.setColor('#1976d2')
+            const colorPickerElement = colorPicker.render()
+            container.appendChild(colorPickerElement)
+        }
+        
+        // 运行所有测试
+        testBasicComponents()
+        testDataComponents()
+        testLayoutComponents()
+        testNavigationComponents()
+        testFeedbackComponents()
+        testUtilityComponents()
+        
+        console.log('Material UI Components 测试完成！')
+    </script>
+</body>
+</html>

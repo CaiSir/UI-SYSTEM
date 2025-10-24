@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Material UI Components 测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-title {
+            color: #1976d2;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .component-demo {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        .note {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 12px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>React Material UI Components 测试页面</h1>
+    
+    <div class="note">
+        <strong>注意：</strong>这个页面展示了 React 版本的 Material UI 组件。
+        这些组件使用真正的 <code>@mui/material</code> 库，而不是 CSS 模拟。
+        需要在 React 环境中运行才能正常工作。
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">基础交互组件测试</div>
+        <div id="basic-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">数据展示组件测试</div>
+        <div id="data-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">布局容器组件测试</div>
+        <div id="layout-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">导航组件测试</div>
+        <div id="navigation-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">反馈组件测试</div>
+        <div id="feedback-components"></div>
+    </div>
+    
+    <div class="test-section">
+        <div class="test-title">工具组件测试</div>
+        <div id="utility-components"></div>
+    </div>
+
+    <script type="module">
+        // 注意：这个示例需要在 React 环境中运行
+        // 这里只是展示组件的创建方式，实际渲染需要 React 环境
+        
+        console.log('React Material UI Components 测试页面')
+        console.log('注意：这些组件需要在 React 环境中运行')
+        
+        // 模拟组件创建（实际使用时需要 React 环境）
+        function simulateReactComponents() {
+            console.log('=== 基础交互组件 ===')
+            
+            // 模拟按钮创建
+            console.log('创建 React Material Button:')
+            console.log('- 文本: "点击我"')
+            console.log('- 变体: contained')
+            console.log('- 颜色: primary')
+            console.log('- 大小: large')
+            
+            // 模拟输入框创建
+            console.log('创建 React Material Input:')
+            console.log('- 标签: "用户名"')
+            console.log('- 占位符: "请输入用户名"')
+            console.log('- 必填: true')
+            
+            // 模拟选择框创建
+            console.log('创建 React Material Select:')
+            console.log('- 标签: "选择城市"')
+            console.log('- 选项: 北京, 上海, 广州, 深圳')
+            
+            console.log('=== 数据展示组件 ===')
+            
+            // 模拟表格创建
+            console.log('创建 React Material Table:')
+            console.log('- 标题: "用户列表"')
+            console.log('- 列: ID, 姓名, 邮箱, 角色')
+            console.log('- 数据: 3 行用户数据')
+            
+            // 模拟卡片创建
+            console.log('创建 React Material Card:')
+            console.log('- 标题: "产品信息"')
+            console.log('- 副标题: "这是一个产品卡片"')
+            console.log('- 内容: "这是卡片的详细内容"')
+            
+            console.log('=== 布局容器组件 ===')
+            
+            // 模拟容器创建
+            console.log('创建 React Material Container:')
+            console.log('- 最大宽度: lg')
+            console.log('- 禁用间距: false')
+            
+            // 模拟栅格创建
+            console.log('创建 React Material Grid:')
+            console.log('- 间距: 2')
+            console.log('- 方向: row')
+            console.log('- 对齐: center')
+            
+            console.log('=== 导航组件 ===')
+            
+            // 模拟标签页创建
+            console.log('创建 React Material Tabs:')
+            console.log('- 标签: 标签1, 标签2, 标签3')
+            console.log('- 变体: standard')
+            
+            // 模拟面包屑创建
+            console.log('创建 React Material Breadcrumb:')
+            console.log('- 项目: 首页 > 产品 > 详情')
+            console.log('- 分隔符: /')
+            
+            console.log('=== 反馈组件 ===')
+            
+            // 模拟对话框创建
+            console.log('创建 React Material Dialog:')
+            console.log('- 标题: "确认删除"')
+            console.log('- 内容: "您确定要删除这个项目吗？"')
+            console.log('- 操作: 取消, 删除')
+            
+            // 模拟消息提示创建
+            console.log('创建 React Material Message:')
+            console.log('- 消息: "操作成功！"')
+            console.log('- 类型: success')
+            console.log('- 持续时间: 3000ms')
+            
+            console.log('=== 工具组件 ===')
+            
+            // 模拟工具提示创建
+            console.log('创建 React Material Tooltip:')
+            console.log('- 标题: "这是一个工具提示"')
+            console.log('- 位置: top')
+            console.log('- 箭头: true')
+            
+            // 模拟颜色选择器创建
+            console.log('创建 React Material ColorPicker:')
+            console.log('- 默认颜色: #1976d2')
+            console.log('- 标签: "选择主题色"')
+        }
+        
+        // 运行模拟
+        simulateReactComponents()
+        
+        // 显示使用说明
+        const usageInfo = document.createElement('div')
+        usageInfo.className = 'note'
+        usageInfo.innerHTML = `
+            <h3>使用方法：</h3>
+            <p>1. 在 React 项目中安装依赖：</p>
+            <pre>npm install @mui/material @mui/icons-material @emotion/react @emotion/styled</pre>
+            
+            <p>2. 导入工厂类：</p>
+            <pre>import { NHAIObjectFactory } from './factory/NHAIFactory'</pre>
+            
+            <p>3. 创建组件：</p>
+            <pre>const button = NHAIObjectFactory.createReactMaterialButton('点击我')
+button.setVariant('contained')
+button.setColor('primary')
+const element = button.render()</pre>
+            
+            <p>4. 在 React 组件中使用：</p>
+            <pre>function MyComponent() {
+  const button = NHAIObjectFactory.createReactMaterialButton('点击我')
+  return button.render()
+}</pre>
+        `
+        document.body.appendChild(usageInfo)
+        
+        console.log('React Material UI Components 测试完成！')
+        console.log('查看控制台输出了解组件创建过程')
+    </script>
+</body>
+</html>

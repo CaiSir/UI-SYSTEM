@@ -1,0 +1,707 @@
+/* Materialize CSS 基础样式 */
+/* 这个文件包含了 Materialize CSS 的核心样式，用于支持 Material 组件 */
+
+/* 按钮样式 */
+.btn {
+  background-color: #26a69a;
+  color: #fff;
+  text-decoration: none;
+  text-align: center;
+  letter-spacing: .5px;
+  transition: background-color .2s ease-out;
+  cursor: pointer;
+  border: none;
+  border-radius: 2px;
+  display: inline-block;
+  height: 36px;
+  line-height: 36px;
+  padding: 0 16px;
+  text-transform: uppercase;
+  vertical-align: middle;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn:hover {
+  background-color: #2bbbad;
+}
+
+.btn-flat {
+  background-color: transparent;
+  color: #26a69a;
+  box-shadow: none;
+}
+
+.btn-flat:hover {
+  background-color: rgba(0,0,0,0.1);
+}
+
+.btn-floating {
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  font-size: 1.6rem;
+  line-height: 56px;
+}
+
+.btn-small {
+  height: 32px;
+  line-height: 32px;
+  padding: 0 16px;
+  font-size: 0.8rem;
+}
+
+.btn-large {
+  height: 54px;
+  line-height: 54px;
+  padding: 0 28px;
+  font-size: 1rem;
+}
+
+.btn.disabled {
+  background-color: #DFDFDF !important;
+  color: #9F9F9F !important;
+  cursor: default;
+}
+
+/* 颜色变体 */
+.btn.red { background-color: #f44336; }
+.btn.red:hover { background-color: #d32f2f; }
+.btn.pink { background-color: #e91e63; }
+.btn.pink:hover { background-color: #c2185b; }
+.btn.purple { background-color: #9c27b0; }
+.btn.purple:hover { background-color: #7b1fa2; }
+.btn.deep-purple { background-color: #673ab7; }
+.btn.deep-purple:hover { background-color: #512da8; }
+.btn.indigo { background-color: #3f51b5; }
+.btn.indigo:hover { background-color: #303f9f; }
+.btn.blue { background-color: #2196f3; }
+.btn.blue:hover { background-color: #1976d2; }
+.btn.light-blue { background-color: #03a9f4; }
+.btn.light-blue:hover { background-color: #0288d1; }
+.btn.cyan { background-color: #00bcd4; }
+.btn.cyan:hover { background-color: #0097a7; }
+.btn.teal { background-color: #009688; }
+.btn.teal:hover { background-color: #00796b; }
+.btn.green { background-color: #4caf50; }
+.btn.green:hover { background-color: #388e3c; }
+.btn.light-green { background-color: #8bc34a; }
+.btn.light-green:hover { background-color: #689f38; }
+.btn.lime { background-color: #cddc39; }
+.btn.lime:hover { background-color: #afb42b; }
+.btn.yellow { background-color: #ffeb3b; }
+.btn.yellow:hover { background-color: #f9a825; }
+.btn.amber { background-color: #ffc107; }
+.btn.amber:hover { background-color: #ff8f00; }
+.btn.orange { background-color: #ff9800; }
+.btn.orange:hover { background-color: #f57c00; }
+.btn.deep-orange { background-color: #ff5722; }
+.btn.deep-orange:hover { background-color: #e64a19; }
+.btn.brown { background-color: #795548; }
+.btn.brown:hover { background-color: #5d4037; }
+.btn.grey { background-color: #9e9e9e; }
+.btn.grey:hover { background-color: #757575; }
+.btn.blue-grey { background-color: #607d8b; }
+.btn.blue-grey:hover { background-color: #455a64; }
+
+/* 输入框样式 */
+.input-field {
+  position: relative;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.input-field input,
+.input-field textarea {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid #9e9e9e;
+  border-radius: 0;
+  outline: none;
+  height: 3rem;
+  width: 100%;
+  font-size: 16px;
+  margin: 0 0 8px 0;
+  padding: 0;
+  box-shadow: none;
+  box-sizing: content-box;
+  transition: all .3s;
+}
+
+.input-field input:focus,
+.input-field textarea:focus {
+  border-bottom: 1px solid #26a69a;
+  box-shadow: 0 1px 0 0 #26a69a;
+}
+
+.input-field input:focus + label,
+.input-field textarea:focus + label {
+  color: #26a69a;
+}
+
+.input-field input:focus + label:not(.label-icon).active,
+.input-field textarea:focus + label:not(.label-icon).active {
+  transform: translateY(-14px) scale(0.8);
+  transform-origin: 0 0;
+}
+
+.input-field label {
+  color: #9e9e9e;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  font-size: 16px;
+  cursor: text;
+  transition: color .2s ease-out, transform .2s ease-out;
+  transform-origin: 0% 100%;
+  text-align: initial;
+  transform: translateY(12px);
+}
+
+.input-field label.active {
+  transform: translateY(-14px) scale(0.8);
+  transform-origin: 0 0;
+}
+
+.input-field .helper-text {
+  position: relative;
+  min-height: 18px;
+  display: block;
+  font-size: 12px;
+  color: rgba(0,0,0,0.6);
+}
+
+.input-field .helper-text[data-error]:not([data-success]) {
+  color: #f44336;
+}
+
+.input-field .helper-text[data-success]:not([data-error]) {
+  color: #4caf50;
+}
+
+.input-field input.validate + label,
+.input-field textarea.validate + label {
+  width: 100%;
+  pointer-events: none;
+}
+
+.input-field input.validate:valid,
+.input-field textarea.validate:valid {
+  border-bottom: 1px solid #4caf50;
+  box-shadow: 0 1px 0 0 #4caf50;
+}
+
+.input-field input.validate:invalid,
+.input-field textarea.validate:invalid {
+  border-bottom: 1px solid #f44336;
+  box-shadow: 0 1px 0 0 #f44336;
+}
+
+.input-field input[type=search] {
+  display: block;
+  line-height: inherit;
+  padding-left: 4rem;
+  width: calc(100% - 4rem);
+}
+
+.input-field .prefix {
+  position: absolute;
+  width: 3rem;
+  font-size: 2rem;
+  transition: color .2s;
+  top: 0.5rem;
+}
+
+.input-field .prefix ~ input,
+.input-field .prefix ~ textarea {
+  margin-left: 3rem;
+  width: calc(100% - 3rem);
+}
+
+.input-field .prefix ~ label {
+  margin-left: 3rem;
+}
+
+/* 选择框样式 */
+.input-field select {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid #9e9e9e;
+  border-radius: 0;
+  outline: none;
+  height: 3rem;
+  width: 100%;
+  font-size: 16px;
+  margin: 0 0 8px 0;
+  padding: 0;
+  box-shadow: none;
+  box-sizing: content-box;
+  transition: all .3s;
+}
+
+.input-field select:focus {
+  border-bottom: 1px solid #26a69a;
+  box-shadow: 0 1px 0 0 #26a69a;
+}
+
+.input-field select:focus + label {
+  color: #26a69a;
+}
+
+.input-field select:focus + label:not(.label-icon).active {
+  transform: translateY(-14px) scale(0.8);
+  transform-origin: 0 0;
+}
+
+.input-field select.browser-default {
+  background-color: transparent;
+  border: 1px solid #9e9e9e;
+  border-radius: 4px;
+  padding: 0 8px;
+  height: 3rem;
+  line-height: 3rem;
+}
+
+.input-field select.browser-default:focus {
+  border: 1px solid #26a69a;
+  box-shadow: 0 0 0 1px #26a69a;
+}
+
+/* 复选框样式 */
+.checkbox {
+  position: relative;
+  display: inline-block;
+  margin: 0.5rem 0;
+}
+
+.checkbox input[type="checkbox"] {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.checkbox input[type="checkbox"] + label {
+  position: relative;
+  padding-left: 35px;
+  cursor: pointer;
+  display: inline-block;
+  height: 25px;
+  line-height: 25px;
+  font-size: 1rem;
+  transition: .28s ease;
+  user-select: none;
+}
+
+.checkbox input[type="checkbox"] + label:before,
+.checkbox input[type="checkbox"] + label:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 4px;
+  width: 16px;
+  height: 16px;
+  z-index: 0;
+  transition: .28s ease;
+}
+
+.checkbox input[type="checkbox"] + label:before {
+  border: 2px solid #5a5a5a;
+  border-radius: 1px;
+  background-color: transparent;
+}
+
+.checkbox input[type="checkbox"]:checked + label:before {
+  top: -4px;
+  left: -5px;
+  width: 12px;
+  height: 22px;
+  border-top: 2px solid transparent;
+  border-left: 2px solid transparent;
+  border-right: 2px solid #26a69a;
+  border-bottom: 2px solid #26a69a;
+  transform: rotate(40deg);
+  backface-visibility: hidden;
+  transform-origin: 100% 100%;
+}
+
+.checkbox input[type="checkbox"]:checked + label:after {
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #26a69a;
+  background-color: transparent;
+  z-index: 0;
+}
+
+/* 单选框样式 */
+.radio {
+  position: relative;
+  display: inline-block;
+  margin: 0.5rem 0;
+}
+
+.radio input[type="radio"] {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.radio input[type="radio"] + label {
+  position: relative;
+  padding-left: 35px;
+  cursor: pointer;
+  display: inline-block;
+  height: 25px;
+  line-height: 25px;
+  font-size: 1rem;
+  transition: .28s ease;
+  user-select: none;
+}
+
+.radio input[type="radio"] + label:before,
+.radio input[type="radio"] + label:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 4px;
+  width: 16px;
+  height: 16px;
+  z-index: 0;
+  transition: .28s ease;
+  border-radius: 50%;
+}
+
+.radio input[type="radio"] + label:before {
+  border: 2px solid #5a5a5a;
+  background-color: transparent;
+}
+
+.radio input[type="radio"]:checked + label:before {
+  border: 2px solid #26a69a;
+}
+
+.radio input[type="radio"]:checked + label:after {
+  border: 2px solid #26a69a;
+  background-color: #26a69a;
+  transform: scale(0.5);
+}
+
+/* 开关样式 */
+.switch {
+  position: relative;
+  display: inline-block;
+  margin: 0.5rem 0;
+}
+
+.switch input[type="checkbox"] {
+  opacity: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.switch input[type="checkbox"] + label {
+  position: relative;
+  padding-left: 60px;
+  cursor: pointer;
+  display: inline-block;
+  height: 25px;
+  line-height: 25px;
+  font-size: 1rem;
+  transition: .28s ease;
+  user-select: none;
+}
+
+.switch input[type="checkbox"] + label:before,
+.switch input[type="checkbox"] + label:after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: 4px;
+  width: 36px;
+  height: 14px;
+  z-index: 0;
+  transition: .28s ease;
+  border-radius: 14px;
+}
+
+.switch input[type="checkbox"] + label:before {
+  background-color: rgba(0,0,0,0.38);
+}
+
+.switch input[type="checkbox"] + label:after {
+  background-color: #f1f1f1;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  top: 2px;
+  left: 0;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.26);
+}
+
+.switch input[type="checkbox"]:checked + label:before {
+  background-color: rgba(38, 166, 154, 0.5);
+}
+
+.switch input[type="checkbox"]:checked + label:after {
+  background-color: #26a69a;
+  transform: translateX(16px);
+}
+
+/* 滑块样式 */
+.range-field {
+  position: relative;
+  margin: 0.5rem 0;
+}
+
+.range-field input[type="range"] {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.range-field input[type="range"] + .thumb {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  background: #26a69a;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.26);
+  transform: translateX(-50%);
+  transition: all 0.3s ease;
+}
+
+.range-field input[type="range"] + .thumb .value {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #26a69a;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.range-field .track {
+  position: absolute;
+  top: 15px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: #c0c0c0;
+  border-radius: 1px;
+}
+
+.range-field .track .active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #26a69a;
+  border-radius: 1px;
+}
+
+/* 卡片样式 */
+.card {
+  position: relative;
+  margin: 0.5rem 0 1rem 0;
+  background-color: #fff;
+  transition: box-shadow .25s;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px 0 rgba(0,0,0,0.16), 0 2px 10px 0 rgba(0,0,0,0.12);
+}
+
+.card .card-content {
+  padding: 24px;
+  border-radius: 0 0 2px 2px;
+}
+
+.card .card-title {
+  font-size: 24px;
+  font-weight: 300;
+  margin-bottom: 8px;
+}
+
+.card .card-action {
+  position: relative;
+  background-color: inherit;
+  border-top: 1px solid rgba(160,160,160,0.2);
+  padding: 16px 24px;
+}
+
+.card .card-action a {
+  color: #ffab40;
+  margin-right: 24px;
+  transition: color .3s ease;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.card .card-action a:hover {
+  color: #ffd8a6;
+}
+
+/* 列表样式 */
+.collection {
+  margin: 0.5rem 0 1rem 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.collection .collection-item {
+  background-color: #fff;
+  line-height: 1.5rem;
+  padding: 10px 20px;
+  margin: 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.collection .collection-item:last-child {
+  border-bottom: none;
+}
+
+.collection .collection-item.active {
+  background-color: #26a69a;
+  color: #eafaf9;
+}
+
+.collection .collection-item.avatar {
+  min-height: 84px;
+  padding-left: 72px;
+  position: relative;
+}
+
+.collection .collection-item.avatar .circle {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  left: 15px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.collection .collection-item.avatar .title {
+  font-size: 16px;
+  line-height: 42px;
+}
+
+.collection .collection-item.avatar p {
+  margin: 0;
+}
+
+.collection .collection-item.avatar .secondary-content {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+/* 徽章样式 */
+.badge {
+  display: inline-block;
+  padding: 0.25em 0.4em;
+  font-size: 75%;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.25rem;
+  background-color: #26a69a;
+  color: #fff;
+}
+
+.badge.new {
+  font-weight: 300;
+  font-size: 0.8rem;
+  color: #fff;
+  background-color: #26a69a;
+  border-radius: 2px;
+}
+
+.badge.new:after {
+  content: " new";
+}
+
+/* 头像样式 */
+.circle {
+  border-radius: 50%;
+}
+
+/* 工具提示样式 */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.tooltip .tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* 响应式设计 */
+@media only screen and (max-width: 600px) {
+  .btn {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  
+  .input-field {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .card {
+    margin: 0.25rem 0 0.5rem 0;
+  }
+}

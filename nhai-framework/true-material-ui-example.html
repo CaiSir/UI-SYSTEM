@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>真正的 Material UI 使用示例</title>
+    <!-- 使用 Material UI 的 CSS 框架 -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Material UI CSS 变量和基础样式 */
+        :root {
+            --mdc-theme-primary: #1976d2;
+            --mdc-theme-secondary: #dc004e;
+            --mdc-theme-surface: #fff;
+            --mdc-theme-background: #fafafa;
+            --mdc-theme-on-primary: #fff;
+            --mdc-theme-on-secondary: #fff;
+            --mdc-theme-on-surface: #000;
+            --mdc-theme-on-background: #000;
+        }
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--mdc-theme-background);
+        }
+        
+        /* Material Button 样式 */
+        .mdc-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            min-width: 64px;
+            height: 36px;
+            padding: 0 16px;
+            border: none;
+            border-radius: 4px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.02857em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+            outline: none;
+        }
+        
+        .mdc-button--raised {
+            background-color: var(--mdc-theme-primary);
+            color: var(--mdc-theme-on-primary);
+            box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2), 0px 2px 2px 0px rgba(0,0,0,0.14), 0px 1px 5px 0px rgba(0,0,0,0.12);
+        }
+        
+        .mdc-button--raised:hover {
+            box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12);
+        }
+        
+        .mdc-button--outlined {
+            background-color: transparent;
+            color: var(--mdc-theme-primary);
+            border: 1px solid var(--mdc-theme-primary);
+        }
+        
+        .mdc-button--text {
+            background-color: transparent;
+            color: var(--mdc-theme-primary);
+        }
+        
+        .mdc-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* Material TextField 样式 */
+        .mdc-text-field {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: 100%;
+            height: 56px;
+            margin: 8px 0;
+        }
+        
+        .mdc-text-field__input {
+            width: 100%;
+            height: 100%;
+            padding: 20px 16px 6px;
+            border: none;
+            border-bottom: 1px solid rgba(0,0,0,0.42);
+            background: transparent;
+            font-family: 'Roboto', sans-serif;
+            font-size: 1rem;
+            outline: none;
+            transition: border-bottom-color 0.2s ease-in-out;
+        }
+        
+        .mdc-text-field__input:focus {
+            border-bottom-color: var(--mdc-theme-primary);
+            border-bottom-width: 2px;
+        }
+        
+        .mdc-text-field__label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'Roboto', sans-serif;
+            font-size: 1rem;
+            color: rgba(0,0,0,0.6);
+            transition: all 0.2s ease-in-out;
+            pointer-events: none;
+        }
+        
+        .mdc-text-field__input:focus + .mdc-text-field__label,
+        .mdc-text-field__input:not(:placeholder-shown) + .mdc-text-field__label {
+            top: 8px;
+            font-size: 0.75rem;
+            color: var(--mdc-theme-primary);
+        }
+        
+        /* Material Card 样式 */
+        .mdc-card {
+            background-color: var(--mdc-theme-surface);
+            border-radius: 4px;
+            box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12);
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        
+        .mdc-card__content {
+            padding: 16px;
+        }
+        
+        .mdc-card__title {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin: 0 0 8px 0;
+            color: var(--mdc-theme-on-surface);
+        }
+        
+        .mdc-card__subtitle {
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.875rem;
+            color: rgba(0,0,0,0.6);
+            margin: 0 0 16px 0;
+        }
+        
+        .mdc-card__body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: var(--mdc-theme-on-surface);
+        }
+        
+        /* 布局样式 */
+        .demo-section {
+            margin: 32px 0;
+            padding: 24px;
+            background-color: var(--mdc-theme-surface);
+            border-radius: 8px;
+            box-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12);
+        }
+        
+        .demo-title {
+            font-family: 'Roboto', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin: 0 0 24px 0;
+            color: var(--mdc-theme-primary);
+        }
+        
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>真正的 Material UI 使用示例</h1>
+    <p>这个示例展示了如何使用真正的 Material Design 样式系统，而不是 React 组件库。</p>
+    
+    <div class="demo-section">
+        <h2 class="demo-title">Material Buttons</h2>
+        <div class="demo-grid">
+            <button class="mdc-button mdc-button--raised">Raised Button</button>
+            <button class="mdc-button mdc-button--outlined">Outlined Button</button>
+            <button class="mdc-button mdc-button--text">Text Button</button>
+            <button class="mdc-button mdc-button--raised" disabled>Disabled Button</button>
+        </div>
+    </div>
+    
+    <div class="demo-section">
+        <h2 class="demo-title">Material Text Fields</h2>
+        <div class="demo-grid">
+            <div class="mdc-text-field">
+                <input type="text" class="mdc-text-field__input" placeholder=" " id="name">
+                <label class="mdc-text-field__label" for="name">Name</label>
+            </div>
+            <div class="mdc-text-field">
+                <input type="email" class="mdc-text-field__input" placeholder=" " id="email">
+                <label class="mdc-text-field__label" for="email">Email</label>
+            </div>
+        </div>
+    </div>
+    
+    <div class="demo-section">
+        <h2 class="demo-title">Material Cards</h2>
+        <div class="mdc-card">
+            <div class="mdc-card__content">
+                <h3 class="mdc-card__title">Card Title</h3>
+                <p class="mdc-card__subtitle">Card Subtitle</p>
+                <p class="mdc-card__body">
+                    This is the card body text. It can contain any content and will wrap naturally.
+                    Material Design cards are used to display content and actions about a single subject.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 添加一些交互效果
+        document.querySelectorAll('.mdc-button').forEach(button => {
+            button.addEventListener('click', function() {
+                console.log('Button clicked:', this.textContent);
+            });
+        });
+        
+        document.querySelectorAll('.mdc-text-field__input').forEach(input => {
+            input.addEventListener('focus', function() {
+                console.log('Input focused:', this.id);
+            });
+        });
+    </script>
+</body>
+</html>

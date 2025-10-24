@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material 工具栏组件测试</title>
+    <link rel="stylesheet" href="src/components/materialComponents/materialize.css">
+    <link rel="stylesheet" href="src/components/materialComponents/toolbar/toolbar.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: #2196f3;
+            color: white;
+            padding: 16px 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 300;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-secondary {
+            background-color: white;
+            color: #2196f3;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .main-content {
+            height: calc(100vh - 64px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .toolbar-container {
+            flex: 1;
+            display: flex;
+        }
+        
+        .status-bar {
+            background-color: #424242;
+            color: white;
+            padding: 8px 16px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-item .material-icons {
+            font-size: 16px;
+        }
+        
+        .demo-controls {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 16px;
+            z-index: 1000;
+            min-width: 200px;
+        }
+        
+        .demo-controls h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        .control-group {
+            margin-bottom: 12px;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .control-group button {
+            width: 100%;
+            padding: 8px;
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .control-group button:hover {
+            background-color: #1976d2;
+        }
+        
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            max-width: 300px;
+            z-index: 1000;
+        }
+        
+        .info-panel h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+        }
+        
+        .info-panel p {
+            margin: 4px 0;
+            line-height: 1.4;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Material 工具栏组件测试</h1>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="toggleTheme()">
+                <i class="material-icons">dark_mode</i>
+                切换主题
+            </button>
+            <button class="btn btn-secondary" onclick="resetToolbar()">
+                <i class="material-icons">refresh</i>
+                重置
+            </button>
+            <button class="btn btn-secondary" onclick="exportDesign()">
+                <i class="material-icons">download</i>
+                导出
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="toolbar-container" id="toolbarContainer">
+            <!-- 工具栏将在这里渲染 -->
+        </div>
+        
+        <div class="status-bar">
+            <div class="status-item">
+                <i class="material-icons">info</i>
+                <span id="statusText">准备就绪</span>
+            </div>
+            <div class="status-item">
+                <i class="material-icons">widgets</i>
+                <span id="componentCount">组件数量: 0</span>
+            </div>
+            <div class="status-item">
+                <i class="material-icons">schedule</i>
+                <span id="lastAction">最后操作: 无</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-controls">
+        <h3>演示控制</h3>
+        
+        <div class="control-group">
+            <label>工具栏类型</label>
+            <select id="toolbarType" onchange="switchToolbarType()">
+                <option value="basic">基础工具栏</option>
+                <option value="advanced">高级工具栏</option>
+                <option value="form">表单设计器</option>
+                <option value="dashboard">仪表板设计器</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>主题</label>
+            <select id="themeSelect" onchange="changeTheme()">
+                <option value="light">浅色主题</option>
+                <option value="dark">深色主题</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>功能开关</label>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="enableDragDrop" checked onchange="toggleDragDrop()">
+                    <span>拖拽功能</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="enableSearch" checked onchange="toggleSearch()">
+                    <span>搜索功能</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="enableCategories" checked onchange="toggleCategories()">
+                    <span>分类显示</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <button onclick="clearAllComponents()">清空所有组件</button>
+        </div>
+        
+        <div class="control-group">
+            <button onclick="showComponentList()">显示组件列表</button>
+        </div>
+    </div>
+
+    <div class="info-panel" id="infoPanel">
+        <h4>使用说明</h4>
+        <p>1. 从左侧工具栏拖拽组件到预览区域</p>
+        <p>2. 点击组件进行选择和编辑</p>
+        <p>3. 使用右侧控制面板调整设置</p>
+        <p>4. 支持多种工具栏类型和主题</p>
+    </div>
+
+    <script type="module">
+        // 这里将加载工具栏组件
+        console.log('Material 工具栏组件测试页面加载完成')
+        
+        // 模拟工具栏初始化
+        window.toolbarInstance = null
+        
+        // 初始化工具栏
+        function initToolbar() {
+            console.log('初始化工具栏...')
+            updateStatus('工具栏初始化中...')
+            
+            // 模拟创建工具栏
+            setTimeout(() => {
+                updateStatus('工具栏初始化完成')
+                updateComponentCount(0)
+            }, 1000)
+        }
+        
+        // 更新状态
+        function updateStatus(message) {
+            document.getElementById('statusText').textContent = message
+            document.getElementById('lastAction').textContent = `最后操作: ${message}`
+        }
+        
+        // 更新组件数量
+        function updateComponentCount(count) {
+            document.getElementById('componentCount').textContent = `组件数量: ${count}`
+        }
+        
+        // 切换主题
+        window.toggleTheme = function() {
+            const currentTheme = document.getElementById('themeSelect').value
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light'
+            document.getElementById('themeSelect').value = newTheme
+            changeTheme()
+        }
+        
+        // 改变主题
+        window.changeTheme = function() {
+            const theme = document.getElementById('themeSelect').value
+            const toolbarContainer = document.getElementById('toolbarContainer')
+            
+            if (theme === 'dark') {
+                toolbarContainer.classList.add('dark')
+            } else {
+                toolbarContainer.classList.remove('dark')
+            }
+            
+            updateStatus(`切换到${theme === 'dark' ? '深色' : '浅色'}主题`)
+        }
+        
+        // 切换工具栏类型
+        window.switchToolbarType = function() {
+            const type = document.getElementById('toolbarType').value
+            const typeNames = {
+                'basic': '基础工具栏',
+                'advanced': '高级工具栏',
+                'form': '表单设计器',
+                'dashboard': '仪表板设计器'
+            }
+            
+            updateStatus(`切换到${typeNames[type]}`)
+        }
+        
+        // 切换拖拽功能
+        window.toggleDragDrop = function() {
+            const enabled = document.getElementById('enableDragDrop').checked
+            updateStatus(`拖拽功能${enabled ? '启用' : '禁用'}`)
+        }
+        
+        // 切换搜索功能
+        window.toggleSearch = function() {
+            const enabled = document.getElementById('enableSearch').checked
+            updateStatus(`搜索功能${enabled ? '启用' : '禁用'}`)
+        }
+        
+        // 切换分类显示
+        window.toggleCategories = function() {
+            const enabled = document.getElementById('enableCategories').checked
+            updateStatus(`分类显示${enabled ? '启用' : '禁用'}`)
+        }
+        
+        // 重置工具栏
+        window.resetToolbar = function() {
+            updateStatus('重置工具栏...')
+            setTimeout(() => {
+                updateStatus('工具栏已重置')
+                updateComponentCount(0)
+            }, 500)
+        }
+        
+        // 导出设计
+        window.exportDesign = function() {
+            updateStatus('导出设计中...')
+            setTimeout(() => {
+                updateStatus('设计已导出')
+            }, 1000)
+        }
+        
+        // 清空所有组件
+        window.clearAllComponents = function() {
+            updateStatus('清空所有组件...')
+            setTimeout(() => {
+                updateStatus('所有组件已清空')
+                updateComponentCount(0)
+            }, 500)
+        }
+        
+        // 显示组件列表
+        window.showComponentList = function() {
+            const components = [
+                '按钮 (Button)',
+                '输入框 (Input)',
+                '选择框 (Select)',
+                '复选框 (Checkbox)',
+                '单选框 (Radio)',
+                '开关 (Switch)',
+                '滑块 (Slider)',
+                '评分 (Rate)',
+                '表格 (Table)',
+                '列表 (List)',
+                '卡片 (Card)',
+                '标签 (Tag)',
+                '徽章 (Badge)',
+                '头像 (Avatar)',
+                '容器 (Container)',
+                '网格 (Grid)',
+                '分割面板 (SplitPanel)',
+                '折叠面板 (Collapse)',
+                '菜单 (Menu)',
+                '标签页 (Tabs)',
+                '面包屑 (Breadcrumb)',
+                '消息 (Message)',
+                '对话框 (Dialog)',
+                '加载 (Loading)',
+                '工具提示 (Tooltip)',
+                '颜色选择器 (ColorPicker)'
+            ]
+            
+            alert(`支持的组件 (${components.length}个):\n\n${components.join('\n')}`)
+            updateStatus('显示组件列表')
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initToolbar()
+            
+            // 5秒后隐藏信息面板
+            setTimeout(() => {
+                document.getElementById('infoPanel').classList.add('hidden')
+            }, 5000)
+        })
+        
+        // 模拟组件添加事件
+        function simulateComponentAdd() {
+            const count = Math.floor(Math.random() * 10) + 1
+            updateComponentCount(count)
+            updateStatus(`添加了${count}个组件`)
+        }
+        
+        // 模拟组件选择事件
+        function simulateComponentSelect() {
+            updateStatus('选择了组件')
+        }
+        
+        // 模拟组件删除事件
+        function simulateComponentDelete() {
+            const count = Math.floor(Math.random() * 5)
+            updateComponentCount(count)
+            updateStatus(`删除了组件`)
+        }
+        
+        // 添加一些模拟事件
+        setInterval(() => {
+            if (Math.random() < 0.1) {
+                simulateComponentAdd()
+            }
+        }, 3000)
+    </script>
+</body>
+</html>

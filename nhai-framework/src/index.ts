@@ -58,8 +58,7 @@ export type {
 } from './core/NHAICore'
 
 // 导出工厂
-export type { NHAIObjectFactory } from './factory/NHAIFactory'
-export { nhaiFactory } from './factory/NHAIFactory'
+export { NHAIObjectFactory, nhaiFactory } from './factory/NHAIFactory'
 
 // 导出适配器
 export { VanillaAdapter, vanillaAdapter } from './adapters/VanillaAdapter'
@@ -68,10 +67,10 @@ export { ReactAdapter, reactAdapter, useNHAI as useNHAIReact, withNHAI } from '.
 export { SvelteAdapter, svelteAdapter, createNHAIStore, nhaiAction } from './adapters/SvelteAdapter'
 
 // 导出动态组件系统
-export { NHAIDynamicComponents } from './components/DynamicComponents'
+export { NHAIDynamicComponents } from './components/cusComponents/DynamicComponents'
 
 // 导出现代化组件
-export { ModernNHAIButton, ModernButtonExample } from './components/NHAIButton/ModernNHAIButton'
+export { ModernNHAIButton, ModernButtonExample } from './components/cusComponents/NHAIButton/ModernNHAIButton'
 
 // 导出组件组合器
 export { 
@@ -79,4 +78,9 @@ export {
   ComponentRegistry,
   PropertyManager,
   TemplateManager
-} from './components/professional/NHAIComponentComposer'
+} from './components/cusComponents/professional/NHAIComponentComposer'
+
+// 导出 Material 组件
+export { MaterialMenuBar } from './components/materialComponents/menubar'
+export { MenuItemType } from './components/materialComponents/menubar'
+export type { MenuBarConfig, MenuBarLayoutType } from './components/materialComponents/menubar'

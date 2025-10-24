@@ -1,10 +1,7 @@
-import { NHAIFrameworkRegistry, VanillaAdapter, NHAIComponentComposer } from 'nhai-framework'
-import './style.css'
+import { MaterialMenuBar, MenuItemType, NHAIFrameworkRegistry, NHAIObjectFactory, VanillaAdapter } from 'nhai-framework'
 
 // 初始化应用
 class FreeDesignApp {
-  private composer: NHAIComponentComposer | null = null
-
   constructor() {
     this.init()
   }
@@ -20,133 +17,111 @@ class FreeDesignApp {
     const currentAdapter = NHAIFrameworkRegistry.use('vanilla')
     console.log('✓ 当前适配器已设置:', currentAdapter.name)
     
-    // 验证适配器是否正确设置
-    const verifyAdapter = NHAIFrameworkRegistry.getCurrent()
-    console.log('✓ 验证当前适配器:', verifyAdapter ? verifyAdapter.name : 'null')
+    // 尝试直接创建 MaterialMenuBar 实例
+    let menuBar: MaterialMenuBar | undefined
+    try {
+      console.log('正在创建 MaterialMenuBar...')
+      console.log('MaterialMenuBar 构造函数:', MaterialMenuBar)
+      console.log('MaterialMenuBar 类型:', typeof MaterialMenuBar)
+      
+      // 检查 MaterialMenuBar 是否为函数
+      if (typeof MaterialMenuBar !== 'function') {
+        console.error('❌ MaterialMenuBar 不是一个函数:', typeof MaterialMenuBar)
+        return
+      }
+      
+      menuBar = new MaterialMenuBar()
+      console.log('✓ Material 菜单栏已创建:', menuBar)
+      console.log('✓ MaterialMenuBar 类型:', typeof menuBar)
+      console.log('✓ MaterialMenuBar 构造函数:', menuBar.constructor.name)
+      
+      // 检查 menuBar 是否为 undefined
+      if (!menuBar) {
+        console.error('❌ MaterialMenuBar 创建失败，返回了 undefined')
+        return
+      }
+      
+      // 测试基本方法
+      console.log('测试 horizontal 方法...')
+      const result = menuBar.horizontal()
+      console.log('horizontal 方法返回:', result)
+      console.log('horizontal 方法返回类型:', typeof result)
+      
+    } catch (error) {
+      console.error('❌ MaterialMenuBar 创建失败:', error)
+      return
+    }
     
-    // 创建组件组合器
-    this.composer = new NHAIComponentComposer({
-      rootPath: '/components',
-      allowedTypes: ['button', 'input', 'container', 'layout'],
-      enableDragDrop: true,
-      enablePropertyEdit: true,
-      enableTemplateSave: true,
-      enableMultiSelect: true,
-      showToolbar: true,
-      showComponentPalette: true,
-      showPropertyPanel: true,
-      canvasWidth: 800,
-      canvasHeight: 600,
-      gridSize: 20,
-      snapToGrid: true
-    })
+    // 确保 menuBar 已定义
+    if (!menuBar) {
+      console.error('❌ menuBar 未定义')
+      return
+    }
+    
+    // 测试菜单栏功能
+    if (menuBar && typeof (menuBar as any).addMenuItem === 'function') {
+      console.log('开始配置菜单栏...')
+      const menuBar = NHAIObjectFactory.createMaterialMenuBar();
 
-    // 渲染到页面
-    this.render()
-    
-    // 设置事件监听
-    this.setupEventListeners()
+      menuBar.horizontal();
+      menuBar.setWidth('100%');
+      menuBar.setBackgroundColor('#ffffff');
+      menuBar.setShadow(true);
+      menuBar.setHeight(60);
+      
+      // 添加下拉菜单
+      menuBar.addSubmenu('file', '文件', [
+        { id: 'new', type: MenuItemType.ITEM, label: '新建', shortcut: 'Ctrl+N', onClick: () => console.log('新建文件') },
+        { id: 'open', type: MenuItemType.ITEM, label: '打开', shortcut: 'Ctrl+O', onClick: () => console.log('打开文件') },
+        { id: 'save', type: MenuItemType.ITEM, label: '保存', shortcut: 'Ctrl+S', onClick: () => console.log('保存文件') },
+        // { id: 'sep1', type: MenuItemType.SEPARATOR },
+        { id: 'exit', type: MenuItemType.ITEM, label: '退出', onClick: () => console.log('退出应用') }
+      ]);
+      
+      menuBar.addSubmenu('edit', '编辑', [
+        { id: 'undo', type: MenuItemType.ITEM, label: '撤销', shortcut: 'Ctrl+Z', onClick: () => console.log('撤销操作') },
+        { id: 'redo', type: MenuItemType.ITEM, label: '重做', shortcut: 'Ctrl+Y', onClick: () => console.log('重做操作') },
+        // { id: 'sep2', type: MenuItemType.SEPARATOR },
+        { id: 'cut', type: MenuItemType.ITEM, label: '剪切', shortcut: 'Ctrl+X', onClick: () => console.log('剪切内容') },
+        { id: 'copy', type: MenuItemType.ITEM, label: '复制', shortcut: 'Ctrl+C', onClick: () => console.log('复制内容') },
+        { id: 'paste', type: MenuItemType.ITEM, label: '粘贴', shortcut: 'Ctrl+V', onClick: () => console.log('粘贴内容') }
+      ]);
+      
+      menuBar.addMenuItem('view', '视图', () => console.log('视图菜单'));
+      // menuBar.addSeparator('sep1');
+      menuBar.addMenuItem('help', '帮助', () => console.log('帮助菜单'));
+
+      console.log('菜单栏:', menuBar) 
+
+      console.log('✓ 菜单栏配置完成')
+      
+      // 渲染菜单栏到页面
+      this.renderMenuBar(menuBar)
+    } else {
+      console.error('❌ menuBar 对象无效或 addMenuItem 方法不存在')
+      console.log('menuBar:', menuBar)
+      console.log('addMenuItem 方法:', typeof (menuBar as any)?.addMenuItem)
+      console.log('menuBar 类型:', typeof menuBar)
+      if (menuBar) {
+        console.log('menuBar 的方法:', Object.getOwnPropertyNames(Object.getPrototypeOf(menuBar)))
+      }
+    }
     
     console.log('NHAI Free Design 初始化完成')
   }
 
-  private render(): void {
+  private renderMenuBar(menuBar: MaterialMenuBar): void {
     const appContainer = document.getElementById('app')
-    if (!appContainer || !this.composer) return
+    if (!appContainer) return
 
     // 清空容器
     appContainer.innerHTML = ''
     
-    // 渲染组件组合器
-    const element = this.composer.render()
+    // 渲染菜单栏
+    const element = menuBar.render()
     appContainer.appendChild(element)
-  }
-
-  private updateCanvas(): void {
-    if (!this.composer) return
     
-    // 查找画布元素
-    const canvas = document.querySelector('.nhai-composer-canvas') as HTMLElement
-    if (!canvas) {
-      console.warn('画布元素未找到')
-      return
-    }
-
-    // 清空画布
-    canvas.innerHTML = ''
-    
-    // 渲染所有组件实例
-    const components = this.composer.getAllComponents()
-    console.log('正在渲染', components.length, '个组件到画布')
-    
-    components.forEach(component => {
-      this.renderComponentToCanvas(component, canvas)
-    })
-  }
-
-  private renderComponentToCanvas(component: any, canvas: HTMLElement): void {
-    // 直接使用 document.createElement 创建元素
-    const element = document.createElement('div')
-    
-    // 设置样式和属性
-    element.className = 'nhai-component-instance'
-    element.style.position = 'absolute'
-    element.style.left = `${component.position.x}px`
-    element.style.top = `${component.position.y}px`
-    element.style.width = `${component.size.width}px`
-    element.style.height = `${component.size.height}px`
-    element.style.border = '1px solid #1890ff'
-    element.style.borderRadius = '4px'
-    element.style.background = '#f0f8ff'
-    element.style.display = 'flex'
-    element.style.alignItems = 'center'
-    element.style.justifyContent = 'center'
-    element.style.cursor = 'pointer'
-    element.style.fontSize = '12px'
-    element.style.color = '#1890ff'
-    
-    // 设置文本内容
-    element.textContent = `${component.definition.name} (${component.id.slice(-6)})`
-    
-    // 添加点击事件
-    element.addEventListener('click', () => {
-      console.log('点击了组件:', component.id)
-      // 这里可以添加选择组件的逻辑
-    })
-
-    canvas.appendChild(element)
-  }
-
-  private setupEventListeners(): void {
-    if (!this.composer) return
-
-    // 监听组件添加事件
-    this.composer.addEventListener('componentAdded', (data) => {
-      console.log('组件已添加:', data.component)
-    })
-
-    // 监听属性更新事件
-    this.composer.addEventListener('componentPropsUpdated', (data) => {
-      console.log('组件属性已更新:', data.component, data.props)
-    })
-
-    // 监听模板保存事件
-    this.composer.addEventListener('templateSaved', (data) => {
-      console.log('模板已保存:', data.template)
-      alert(`模板 "${data.template.name}" 已保存成功！`)
-    })
-
-    // 监听模板加载事件
-    this.composer.addEventListener('templateLoaded', (data) => {
-      console.log('模板已加载:', data.template, data.components)
-      alert(`模板 "${data.template.name}" 已加载成功！`)
-    })
-
-    // 监听渲染更新事件
-    this.composer.addEventListener('renderUpdate', (data) => {
-      console.log('需要重新渲染:', data.components.length, '个组件')
-      this.updateCanvas()
-    })
+    console.log('✓ 菜单栏已渲染到页面')
   }
 }
 

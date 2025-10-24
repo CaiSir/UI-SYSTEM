@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material 工具栏命令式API测试</title>
+    <link rel="stylesheet" href="src/components/materialComponents/materialize.css">
+    <link rel="stylesheet" href="src/components/materialComponents/toolbar/toolbar.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background-color: #2196f3;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 8px 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .demo-section h2 {
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            color: #333;
+            border-bottom: 2px solid #2196f3;
+            padding-bottom: 8px;
+        }
+        
+        .demo-section p {
+            margin: 0 0 16px 0;
+            color: #666;
+        }
+        
+        .toolbar-container {
+            margin: 16px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .code-block {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #2196f3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1976d2;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e0a800;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .form-group {
+            margin: 12px 0;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+        }
+        
+        .status {
+            background-color: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 16px 0;
+            color: #2e7d32;
+        }
+        
+        .error {
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 16px 0;
+            color: #c62828;
+        }
+        
+        .info {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 16px 0;
+            color: #1565c0;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .feature-list li::before {
+            content: '✓';
+            color: #4caf50;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Material 工具栏命令式API测试</h1>
+            <p>通过命令式API动态添加控件和自定义布局的工具栏组件</p>
+        </div>
+
+        <div class="demo-section">
+            <h2>🚀 基础工具栏</h2>
+            <p>最简单的工具栏示例，包含基本的按钮和分隔符</p>
+            <div class="toolbar-container" id="basicToolbar">
+                <!-- 基础工具栏将在这里渲染 -->
+            </div>
+            <div class="code-block">
+                <pre>// 创建基础工具栏
+const toolbar = NHAIObjectFactory.createMaterialToolbar()
+toolbar
+  .horizontal()
+  .setAlignment(ToolbarAlignment.START)
+  .addButton('save', '保存', () => console.log('保存'))
+  .addButton('cancel', '取消', () => console.log('取消'))
+  .addSeparator('sep1')
+  .addIconButton('add', 'add', () => console.log('添加'))</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📝 表单工具栏</h2>
+            <p>包含搜索框和选择框的表单操作工具栏</p>
+            <div class="toolbar-container" id="formToolbar">
+                <!-- 表单工具栏将在这里渲染 -->
+            </div>
+            <div class="code-block">
+                <pre>// 创建表单工具栏
+const formToolbar = NHAIObjectFactory.createMaterialToolbar()
+formToolbar
+  .horizontal()
+  .setAlignment(ToolbarAlignment.SPACE_BETWEEN)
+  .addButton('new', '新建', () => console.log('新建'))
+  .addInput('search', '搜索...', (value) => console.log('搜索:', value))
+  .addSelect('filter', options, (value) => console.log('过滤:', value))</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>✏️ 编辑器工具栏</h2>
+            <p>富文本编辑器的工具栏，包含格式化按钮</p>
+            <div class="toolbar-container" id="editorToolbar">
+                <!-- 编辑器工具栏将在这里渲染 -->
+            </div>
+            <div class="code-block">
+                <pre>// 创建编辑器工具栏
+const editorToolbar = NHAIObjectFactory.createMaterialToolbar()
+editorToolbar
+  .horizontal()
+  .addIconButton('bold', 'format_bold', () => console.log('粗体'))
+  .addIconButton('italic', 'format_italic', () => console.log('斜体'))
+  .addIconButton('underline', 'format_underlined', () => console.log('下划线'))
+  .addSeparator('format-sep')
+  .addIconButton('align-left', 'format_align_left', () => console.log('左对齐'))</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📊 数据表格工具栏</h2>
+            <p>数据表格的操作工具栏，包含过滤和导出功能</p>
+            <div class="toolbar-container" id="dataTableToolbar">
+                <!-- 数据表格工具栏将在这里渲染 -->
+            </div>
+            <div class="code-block">
+                <pre>// 创建数据表格工具栏
+const dataToolbar = NHAIObjectFactory.createMaterialToolbar()
+dataToolbar
+  .horizontal()
+  .setAlignment(ToolbarAlignment.SPACE_BETWEEN)
+  .addButton('add', '添加记录', () => console.log('添加记录'))
+  .addSelect('filter', filterOptions, (value) => console.log('过滤:', value))
+  .addInput('search', '搜索...', (value) => console.log('搜索:', value))
+  .addIconButton('export', 'download', () => console.log('导出'))</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📱 垂直工具栏</h2>
+            <p>垂直布局的侧边栏工具栏</p>
+            <div class="toolbar-container" id="verticalToolbar" style="height: 300px; width: 80px;">
+                <!-- 垂直工具栏将在这里渲染 -->
+            </div>
+            <div class="code-block">
+                <pre>// 创建垂直工具栏
+const verticalToolbar = NHAIObjectFactory.createMaterialToolbar()
+verticalToolbar
+  .vertical()
+  .setAlignment(ToolbarAlignment.CENTER)
+  .setWidth(60)
+  .setTheme('dark')
+  .addIconButton('home', 'home', () => console.log('首页'))
+  .addIconButton('dashboard', 'dashboard', () => console.log('仪表板'))
+  .addIconButton('users', 'people', () => console.log('用户'))</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🔧 动态工具栏</h2>
+            <p>演示动态添加、隐藏、显示和禁用功能</p>
+            <div class="toolbar-container" id="dynamicToolbar">
+                <!-- 动态工具栏将在这里渲染 -->
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="addDynamicButton()">添加按钮</button>
+                <button class="btn btn-secondary" onclick="hideDynamicButton()">隐藏按钮</button>
+                <button class="btn btn-success" onclick="showDynamicButton()">显示按钮</button>
+                <button class="btn btn-warning" onclick="disableDynamicButton()">禁用按钮</button>
+                <button class="btn btn-danger" onclick="enableDynamicButton()">启用按钮</button>
+            </div>
+            <div class="code-block">
+                <pre>// 动态操作示例
+toolbar.addButton('dynamic', '动态按钮', () => console.log('动态按钮'))
+toolbar.hideItem('dynamic')
+toolbar.showItem('dynamic')
+toolbar.disableItem('dynamic')
+toolbar.enableItem('dynamic')</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎨 布局控制</h2>
+            <p>演示不同的布局类型和对齐方式</p>
+            <div class="toolbar-container" id="layoutToolbar">
+                <!-- 布局工具栏将在这里渲染 -->
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="setHorizontalLayout()">水平布局</button>
+                <button class="btn btn-primary" onclick="setVerticalLayout()">垂直布局</button>
+                <button class="btn btn-primary" onclick="setGridLayout()">网格布局</button>
+                <button class="btn btn-secondary" onclick="setStartAlignment()">开始对齐</button>
+                <button class="btn btn-secondary" onclick="setCenterAlignment()">居中对齐</button>
+                <button class="btn btn-secondary" onclick="setEndAlignment()">结束对齐</button>
+            </div>
+            <div class="code-block">
+                <pre>// 布局控制示例
+toolbar.horizontal()  // 或 .vertical() 或 .grid(4)
+toolbar.setAlignment(ToolbarAlignment.CENTER)
+toolbar.setSpacing(16)
+toolbar.setPadding(20)</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>🎯 主题切换</h2>
+            <p>演示浅色和深色主题切换</p>
+            <div class="toolbar-container" id="themeToolbar">
+                <!-- 主题工具栏将在这里渲染 -->
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="setLightTheme()">浅色主题</button>
+                <button class="btn btn-secondary" onclick="setDarkTheme()">深色主题</button>
+            </div>
+            <div class="code-block">
+                <pre>// 主题切换示例
+toolbar.setTheme('light')
+toolbar.setTheme('dark')
+toolbar.setBackgroundColor('#2c3e50')
+toolbar.setBorderColor('#34495e')</pre>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📋 功能特性</h2>
+            <div class="grid">
+                <div>
+                    <h3>布局类型</h3>
+                    <ul class="feature-list">
+                        <li>水平布局 (Horizontal)</li>
+                        <li>垂直布局 (Vertical)</li>
+                        <li>网格布局 (Grid)</li>
+                        <li>弹性布局 (Flex)</li>
+                        <li>自定义布局 (Custom)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>对齐方式</h3>
+                    <ul class="feature-list">
+                        <li>开始对齐 (Start)</li>
+                        <li>居中对齐 (Center)</li>
+                        <li>结束对齐 (End)</li>
+                        <li>两端对齐 (Space Between)</li>
+                        <li>环绕对齐 (Space Around)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>组件类型</h3>
+                    <ul class="feature-list">
+                        <li>按钮 (Button)</li>
+                        <li>图标按钮 (Icon Button)</li>
+                        <li>输入框 (Input)</li>
+                        <li>选择框 (Select)</li>
+                        <li>分隔符 (Separator)</li>
+                        <li>标签 (Label)</li>
+                        <li>自定义组件</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>动态操作</h3>
+                    <ul class="feature-list">
+                        <li>添加组件</li>
+                        <li>移除组件</li>
+                        <li>更新组件</li>
+                        <li>显示/隐藏组件</li>
+                        <li>启用/禁用组件</li>
+                        <li>重新排序组件</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📖 使用指南</h2>
+            <div class="info">
+                <h4>快速开始</h4>
+                <p>1. 创建工具栏：<code>const toolbar = NHAIObjectFactory.createMaterialToolbar()</code></p>
+                <p>2. 配置布局：<code>toolbar.horizontal().setAlignment(ToolbarAlignment.START)</code></p>
+                <p>3. 添加组件：<code>toolbar.addButton('id', '文本', onClick)</code></p>
+                <p>4. 渲染到页面：<code>document.getElementById('container').appendChild(toolbar.render())</code></p>
+            </div>
+            
+            <div class="status">
+                <h4>最佳实践</h4>
+                <p>• 使用有意义的ID标识每个组件</p>
+                <p>• 合理使用分隔符组织相关功能</p>
+                <p>• 根据屏幕尺寸选择合适的布局类型</p>
+                <p>• 提供适当的工具提示和标签</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // 模拟工具栏功能
+        console.log('Material 工具栏命令式API测试页面加载完成')
+        
+        // 模拟工具栏实例
+        window.toolbars = {}
+        
+        // 初始化所有工具栏
+        function initToolbars() {
+            console.log('初始化工具栏...')
+            
+            // 模拟渲染工具栏
+            const toolbarContainers = [
+                'basicToolbar', 'formToolbar', 'editorToolbar', 
+                'dataTableToolbar', 'verticalToolbar', 'dynamicToolbar',
+                'layoutToolbar', 'themeToolbar'
+            ]
+            
+            toolbarContainers.forEach(containerId => {
+                const container = document.getElementById(containerId)
+                if (container) {
+                    container.innerHTML = createMockToolbar(containerId)
+                }
+            })
+            
+            console.log('工具栏初始化完成')
+        }
+        
+        // 创建模拟工具栏
+        function createMockToolbar(type) {
+            const toolbars = {
+                basicToolbar: `
+                    <div class="material-toolbar toolbar-horizontal toolbar-start toolbar-light">
+                        <div class="toolbar-item"><button class="btn">保存</button></div>
+                        <div class="toolbar-item"><button class="btn">取消</button></div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">add</i></button></div>
+                    </div>
+                `,
+                formToolbar: `
+                    <div class="material-toolbar toolbar-horizontal toolbar-space-between toolbar-light">
+                        <div class="toolbar-item"><button class="btn">新建</button></div>
+                        <div class="toolbar-item"><button class="btn">打开</button></div>
+                        <div class="toolbar-item"><button class="btn">保存</button></div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-item"><input placeholder="搜索表单..."></div>
+                        <div class="toolbar-item"><select><option>全部</option><option>活跃</option></select></div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">settings</i></button></div>
+                    </div>
+                `,
+                editorToolbar: `
+                    <div class="material-toolbar toolbar-horizontal toolbar-start toolbar-light">
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">format_bold</i></button></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">format_italic</i></button></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">format_underlined</i></button></div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">format_align_left</i></button></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">format_align_center</i></button></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">format_align_right</i></button></div>
+                    </div>
+                `,
+                dataTableToolbar: `
+                    <div class="material-toolbar toolbar-horizontal toolbar-space-between toolbar-light">
+                        <div class="toolbar-item"><button class="btn">添加记录</button></div>
+                        <div class="toolbar-item"><button class="btn">编辑</button></div>
+                        <div class="toolbar-item"><button class="btn">删除</button></div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-item"><select><option>全部</option><option>活跃</option></select></div>
+                        <div class="toolbar-item"><input placeholder="搜索..."></div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">refresh</i></button></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">download</i></button></div>
+                    </div>
+                `,
+                verticalToolbar: `
+                    <div class="material-toolbar toolbar-vertical toolbar-center toolbar-dark" style="height: 300px; width: 80px;">
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">home</i></button></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">dashboard</i></button></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">people</i></button></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">inventory</i></button></div>
+                        <div class="toolbar-separator"></div>
+                        <div class="toolbar-item"><button class="btn"><i class="material-icons">settings</i></button></div>
+                    </div>
+                `,
+                dynamicToolbar: `
+                    <div class="material-toolbar toolbar-horizontal toolbar-start toolbar-light">
+                        <div class="toolbar-item"><button class="btn">开始</button></div>
+                        <div class="toolbar-item"><button class="btn">暂停</button></div>
+                        <div class="toolbar-item"><button class="btn">停止</button></div>
+                        <div class="toolbar-item" id="dynamic-item" style="display: none;"><button class="btn">动态按钮</button></div>
+                    </div>
+                `,
+                layoutToolbar: `
+                    <div class="material-toolbar toolbar-horizontal toolbar-start toolbar-light">
+                        <div class="toolbar-item"><button class="btn">按钮1</button></div>
+                        <div class="toolbar-item"><button class="btn">按钮2</button></div>
+                        <div class="toolbar-item"><button class="btn">按钮3</button></div>
+                        <div class="toolbar-item"><button class="btn">按钮4</button></div>
+                    </div>
+                `,
+                themeToolbar: `
+                    <div class="material-toolbar toolbar-horizontal toolbar-center toolbar-light">
+                        <div class="toolbar-item"><button class="btn">浅色主题</button></div>
+                        <div class="toolbar-item"><button class="btn">深色主题</button></div>
+                        <div class="toolbar-item"><button class="btn">自定义颜色</button></div>
+                    </div>
+                `
+            }
+            
+            return toolbars[type] || '<div class="material-toolbar">工具栏</div>'
+        }
+        
+        // 动态工具栏控制函数
+        window.addDynamicButton = function() {
+            const container = document.getElementById('dynamicToolbar')
+            const dynamicItem = container.querySelector('#dynamic-item')
+            if (dynamicItem) {
+                dynamicItem.style.display = 'flex'
+                console.log('添加动态按钮')
+            }
+        }
+        
+        window.hideDynamicButton = function() {
+            const container = document.getElementById('dynamicToolbar')
+            const dynamicItem = container.querySelector('#dynamic-item')
+            if (dynamicItem) {
+                dynamicItem.style.display = 'none'
+                console.log('隐藏动态按钮')
+            }
+        }
+        
+        window.showDynamicButton = function() {
+            const container = document.getElementById('dynamicToolbar')
+            const dynamicItem = container.querySelector('#dynamic-item')
+            if (dynamicItem) {
+                dynamicItem.style.display = 'flex'
+                console.log('显示动态按钮')
+            }
+        }
+        
+        window.disableDynamicButton = function() {
+            const container = document.getElementById('dynamicToolbar')
+            const dynamicItem = container.querySelector('#dynamic-item')
+            if (dynamicItem) {
+                dynamicItem.classList.add('toolbar-item-disabled')
+                console.log('禁用动态按钮')
+            }
+        }
+        
+        window.enableDynamicButton = function() {
+            const container = document.getElementById('dynamicToolbar')
+            const dynamicItem = container.querySelector('#dynamic-item')
+            if (dynamicItem) {
+                dynamicItem.classList.remove('toolbar-item-disabled')
+                console.log('启用动态按钮')
+            }
+        }
+        
+        // 布局控制函数
+        window.setHorizontalLayout = function() {
+            const container = document.getElementById('layoutToolbar')
+            const toolbar = container.querySelector('.material-toolbar')
+            if (toolbar) {
+                toolbar.className = 'material-toolbar toolbar-horizontal toolbar-start toolbar-light'
+                console.log('设置为水平布局')
+            }
+        }
+        
+        window.setVerticalLayout = function() {
+            const container = document.getElementById('layoutToolbar')
+            const toolbar = container.querySelector('.material-toolbar')
+            if (toolbar) {
+                toolbar.className = 'material-toolbar toolbar-vertical toolbar-center toolbar-light'
+                toolbar.style.height = '200px'
+                console.log('设置为垂直布局')
+            }
+        }
+        
+        window.setGridLayout = function() {
+            const container = document.getElementById('layoutToolbar')
+            const toolbar = container.querySelector('.material-toolbar')
+            if (toolbar) {
+                toolbar.className = 'material-toolbar toolbar-grid toolbar-center toolbar-light'
+                toolbar.style.gridTemplateColumns = 'repeat(2, 1fr)'
+                console.log('设置为网格布局')
+            }
+        }
+        
+        window.setStartAlignment = function() {
+            const container = document.getElementById('layoutToolbar')
+            const toolbar = container.querySelector('.material-toolbar')
+            if (toolbar) {
+                toolbar.classList.remove('toolbar-center', 'toolbar-end')
+                toolbar.classList.add('toolbar-start')
+                console.log('设置为开始对齐')
+            }
+        }
+        
+        window.setCenterAlignment = function() {
+            const container = document.getElementById('layoutToolbar')
+            const toolbar = container.querySelector('.material-toolbar')
+            if (toolbar) {
+                toolbar.classList.remove('toolbar-start', 'toolbar-end')
+                toolbar.classList.add('toolbar-center')
+                console.log('设置为居中对齐')
+            }
+        }
+        
+        window.setEndAlignment = function() {
+            const container = document.getElementById('layoutToolbar')
+            const toolbar = container.querySelector('.material-toolbar')
+            if (toolbar) {
+                toolbar.classList.remove('toolbar-start', 'toolbar-center')
+                toolbar.classList.add('toolbar-end')
+                console.log('设置为结束对齐')
+            }
+        }
+        
+        // 主题控制函数
+        window.setLightTheme = function() {
+            const container = document.getElementById('themeToolbar')
+            const toolbar = container.querySelector('.material-toolbar')
+            if (toolbar) {
+                toolbar.classList.remove('toolbar-dark')
+                toolbar.classList.add('toolbar-light')
+                console.log('设置为浅色主题')
+            }
+        }
+        
+        window.setDarkTheme = function() {
+            const container = document.getElementById('themeToolbar')
+            const toolbar = container.querySelector('.material-toolbar')
+            if (toolbar) {
+                toolbar.classList.remove('toolbar-light')
+                toolbar.classList.add('toolbar-dark')
+                console.log('设置为深色主题')
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initToolbars()
+        })
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
  * 展示如何通过 API 配置动态创建和更新组件
  */
 
-import { NHAIDynamicComponents } from '../components/DynamicComponents'
+import { NHAIDynamicComponents } from '../components/cusComponents/DynamicComponents'
 
 // 1. API 配置示例
 export const APIConfigExamples = {

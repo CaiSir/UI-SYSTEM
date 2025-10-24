@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material MenuBar API Example</title>
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="./src/components/materialComponents/materialize.css">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Custom MenuBar CSS -->
+    <link rel="stylesheet" href="./src/components/materialComponents/menubar/menubar.css">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .menubar-container {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+        .menubar-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .context-menu-demo {
+            width: 300px;
+            height: 200px;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        .context-menu-demo:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Material MenuBar API 示例</h1>
+    <p>通过命令式 API 动态创建和配置菜单栏。</p>
+
+    <div class="menubar-container">
+        <h2 class="menubar-title">1. 基础水平菜单栏</h2>
+        <div id="basicMenuBarHost"></div>
+    </div>
+
+    <div class="menubar-container">
+        <h2 class="menubar-title">2. 带子菜单的菜单栏</h2>
+        <div id="submenuMenuBarHost"></div>
+    </div>
+
+    <div class="menubar-container">
+        <h2 class="menubar-title">3. 带复选框和单选的菜单栏</h2>
+        <div id="checkboxRadioMenuBarHost"></div>
+    </div>
+
+    <div class="menubar-container">
+        <h2 class="menubar-title">4. 垂直菜单栏</h2>
+        <div id="verticalMenuBarHost"></div>
+    </div>
+
+    <div class="menubar-container">
+        <h2 class="menubar-title">5. 上下文菜单</h2>
+        <div class="context-menu-demo" id="contextMenuDemo">
+            右键点击此区域显示上下文菜单
+        </div>
+        <div id="contextMenuHost"></div>
+    </div>
+
+    <div class="menubar-container">
+        <h2 class="menubar-title">6. 动态菜单栏</h2>
+        <div id="dynamicMenuBarHost"></div>
+    </div>
+
+    <div class="menubar-container">
+        <h2 class="menubar-title">7. 带菜单组的菜单栏</h2>
+        <div id="groupedMenuBarHost"></div>
+    </div>
+
+    <div class="menubar-container">
+        <h2 class="menubar-title">8. 深色主题菜单栏</h2>
+        <div id="darkThemeMenuBarHost"></div>
+    </div>
+
+    <script type="module">
+        import { NHAIFrameworkRegistry } from './src/core/NHAICore.js'
+        import { VanillaAdapter } from './src/adapters/VanillaAdapter.js'
+        import {
+            createBasicMenuBarExample,
+            createSubmenuMenuBarExample,
+            createCheckboxRadioMenuBarExample,
+            createVerticalMenuBarExample,
+            createContextMenuExample,
+            createDynamicMenuBarExample,
+            createGroupedMenuBarExample,
+            createDarkThemeMenuBarExample
+        } from './src/components/materialComponents/menubar/menubar-examples.ts'
+
+        // 注册 Vanilla 适配器
+        NHAIFrameworkRegistry.register(new VanillaAdapter())
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 渲染各种菜单栏示例
+            const basicMenuBar = createBasicMenuBarExample()
+            basicMenuBar.render(document.getElementById('basicMenuBarHost'))
+
+            const submenuMenuBar = createSubmenuMenuBarExample()
+            submenuMenuBar.render(document.getElementById('submenuMenuBarHost'))
+
+            const checkboxRadioMenuBar = createCheckboxRadioMenuBarExample()
+            checkboxRadioMenuBar.render(document.getElementById('checkboxRadioMenuBarHost'))
+
+            const verticalMenuBar = createVerticalMenuBarExample()
+            verticalMenuBar.render(document.getElementById('verticalMenuBarHost'))
+
+            const contextMenu = createContextMenuExample()
+            contextMenu.render(document.getElementById('contextMenuHost'))
+
+            const dynamicMenuBar = createDynamicMenuBarExample()
+            dynamicMenuBar.render(document.getElementById('dynamicMenuBarHost'))
+
+            const groupedMenuBar = createGroupedMenuBarExample()
+            groupedMenuBar.render(document.getElementById('groupedMenuBarHost'))
+
+            const darkThemeMenuBar = createDarkThemeMenuBarExample()
+            darkThemeMenuBar.render(document.getElementById('darkThemeMenuBarHost'))
+
+            // 上下文菜单演示
+            const contextMenuDemo = document.getElementById('contextMenuDemo')
+            const contextMenuElement = document.getElementById('contextMenuHost')
+            
+            contextMenuDemo.addEventListener('contextmenu', (e) => {
+                e.preventDefault()
+                contextMenuElement.style.display = 'block'
+                contextMenuElement.style.position = 'fixed'
+                contextMenuElement.style.left = e.clientX + 'px'
+                contextMenuElement.style.top = e.clientY + 'px'
+                contextMenuElement.style.zIndex = '1000'
+            })
+
+            // 点击其他地方隐藏上下文菜单
+            document.addEventListener('click', () => {
+                contextMenuElement.style.display = 'none'
+            })
+        })
+    </script>
+</body>
+</html>
