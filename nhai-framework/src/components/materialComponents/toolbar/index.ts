@@ -6,7 +6,6 @@ export { MaterialToolbar } from './MaterialToolbar'
 export type { 
   ToolbarItem, 
   ToolbarConfig, 
-  ToolbarEvents,
   ToolbarLayoutType,
   ToolbarAlignment 
 } from './MaterialToolbar'

@@ -1,4 +1,5 @@
 import { NHAIWidget, NHAIObject, NHAIRenderContext, NHAIFrameworkRegistry } from '../../../core/NHAICore'
+import { MenuBarStyles } from './styles/MenuBarStyles'
 
 /**
  * 菜单栏布局类型枚举
@@ -464,16 +465,29 @@ export class MaterialMenuBar extends NHAIWidget {
 
   // ========== 渲染方法 ==========
 
+  /**
+   * 加载CSS样式
+   */
+  private loadStyles(): void {
+    // 使用MenuBarStyles类加载样式
+    const menuBarStyles = MenuBarStyles.getInstance()
+    menuBarStyles.loadStyles()
+  }
+
   render(_context?: NHAIRenderContext): any {
     const adapter = NHAIFrameworkRegistry.getCurrent()
     if (!adapter) {
       throw new Error('No framework adapter registered')
     }
 
+    // 加载CSS样式文件
+    this.loadStyles()
+
     const container = adapter.createElement('div', {
       className: this.buildMenuBarClasses(),
       style: this.buildMenuBarStyles()
     })
+
 
     this._container = container
 
@@ -558,7 +572,7 @@ export class MaterialMenuBar extends NHAIWidget {
     // 图标
     if (item.icon && this._config.showIcons) {
       const iconElement = adapter.createElement('i', {
-        className: 'material-icons menu-item-icon',
+        className: 'material-icons nhai-menu-item-icon',
         style: { marginRight: '12px', fontSize: '20px', flexShrink: '0' }
       }, [item.icon])
       itemElement.appendChild(iconElement)
@@ -567,15 +581,7 @@ export class MaterialMenuBar extends NHAIWidget {
     // 标签
     if (item.label) {
       const labelElement = adapter.createElement('span', {
-        className: 'menu-item-label',
-        style: {
-          display: 'inline-block',
-          whiteSpace: 'nowrap',
-          fontSize: '14px',
-          fontWeight: '500',
-          color: 'inherit',
-          lineHeight: '1.4'
-        }
+        className: 'nhai-menu-item-label'
       }, [item.label])
       itemElement.appendChild(labelElement)
     }
@@ -583,8 +589,7 @@ export class MaterialMenuBar extends NHAIWidget {
     // 快捷键
     if (item.shortcut && this._config.showShortcuts) {
       const shortcutElement = adapter.createElement('span', {
-        className: 'menu-item-shortcut',
-        style: { marginLeft: 'auto', fontSize: '12px', opacity: '0.7' }
+        className: 'nhai-menu-item-shortcut'
       }, [item.shortcut])
       itemElement.appendChild(shortcutElement)
     }
@@ -596,19 +601,7 @@ export class MaterialMenuBar extends NHAIWidget {
 
     // 添加B站风格的悬停效果
     if (item.enabled !== false) {
-      itemElement.addEventListener('mouseenter', () => {
-        itemElement.style.backgroundColor = 'rgba(0, 161, 214, 0.08)'
-        itemElement.style.color = '#00a1d6'
-        itemElement.style.transform = 'translateY(-1px)'
-        itemElement.style.boxShadow = '0 4px 12px rgba(0, 161, 214, 0.15)'
-      })
-      
-      itemElement.addEventListener('mouseleave', () => {
-        itemElement.style.backgroundColor = 'transparent'
-        itemElement.style.color = '#1a1a1a'
-        itemElement.style.transform = 'translateY(0)'
-        itemElement.style.boxShadow = 'none'
-      })
+      itemElement.classList.add('nhai-main-menu-item')
     }
 
     return itemElement
@@ -619,22 +612,7 @@ export class MaterialMenuBar extends NHAIWidget {
    */
   private renderSeparator(adapter: any, item: MenuItem): HTMLElement | null {
     return adapter.createElement('div', {
-      className: 'menu-separator',
-      style: {
-        height: '1px',
-        backgroundColor: 'rgba(0, 0, 0, 0.08)',
-        margin: '4px 12px',
-        width: 'calc(100% - 24px)',
-        borderRadius: '1px',
-        flexShrink: '0',
-        border: 'none',
-        outline: 'none',
-        padding: '0',
-        minHeight: '1px',
-        maxHeight: '1px',
-        overflow: 'hidden',
-        display: 'block'
-      }
+      className: 'nhai-menu-separator',
     })
   }
 
@@ -651,12 +629,14 @@ export class MaterialMenuBar extends NHAIWidget {
     // 主菜单项
     const mainItem = this.renderMenuItem(adapter, { ...item, type: MenuItemType.ITEM })
     if (mainItem) {
-      // 添加下拉箭头
-      const arrowElement = adapter.createElement('i', {
-        className: 'material-icons menu-submenu-arrow',
-        style: { marginLeft: '8px', fontSize: '16px' }
-      }, ['keyboard_arrow_right'])
-      mainItem.appendChild(arrowElement)
+      // 添加下拉箭头（只在有子菜单时显示）
+      if (item.children && item.children.length > 0) {
+        const arrowElement = adapter.createElement('span', {
+          className: 'menu-submenu-arrow',
+          style: { marginLeft: '8px', fontSize: '16px' }
+        }, ['▶'])
+        mainItem.appendChild(arrowElement)
+      }
 
       // 添加B站风格的悬停效果
       mainItem.addEventListener('mouseenter', () => {
@@ -679,9 +659,9 @@ export class MaterialMenuBar extends NHAIWidget {
         e.stopPropagation()
         
         // 切换子菜单显示状态
-        const submenuContainer = submenuElement.querySelector('.menu-submenu-container') as HTMLElement
+        const submenuContainer = submenuElement.querySelector('.nhai-submenu-container') as HTMLElement
         if (submenuContainer) {
-          const isVisible = submenuContainer.style.display !== 'none' && submenuContainer.style.opacity !== '0'
+          const isVisible = submenuContainer.classList.contains('nhai-submenu-visible')
           
           if (isVisible) {
             this.hideSubmenu(item.id)
@@ -701,28 +681,7 @@ export class MaterialMenuBar extends NHAIWidget {
     // 子菜单容器
     if (item.children && item.children.length > 0) {
       const submenuContainer = adapter.createElement('div', {
-        className: 'menu-submenu-container',
-        style: {
-          position: 'absolute',
-          top: '100%',
-          left: '0',
-          backgroundColor: '#ffffff',
-          border: '1px solid rgba(0, 0, 0, 0.08)',
-          borderRadius: '12px',
-          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.1)',
-          minWidth: '200px',
-          width: 'auto',
-          zIndex: '9999',
-          display: 'block', // 改为block，让元素占据空间
-          padding: '8px 0',
-          backdropFilter: 'blur(20px)',
-          background: 'rgba(255, 255, 255, 0.98)',
-          marginTop: '8px',
-          visibility: 'hidden', // 使用visibility隐藏
-          opacity: '0',
-          transform: 'translateY(-10px)',
-          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-        }
+        className: 'nhai-submenu-container',
       })
 
       // 点击子菜单外部区域时隐藏子菜单
@@ -736,33 +695,8 @@ export class MaterialMenuBar extends NHAIWidget {
       item.children.forEach(child => {
         const childElement = this.renderItem(adapter, child)
         if (childElement) {
-             // 为子菜单项添加B站风格样式
-             Object.assign(childElement.style, {
-               borderRadius: '6px',
-               margin: '1px 8px',
-               padding: '8px 12px',
-               borderBottom: 'none',
-               fontSize: '13px',
-               fontWeight: '400',
-               minHeight: '32px',
-               height: 'auto',
-               transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-               color: '#1a1a1a',
-               background: 'transparent'
-             })
-          
-          // 添加子菜单项悬停效果
-          childElement.addEventListener('mouseenter', () => {
-            childElement.style.backgroundColor = 'rgba(0, 161, 214, 0.08)'
-            childElement.style.color = '#00a1d6'
-            childElement.style.transform = 'translateX(4px)'
-          })
-          
-          childElement.addEventListener('mouseleave', () => {
-            childElement.style.backgroundColor = 'transparent'
-            childElement.style.color = '#1a1a1a'
-            childElement.style.transform = 'translateX(0)'
-          })
+          // 添加子菜单项CSS类名
+          childElement.classList.add('nhai-submenu-item')
           
           submenuContainer.appendChild(childElement)
         }
@@ -901,17 +835,14 @@ export class MaterialMenuBar extends NHAIWidget {
     }
     
     this._activeSubmenu = itemId
-    const submenuContainer = this._container?.querySelector(`[data-submenu="${itemId}"] .menu-submenu-container`)
+    const submenuElement = this._container?.querySelector(`[data-submenu="${itemId}"]`) as HTMLElement
+    const submenuContainer = submenuElement?.querySelector('.nhai-submenu-container') as HTMLElement
     
-    if (submenuContainer) {
-      const element = submenuContainer as HTMLElement
-      
-      
+    if (submenuElement && submenuContainer) {
       // 显示子菜单
-      element.style.display = 'block'
-      element.style.visibility = 'visible'
-      element.style.opacity = '1'
-      element.style.transform = 'translateY(0)'
+      submenuContainer.classList.add('nhai-submenu-visible')
+      // 同时给包含箭头的父元素添加类名，用于箭头旋转
+      submenuElement.classList.add('nhai-submenu-visible')
     }
   }
 
@@ -919,18 +850,14 @@ export class MaterialMenuBar extends NHAIWidget {
    * 隐藏子菜单
    */
   private hideSubmenu(itemId: string): void {
-    const submenuContainer = this._container?.querySelector(`[data-submenu="${itemId}"] .menu-submenu-container`)
-    if (submenuContainer) {
-      const element = submenuContainer as HTMLElement
-      element.style.opacity = '0'
-      element.style.transform = 'translateY(-10px)'
-      
-      // 延迟隐藏以完成动画
-      setTimeout(() => {
-        element.style.visibility = 'hidden'
-        element.style.opacity = '0'
-        element.style.transform = 'translateY(-10px)'
-      }, 150)
+    const submenuElement = this._container?.querySelector(`[data-submenu="${itemId}"]`) as HTMLElement
+    const submenuContainer = submenuElement?.querySelector('.nhai-submenu-container') as HTMLElement
+    
+    if (submenuElement && submenuContainer) {
+      // 隐藏子菜单
+      submenuContainer.classList.remove('nhai-submenu-visible')
+      // 同时移除包含箭头的父元素的类名
+      submenuElement.classList.remove('nhai-submenu-visible')
     }
     
     if (this._activeSubmenu === itemId) {
@@ -942,13 +869,15 @@ export class MaterialMenuBar extends NHAIWidget {
    * 隐藏所有子菜单
    */
   private hideAllSubmenus(): void {
-    const allSubmenus = this._container?.querySelectorAll('.menu-submenu-container') as NodeListOf<HTMLElement>
-    if (allSubmenus) {
-      allSubmenus.forEach(submenu => {
-        submenu.style.display = 'none'
-        submenu.style.opacity = ''
-        submenu.style.transform = ''
-        submenu.style.transition = ''
+    const allSubmenuElements = this._container?.querySelectorAll('[data-submenu]') as NodeListOf<HTMLElement>
+    if (allSubmenuElements) {
+      allSubmenuElements.forEach(submenuElement => {
+        const submenuContainer = submenuElement.querySelector('.nhai-submenu-container') as HTMLElement
+        if (submenuContainer) {
+          submenuContainer.classList.remove('nhai-submenu-visible')
+        }
+        // 同时移除包含箭头的父元素的类名
+        submenuElement.classList.remove('nhai-submenu-visible')
       })
     }
     
@@ -960,7 +889,7 @@ export class MaterialMenuBar extends NHAIWidget {
    * 构建菜单栏类名
    */
   private buildMenuBarClasses(): string {
-    let classes = ['material-menu-bar']
+    let classes = ['nhai-menu-bar']
     
     classes.push(`menu-bar-${this._config.layout}`)
     
@@ -1002,7 +931,7 @@ export class MaterialMenuBar extends NHAIWidget {
       height: '60px',
       boxSizing: 'border-box',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      padding: '0 24px',
+      padding: '0 0 0 10px',  // 左边距10px，其他边距为0
       background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
       boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
       minHeight: '60px',
@@ -1020,13 +949,13 @@ export class MaterialMenuBar extends NHAIWidget {
       case MenuBarLayoutType.HORIZONTAL:
         styles.flexDirection = 'row'
         styles.justifyContent = 'flex-start'
-        styles.padding = '0'
+        styles.padding = '0 0 0 10px'
         styles.width = '100%'
         break
       case MenuBarLayoutType.VERTICAL:
         styles.flexDirection = 'column'
         styles.justifyContent = 'flex-start'
-        styles.padding = '0'
+        styles.padding = '0 0 0 10px'
         styles.width = '100%'
         break
       case MenuBarLayoutType.DROPDOWN:
@@ -1052,7 +981,7 @@ export class MaterialMenuBar extends NHAIWidget {
    * 构建菜单项类名
    */
   private buildMenuItemClasses(item: MenuItem): string {
-    let classes = ['menu-item']
+    let classes = ['nhai-menu-item']
     
     classes.push(`menu-item-${item.type}`)
     
@@ -1079,11 +1008,11 @@ export class MaterialMenuBar extends NHAIWidget {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '0 16px',
+      padding: '0 4px',  // 进一步减少到4px
       cursor: item.enabled !== false ? 'pointer' : 'default',
       transition: 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
       borderRadius: '8px',
-      margin: '0 4px',
+      margin: '0 0px',   // 完全移除外边距
       position: 'relative',
       fontWeight: '500',
       fontSize: '15px',
@@ -1096,9 +1025,9 @@ export class MaterialMenuBar extends NHAIWidget {
       color: '#1a1a1a',
       height: '40px',
       flex: '0 0 auto',
-      minWidth: '80px',
-      maxWidth: '160px',
-      overflow: 'hidden'
+      minWidth: '50px',  // 减少最小宽度
+      maxWidth: '120px', // 减少最大宽度
+      overflow: 'visible'
     }
 
     if (item.style) {
@@ -1120,6 +1049,9 @@ export class MaterialMenuBar extends NHAIWidget {
       }
     }
 
+    // 添加调试信息
+    console.log('🔧 菜单项样式:', item.label, styles)
+    
     return styles
   }
 }

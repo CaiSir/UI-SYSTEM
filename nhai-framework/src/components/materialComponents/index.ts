@@ -25,7 +25,7 @@ export * from './utility'
 export * from './toolbar'
 
 // 菜单栏组件
-export * from './menubar'
+export { MaterialMenuBar, MenuItemType } from './menubar'
 
 // 重新导出所有组件类
 export {
@@ -83,11 +83,6 @@ export {
   MaterialToolbar
 } from './toolbar'
 
-export {
-  // 菜单栏组件
-  MaterialMenuBar
-} from './menubar'
-
 // 重新导出所有类型
 export type {
   SelectOption
@@ -118,7 +113,6 @@ export type {
 export type {
   ToolbarItem,
   ToolbarConfig,
-  ToolbarEvents,
   ToolbarLayoutType,
   ToolbarAlignment
 } from './toolbar'
@@ -126,6 +120,5 @@ export type {
 export type {
   MenuItem as MenuBarMenuItem,
   MenuBarConfig,
-  MenuBarLayoutType,
-  MenuItemType
+  MenuBarLayoutType
 } from './menubar'
