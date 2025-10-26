@@ -99,6 +99,14 @@
           
           <!-- 可视化设计模式的组件调色板 -->
           <div v-else-if="currentMode === 'freedesign'" class="component-palette">
+            <!-- 添加组件按钮 -->
+            <div class="palette-header">
+              <h4>组件库</h4>
+              <button @click="openAddComponentDialog" class="btn-add-component" title="添加新组件">
+                <i class="icon-add"></i> 添加组件
+              </button>
+            </div>
+            
             <div 
               v-for="category in componentLibrary" 
               :key="category.category"
@@ -471,6 +479,67 @@
         </div>
       </aside>
     </div>
+    
+    <!-- 添加组件对话框 -->
+    <Teleport to="body">
+      <div v-if="showAddComponentDialog" class="dialog-overlay" @click="closeAddComponentDialog">
+        <div class="dialog-content" @click.stop>
+          <div class="dialog-header">
+            <h3>添加新组件</h3>
+            <button class="close-btn" @click="closeAddComponentDialog">
+              <i class="icon-close"></i>
+            </button>
+          </div>
+          
+          <div class="dialog-body">
+            <div class="form-group">
+              <label>组件ID</label>
+              <input 
+                v-model="newComponentType" 
+                type="text" 
+                placeholder="例如: custom-button"
+                class="form-input"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label>组件名称</label>
+              <input 
+                v-model="newComponentName" 
+                type="text" 
+                placeholder="例如: 自定义按钮"
+                class="form-input"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label>工厂方法</label>
+              <input 
+                v-model="newComponentFactory" 
+                type="text" 
+                placeholder="例如: createCustomButton"
+                class="form-input"
+              >
+            </div>
+            
+            <div class="form-group">
+              <label>组件分类</label>
+              <input 
+                v-model="newComponentCategory" 
+                type="text" 
+                placeholder="例如: 基础控件"
+                class="form-input"
+              >
+            </div>
+          </div>
+          
+          <div class="dialog-footer">
+            <button class="btn-cancel" @click="closeAddComponentDialog">取消</button>
+            <button class="btn-primary" @click="addNewComponent">添加</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -484,7 +553,16 @@ import {
   SvelteAdapter,
   nhaiFactory as NHAIObjectFactory,
   ModernNHAIButton,
-  NHAIComponentComposer
+  NHAIComponentComposer,
+  MaterialButton,
+  MaterialInput,
+  MaterialSwitch,
+  MaterialCheckbox,
+  MaterialCard,
+  MaterialTable,
+  MaterialMenuBar,
+  ButtonType,
+  MenuBarLayoutType
 } from 'nhai-framework'
 import OnlineEditor from './components/ui/OnlineEditor.vue'
 import FreeDesign from './components/ui/FreeDesign.vue'
@@ -503,6 +581,11 @@ const selectedComponentType = ref<string>('')
 const selectedComponentId = ref<string>('')
 const freeDesignRef = ref<any>(null)
 const isFullscreen = ref(false)
+const showAddComponentDialog = ref(false)
+const newComponentType = ref('')
+const newComponentName = ref('')
+const newComponentFactory = ref('')
+const newComponentCategory = ref('基础控件')
 
 // 模式配置
 const modes = [
@@ -511,8 +594,8 @@ const modes = [
   { value: 'freedesign', label: '可视化设计', icon: 'icon-design' }
 ]
 
-// 统一的组件库数据
-const componentLibrary = [
+// 统一的组件库数据 - 使用响应式数组支持动态添加
+const componentLibrary = ref([
   {
     category: '基础控件',
     icon: 'icon-basic',
@@ -610,8 +693,274 @@ const componentLibrary = [
         defaultProps: { columns: 2, rows: 2 }
       }
     ]
+  },
+  {
+    category: 'Material基础组件',
+    icon: 'icon-material-basic',
+    components: [
+      {
+        id: 'material-button',
+        name: 'Material按钮',
+        icon: 'icon-material-button',
+        description: 'Material Design风格按钮',
+        factory: 'createMaterialButton',
+        defaultProps: { text: '按钮', type: 'contained' }
+      },
+      {
+        id: 'material-input',
+        name: 'Material输入框',
+        icon: 'icon-material-input',
+        description: 'Material Design风格输入框',
+        factory: 'createMaterialInput',
+        defaultProps: { placeholder: '请输入内容' }
+      },
+      {
+        id: 'material-select',
+        name: 'Material选择器',
+        icon: 'icon-material-select',
+        description: 'Material Design风格选择器',
+        factory: 'createMaterialSelect',
+        defaultProps: { placeholder: '请选择' }
+      },
+      {
+        id: 'material-checkbox',
+        name: 'Material复选框',
+        icon: 'icon-material-checkbox',
+        description: 'Material Design风格复选框',
+        factory: 'createMaterialCheckbox',
+        defaultProps: { label: '复选框' }
+      },
+      {
+        id: 'material-radio',
+        name: 'Material单选框',
+        icon: 'icon-material-radio',
+        description: 'Material Design风格单选框',
+        factory: 'createMaterialRadio',
+        defaultProps: { label: '单选项' }
+      },
+      {
+        id: 'material-switch',
+        name: 'Material开关',
+        icon: 'icon-material-switch',
+        description: 'Material Design风格开关',
+        factory: 'createMaterialSwitch',
+        defaultProps: { label: '开关' }
+      },
+      {
+        id: 'material-slider',
+        name: 'Material滑块',
+        icon: 'icon-material-slider',
+        description: 'Material Design风格滑块',
+        factory: 'createMaterialSlider',
+        defaultProps: { min: 0, max: 100, value: 50 }
+      },
+      {
+        id: 'material-rate',
+        name: 'Material评分',
+        icon: 'icon-material-rate',
+        description: 'Material Design风格评分',
+        factory: 'createMaterialRate',
+        defaultProps: { count: 5, value: 0 }
+      }
+    ]
+  },
+  {
+    category: 'Material数据展示',
+    icon: 'icon-material-data',
+    components: [
+      {
+        id: 'material-table',
+        name: 'Material表格',
+        icon: 'icon-material-table',
+        description: 'Material Design风格表格',
+        factory: 'createMaterialTable',
+        defaultProps: {}
+      },
+      {
+        id: 'material-list',
+        name: 'Material列表',
+        icon: 'icon-material-list',
+        description: 'Material Design风格列表',
+        factory: 'createMaterialList',
+        defaultProps: {}
+      },
+      {
+        id: 'material-card',
+        name: 'Material卡片',
+        icon: 'icon-material-card',
+        description: 'Material Design风格卡片',
+        factory: 'createMaterialCard',
+        defaultProps: {}
+      },
+      {
+        id: 'material-tag',
+        name: 'Material标签',
+        icon: 'icon-material-tag',
+        description: 'Material Design风格标签',
+        factory: 'createMaterialTag',
+        defaultProps: { text: '标签' }
+      },
+      {
+        id: 'material-badge',
+        name: 'Material徽章',
+        icon: 'icon-material-badge',
+        description: 'Material Design风格徽章',
+        factory: 'createMaterialBadge',
+        defaultProps: { count: 0 }
+      },
+      {
+        id: 'material-avatar',
+        name: 'Material头像',
+        icon: 'icon-material-avatar',
+        description: 'Material Design风格头像',
+        factory: 'createMaterialAvatar',
+        defaultProps: { name: 'User' }
+      }
+    ]
+  },
+  {
+    category: 'Material布局',
+    icon: 'icon-material-layout',
+    components: [
+      {
+        id: 'material-container',
+        name: 'Material容器',
+        icon: 'icon-material-container',
+        description: 'Material Design风格容器',
+        factory: 'createMaterialContainer',
+        defaultProps: {}
+      },
+      {
+        id: 'material-grid',
+        name: 'Material网格',
+        icon: 'icon-material-grid',
+        description: 'Material Design风格网格布局',
+        factory: 'createMaterialGrid',
+        defaultProps: { columns: 12 }
+      },
+      {
+        id: 'material-split-panel',
+        name: 'Material分割面板',
+        icon: 'icon-material-split',
+        description: 'Material Design风格分割面板',
+        factory: 'createMaterialSplitPanel',
+        defaultProps: {}
+      },
+      {
+        id: 'material-collapse',
+        name: 'Material折叠面板',
+        icon: 'icon-material-collapse',
+        description: 'Material Design风格折叠面板',
+        factory: 'createMaterialCollapse',
+        defaultProps: {}
+      }
+    ]
+  },
+  {
+    category: 'Material导航',
+    icon: 'icon-material-navigation',
+    components: [
+      {
+        id: 'material-menu-bar',
+        name: 'Material菜单栏',
+        icon: 'icon-material-menubar',
+        description: 'Material Design风格菜单栏',
+        factory: 'createMaterialMenuBar',
+        defaultProps: {}
+      },
+      {
+        id: 'material-menu',
+        name: 'Material菜单',
+        icon: 'icon-material-menu',
+        description: 'Material Design风格菜单',
+        factory: 'createMaterialMenu',
+        defaultProps: {}
+      },
+      {
+        id: 'material-tabs',
+        name: 'Material标签页',
+        icon: 'icon-material-tabs',
+        description: 'Material Design风格标签页',
+        factory: 'createMaterialTabs',
+        defaultProps: {}
+      },
+      {
+        id: 'material-breadcrumb',
+        name: 'Material面包屑',
+        icon: 'icon-material-breadcrumb',
+        description: 'Material Design风格面包屑导航',
+        factory: 'createMaterialBreadcrumb',
+        defaultProps: {}
+      }
+    ]
+  },
+  {
+    category: 'Material工具栏',
+    icon: 'icon-material-toolbar',
+    components: [
+      {
+        id: 'material-toolbar',
+        name: 'Material工具栏',
+        icon: 'icon-material-toolbar',
+        description: 'Material Design风格工具栏',
+        factory: 'createMaterialToolbar',
+        defaultProps: {}
+      }
+    ]
+  },
+  {
+    category: 'Material反馈',
+    icon: 'icon-material-feedback',
+    components: [
+      {
+        id: 'material-dialog',
+        name: 'Material对话框',
+        icon: 'icon-material-dialog',
+        description: 'Material Design风格对话框',
+        factory: 'createMaterialDialog',
+        defaultProps: {}
+      },
+      {
+        id: 'material-message',
+        name: 'Material消息',
+        icon: 'icon-material-message',
+        description: 'Material Design风格消息提示',
+        factory: 'createMaterialMessage',
+        defaultProps: { message: '消息内容' }
+      },
+      {
+        id: 'material-loading',
+        name: 'Material加载',
+        icon: 'icon-material-loading',
+        description: 'Material Design风格加载动画',
+        factory: 'createMaterialLoading',
+        defaultProps: {}
+      }
+    ]
+  },
+  {
+    category: 'Material工具',
+    icon: 'icon-material-utility',
+    components: [
+      {
+        id: 'material-tooltip',
+        name: 'Material提示框',
+        icon: 'icon-material-tooltip',
+        description: 'Material Design风格提示框',
+        factory: 'createMaterialTooltip',
+        defaultProps: { content: '提示内容' }
+      },
+      {
+        id: 'material-color-picker',
+        name: 'Material颜色选择器',
+        icon: 'icon-material-color-picker',
+        description: 'Material Design风格颜色选择器',
+        factory: 'createMaterialColorPicker',
+        defaultProps: { color: '#1890ff' }
+      }
+    ]
   }
-]
+])
 
 // 组件属性配置
 const componentProperties = {
@@ -2864,6 +3213,589 @@ button2.setStyle({
         ]
       }
     ]
+  },
+  {
+    name: 'Material组件',
+    expanded: false,
+    children: [
+      {
+        name: 'Material基础',
+        expanded: false,
+        children: [
+          {
+            id: 'material-button',
+            title: 'Material按钮',
+            description: 'Material Design风格的按钮组件',
+            code: `// Material按钮示例
+import { MaterialButton, ButtonType } from 'nhai-framework'
+
+// 1. 包含按钮 (Contained)
+const containedButton = new MaterialButton({
+  text: '包含按钮',
+  type: ButtonType.CONTAINED,
+  color: 'primary',
+  disabled: false
+})
+
+// 2. 轮廓按钮 (Outlined)
+const outlinedButton = new MaterialButton({
+  text: '轮廓按钮',
+  type: ButtonType.OUTLINED,
+  color: 'primary',
+  disabled: false
+})
+
+// 3. 文本按钮 (Text)
+const textButton = new MaterialButton({
+  text: '文本按钮',
+  type: ButtonType.TEXT,
+  color: 'primary',
+  disabled: false
+})
+
+// 添加到容器
+const container = document.createElement('div')
+container.style.cssText = \`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+\`
+
+container.appendChild(containedButton.render())
+container.appendChild(outlinedButton.render())
+container.appendChild(textButton.render())`,
+            createDemo: () => {
+              if (!demoArea.value) return
+              
+              try {
+                const container = NHAIObjectFactory.createContainer()
+                container.setStyle({ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '16px', 
+                  padding: '20px' 
+                })
+                
+                // 创建Material按钮 - 先创建容器，然后用容器作为parent
+                const button1 = new MaterialButton(container as any)
+                button1.setText('包含按钮')
+                button1.setType(ButtonType.CONTAINED)
+                button1.setColor('primary')
+                button1.setDisabled(false)
+                
+                const button2 = new MaterialButton(container as any)
+                button2.setText('轮廓按钮')
+                button2.setType(ButtonType.OUTLINED)
+                button2.setColor('primary')
+                button2.setDisabled(false)
+                
+                const button3 = new MaterialButton(container as any)
+                button3.setText('文本按钮')
+                button3.setType(ButtonType.TEXT)
+                button3.setColor('primary')
+                button3.setDisabled(false)
+                
+                const element = container.render()
+                demoArea.value.appendChild(element)
+              } catch (error) {
+                console.error('创建Material按钮演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          },
+          {
+            id: 'material-input',
+            title: 'Material输入框',
+            description: 'Material Design风格的输入框组件',
+            code: `// Material输入框示例
+import { MaterialInput, InputType } from 'nhai-framework'
+
+// 1. 标准输入框
+const standardInput = new MaterialInput({
+  type: InputType.TEXT,
+  label: '标准输入框',
+  placeholder: '请输入内容',
+  helperText: '这是提示信息',
+  required: false,
+  disabled: false
+})
+
+// 2. 数字输入框
+const numberInput = new MaterialInput({
+  type: InputType.NUMBER,
+  label: '数字输入框',
+  placeholder: '请输入数字',
+  helperText: '只能输入数字',
+  required: true,
+  disabled: false
+})
+
+// 3. 密码输入框
+const passwordInput = new MaterialInput({
+  type: InputType.PASSWORD,
+  label: '密码输入框',
+  placeholder: '请输入密码',
+  helperText: '至少8位字符',
+  required: true,
+  disabled: false,
+  showPasswordToggle: true
+})
+
+// 添加到容器
+const container = document.createElement('div')
+container.style.cssText = \`
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px;
+  max-width: 400px;
+\`
+
+container.appendChild(standardInput.render())
+container.appendChild(numberInput.render())
+container.appendChild(passwordInput.render())`,
+            createDemo: () => {
+              if (!demoArea.value) return
+              
+              try {
+                const container = NHAIObjectFactory.createContainer()
+                container.setStyle({ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '24px', 
+                  padding: '20px', 
+                  maxWidth: '400px' 
+                })
+                
+                // 创建Material输入框
+                const input1 = new MaterialInput(container as any)
+                input1.setType('text')
+                input1.setLabel('标准输入框')
+                input1.setPlaceholder('请输入内容')
+                input1.setHelperText('这是提示信息')
+                input1.setRequired(false)
+                input1.setDisabled(false)
+                
+                const input2 = new MaterialInput(container as any)
+                input2.setType('number')
+                input2.setLabel('数字输入框')
+                input2.setPlaceholder('请输入数字')
+                input2.setHelperText('只能输入数字')
+                input2.setRequired(true)
+                input2.setDisabled(false)
+                
+                const input3 = new MaterialInput(container as any)
+                input3.setType('password')
+                input3.setLabel('密码输入框')
+                input3.setPlaceholder('请输入密码')
+                input3.setHelperText('至少8位字符')
+                input3.setRequired(true)
+                input3.setDisabled(false)
+                
+                const element = container.render()
+                demoArea.value.appendChild(element)
+              } catch (error) {
+                console.error('创建Material输入框演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          },
+          {
+            id: 'material-switch',
+            title: 'Material开关',
+            description: 'Material Design风格的开关组件',
+            code: `// Material开关示例
+import { MaterialSwitch } from 'nhai-framework'
+
+// 1. 基础开关
+const basicSwitch = new MaterialSwitch({
+  label: '启用通知',
+  checked: false,
+  disabled: false,
+  color: 'primary'
+})
+
+// 2. 选中状态
+const checkedSwitch = new MaterialSwitch({
+  label: '自动保存',
+  checked: true,
+  disabled: false,
+  color: 'primary'
+})
+
+// 3. 禁用状态
+const disabledSwitch = new MaterialSwitch({
+  label: '高级设置',
+  checked: false,
+  disabled: true,
+  color: 'primary'
+})
+
+// 添加到容器
+const container = document.createElement('div')
+container.style.cssText = \`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  max-width: 300px;
+\`
+
+container.appendChild(basicSwitch.render())
+container.appendChild(checkedSwitch.render())
+container.appendChild(disabledSwitch.render())`,
+            createDemo: () => {
+              if (!demoArea.value) return
+              
+              try {
+                const container = NHAIObjectFactory.createContainer()
+                container.setStyle({ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '16px', 
+                  padding: '20px', 
+                  maxWidth: '300px' 
+                })
+                
+                // 创建Material开关
+                const switch1 = new MaterialSwitch(container as any)
+                switch1.setLabel('启用通知')
+                switch1.setChecked(false)
+                switch1.setDisabled(false)
+                switch1.setColor('primary')
+                
+                const switch2 = new MaterialSwitch(container as any)
+                switch2.setLabel('自动保存')
+                switch2.setChecked(true)
+                switch2.setDisabled(false)
+                switch2.setColor('primary')
+                
+                const switch3 = new MaterialSwitch(container as any)
+                switch3.setLabel('高级设置')
+                switch3.setChecked(false)
+                switch3.setDisabled(true)
+                switch3.setColor('primary')
+                
+                const element = container.render()
+                demoArea.value.appendChild(element)
+              } catch (error) {
+                console.error('创建Material开关演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          },
+          {
+            id: 'material-checkbox',
+            title: 'Material复选框',
+            description: 'Material Design风格的复选框组件',
+            code: `// Material复选框示例
+import { MaterialCheckbox } from 'nhai-framework'
+
+// 1. 基础复选框
+const basicCheckbox = new MaterialCheckbox(container)
+basicCheckbox.setLabel('启用通知')
+basicCheckbox.setChecked(false)
+basicCheckbox.setDisabled(false)
+basicCheckbox.setColor('primary')
+
+// 2. 选中状态
+const checkedCheckbox = new MaterialCheckbox(container)
+checkedCheckbox.setLabel('自动保存')
+checkedCheckbox.setChecked(true)
+checkedCheckbox.setDisabled(false)
+checkedCheckbox.setColor('primary')
+
+// 3. 禁用状态
+const disabledCheckbox = new MaterialCheckbox(container)
+disabledCheckbox.setLabel('高级设置')
+disabledCheckbox.setChecked(false)
+disabledCheckbox.setDisabled(true)
+disabledCheckbox.setColor('primary')`,
+            createDemo: () => {
+              if (!demoArea.value) return
+              
+              try {
+                const container = NHAIObjectFactory.createContainer()
+                container.setStyle({ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '16px', 
+                  padding: '20px', 
+                  maxWidth: '300px' 
+                })
+                
+                // 创建Material复选框
+                const checkbox1 = new MaterialCheckbox(container as any)
+                checkbox1.setLabel('启用通知')
+                checkbox1.setChecked(false)
+                checkbox1.setDisabled(false)
+                checkbox1.setColor('primary')
+                
+                const checkbox2 = new MaterialCheckbox(container as any)
+                checkbox2.setLabel('自动保存')
+                checkbox2.setChecked(true)
+                checkbox2.setDisabled(false)
+                checkbox2.setColor('primary')
+                
+                const checkbox3 = new MaterialCheckbox(container as any)
+                checkbox3.setLabel('高级设置')
+                checkbox3.setChecked(false)
+                checkbox3.setDisabled(true)
+                checkbox3.setColor('primary')
+                
+                const element = container.render()
+                demoArea.value.appendChild(element)
+              } catch (error) {
+                console.error('创建Material复选框演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          }
+        ]
+      },
+      {
+        name: 'Material数据',
+        expanded: false,
+        children: [
+          {
+            id: 'material-card',
+            title: 'Material卡片',
+            description: 'Material Design风格的卡片组件',
+            code: `// Material卡片示例
+import { MaterialCard } from 'nhai-framework'
+
+// 1. 基础卡片
+const basicCard = new MaterialCard({
+  title: '卡片标题',
+  subtitle: '卡片副标题',
+  content: '这是卡片的内容区域',
+  actions: [
+    { label: '操作', type: 'button' }
+  ]
+})
+
+// 2. 带图片的卡片
+const imageCard = new MaterialCard({
+  title: '图片卡片',
+  subtitle: '带图片的内容',
+  image: 'https://via.placeholder.com/300x200',
+  content: '这是一张带图片的卡片',
+  actions: [
+    { label: '分享', type: 'button' },
+    { label: '收藏', type: 'button' }
+  ]
+})
+
+// 添加到容器
+const container = document.createElement('div')
+container.style.cssText = \`
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+\`
+
+container.appendChild(basicCard.render())
+container.appendChild(imageCard.render())`,
+            createDemo: () => {
+              if (!demoArea.value) return
+              
+              try {
+                const container = NHAIObjectFactory.createContainer()
+                container.setStyle({ 
+                  display: 'flex', 
+                  gap: '20px', 
+                  padding: '20px', 
+                  flexWrap: 'wrap' 
+                })
+                
+                // 创建Material卡片
+                const card1 = new MaterialCard(container as any)
+                card1.setTitle('卡片标题')
+                card1.setSubtitle('卡片副标题')
+                card1.setContent('这是卡片的内容区域，可以包含任何内容')
+                card1.setElevation(2)
+                
+                const card2 = new MaterialCard(container as any)
+                card2.setTitle('带图片的卡片')
+                card2.setSubtitle('带图片的内容')
+                card2.setContent('这是一张带图片的卡片')
+                card2.setImage('https://via.placeholder.com/300x200')
+                card2.setElevation(4)
+                
+                const element = container.render()
+                demoArea.value.appendChild(element)
+              } catch (error) {
+                console.error('创建Material卡片演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          },
+          {
+            id: 'material-table',
+            title: 'Material表格',
+            description: 'Material Design风格的表格组件',
+            code: `// Material表格示例
+import { MaterialTable } from 'nhai-framework'
+
+// 定义表格列
+const columns = [
+  { key: 'name', label: '姓名' },
+  { key: 'age', label: '年龄' },
+  { key: 'email', label: '邮箱' }
+]
+
+// 定义表格数据
+const data = [
+  { name: '张三', age: 25, email: 'zhangsan@example.com' },
+  { name: '李四', age: 30, email: 'lisi@example.com' },
+  { name: '王五', age: 28, email: 'wangwu@example.com' }
+]
+
+// 创建表格
+const table = new MaterialTable({
+  columns,
+  data,
+  pagination: true,
+  pageSize: 10,
+  sortable: true
+})
+
+// 添加到容器
+const container = document.createElement('div')
+container.style.cssText = \`
+  padding: 20px;
+\`
+
+container.appendChild(table.render())`,
+            createDemo: () => {
+              if (!demoArea.value) return
+              
+              try {
+                const container = NHAIObjectFactory.createContainer()
+                container.setStyle({ padding: '20px' })
+                
+                // 创建Material表格
+                const columns = [
+                  { key: 'name', label: '姓名', sortable: true },
+                  { key: 'age', label: '年龄', sortable: true },
+                  { key: 'email', label: '邮箱', sortable: false }
+                ]
+                
+                const data = [
+                  { name: '张三', age: 25, email: 'zhangsan@example.com' },
+                  { name: '李四', age: 30, email: 'lisi@example.com' },
+                  { name: '王五', age: 28, email: 'wangwu@example.com' }
+                ]
+                
+                const table = new MaterialTable(container as any)
+                table.setColumns(columns)
+                table.setData(data)
+                table.setPagination(true)
+                table.setPageSize(10)
+                table.setSortable(true)
+                table.setDense(false)
+                table.setElevation(2)
+                const element = container.render()
+                demoArea.value.appendChild(element)
+              } catch (error) {
+                console.error('创建Material表格演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          }
+        ]
+      },
+      {
+        name: 'Material导航',
+        expanded: false,
+        children: [
+          {
+            id: 'material-menu-bar',
+            title: 'Material菜单栏',
+            description: 'Material Design风格的菜单栏组件',
+            code: `// Material菜单栏示例
+import { MaterialMenuBar, MenuBarLayoutType } from 'nhai-framework'
+
+// 创建菜单栏
+const menuBar = new MaterialMenuBar({
+  layout: MenuBarLayoutType.HORIZONTAL,
+  elevation: 2,
+  dense: false,
+  items: [
+    {
+      label: '文件',
+      type: 'SUBMENU',
+      children: [
+        { label: '新建', type: 'ITEM' },
+        { label: '打开', type: 'ITEM' },
+        { label: '保存', type: 'ITEM' },
+        { label: 'SEPARATOR' },
+        { label: '退出', type: 'ITEM' }
+      ]
+    },
+    {
+      label: '编辑',
+      type: 'SUBMENU',
+      children: [
+        { label: '撤销', type: 'ITEM' },
+        { label: '重做', type: 'ITEM' }
+      ]
+    },
+    { label: '视图', type: 'ITEM' },
+    { label: '帮助', type: 'ITEM' }
+  ]
+})
+
+// 添加到容器
+const container = document.createElement('div')
+container.appendChild(menuBar.render())`,
+            createDemo: () => {
+              if (!demoArea.value) return
+              
+              try {
+                const container = NHAIObjectFactory.createContainer()
+                container.setStyle({ width: '100%' })
+                
+                // 创建Material菜单栏
+                const menuBar = new MaterialMenuBar(container as any)
+                menuBar.setLayout(MenuBarLayoutType.HORIZONTAL)
+                menuBar.setElevation(2)
+                menuBar.setDense(false)
+                menuBar.setItems([
+                  {
+                    label: '文件',
+                    type: 'SUBMENU',
+                    children: [
+                      { label: '新建', type: 'ITEM' },
+                      { label: '打开', type: 'ITEM' },
+                      { label: '保存', type: 'ITEM' },
+                      { type: 'SEPARATOR' },
+                      { label: '退出', type: 'ITEM' }
+                    ]
+                  },
+                  {
+                    label: '编辑',
+                    type: 'SUBMENU',
+                    children: [
+                      { label: '撤销', type: 'ITEM' },
+                      { label: '重做', type: 'ITEM' }
+                    ]
+                  },
+                  { label: '视图', type: 'ITEM' },
+                  { label: '帮助', type: 'ITEM' }
+                ])
+                const element = container.render()
+                demoArea.value.appendChild(element)
+              } catch (error) {
+                console.error('创建Material菜单栏演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          }
+        ]
+      }
+    ]
   }
 ])
 
@@ -3103,6 +4035,68 @@ const toggleFullscreen = () => {
 const exitFullscreen = () => {
   isFullscreen.value = false
   document.body.style.overflow = ''
+}
+
+// 添加新组件类型
+const openAddComponentDialog = () => {
+  showAddComponentDialog.value = true
+  newComponentType.value = ''
+  newComponentName.value = ''
+  newComponentFactory.value = ''
+  newComponentCategory.value = '基础控件'
+}
+
+const closeAddComponentDialog = () => {
+  showAddComponentDialog.value = false
+}
+
+const addNewComponent = () => {
+  if (!newComponentType.value || !newComponentName.value || !newComponentFactory.value) {
+    alert('请填写完整信息')
+    return
+  }
+  
+  // 查找或创建分类
+  let category = componentLibrary.value.find(c => c.category === newComponentCategory.value)
+  
+  if (!category) {
+    // 创建新分类
+    category = {
+      category: newComponentCategory.value,
+      icon: 'icon-custom',
+      components: []
+    }
+    componentLibrary.value.push(category)
+  }
+  
+  // 添加新组件
+  category.components.push({
+    id: newComponentType.value,
+    name: newComponentName.value,
+    icon: 'icon-custom',
+    description: '自定义组件',
+    factory: newComponentFactory.value,
+    defaultProps: {}
+  })
+  
+  console.log('新组件已添加:', newComponentType.value)
+  closeAddComponentDialog()
+}
+
+// 获取所有组件ID列表
+const getAllComponentIds = () => {
+  const ids: string[] = []
+  componentLibrary.value.forEach(category => {
+    category.components.forEach(component => {
+      ids.push(component.id)
+    })
+  })
+  return ids
+}
+
+// 获取组件类别列表
+const getComponentCategories = () => {
+  return componentLibrary.value.map(c => c.category)
 }
 
 // 获取当前组件的属性配置
@@ -4693,5 +5687,143 @@ input:checked + .slider:before {
 
 .icon-exit-fullscreen::before {
   content: '⛷';
+}
+
+.icon-add::before {
+  content: '+';
+}
+
+/* 组件调色板头部 */
+.palette-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 12px;
+}
+
+.palette-header h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.btn-add-component {
+  padding: 6px 12px;
+  background: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.btn-add-component:hover {
+  background: #40a9ff;
+}
+
+.btn-add-component:active {
+  background: #096dd9;
+}
+
+/* 对话框样式 */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.dialog-content {
+  background: white;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90vw;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.dialog-body {
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn-cancel {
+  padding: 8px 16px;
+  background: white;
+  color: #666;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  border-color: #1890ff;
+  color: #1890ff;
 }
 </style>

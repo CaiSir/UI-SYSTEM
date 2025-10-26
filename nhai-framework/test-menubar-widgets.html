@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MaterialMenuBar 控件支持测试</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #1976d2;
+      margin-bottom: 20px;
+    }
+
+    .test-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+
+    .test-section h2 {
+      color: #424242;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .test-area {
+      margin-top: 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 10px;
+      background: white;
+    }
+
+    .description {
+      color: #666;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e3f2fd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .error {
+      color: #d32f2f;
+      background: #ffebee;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+
+    button {
+      padding: 8px 16px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      background: #1976d2;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 MaterialMenuBar 控件支持测试</h1>
+
+    <div class="test-section">
+      <h2>测试 1: 基础菜单项</h2>
+      <div class="description">
+        测试基础菜单项功能（非控件菜单项）
+      </div>
+      <div id="test1" class="test-area"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>测试 2: 嵌入按钮控件</h2>
+      <div class="description">
+        在菜单栏中嵌入 <code>MaterialButton</code> 控件
+      </div>
+      <div id="test2" class="test-area"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>测试 3: 嵌入输入框控件</h2>
+      <div class="description">
+        在菜单栏中嵌入 <code>MaterialInput</code> 控件
+      </div>
+      <div id="test3" class="test-area"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>测试 4: 混合控件</h2>
+      <div class="description">
+        同时嵌入多种控件（按钮、输入框、开关等）
+      </div>
+      <div id="test4" class="test-area"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>测试 5: 所有控件类型</h2>
+      <div class="description">
+        测试菜单栏对基础组件的完全支持
+      </div>
+      <div id="test5" class="test-area"></div>
+    </div>
+
+    <div id="result" class="result">
+      测试准备中...
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      NHAIFrameworkRegistry,
+      VanillaAdapter
+    } from './src/adapters/VanillaAdapter.js';
+    import {
+      MaterialMenuBar,
+      MaterialButton,
+      MaterialInput,
+      MaterialSelect,
+      MaterialCheckbox,
+      MaterialRadio,
+      MaterialSwitch,
+      MaterialSlider,
+      MaterialRate,
+      MenuItemType
+    } from './src/components/materialComponents/index.js';
+
+    // 注册 Vanilla 适配器
+    NHAIFrameworkRegistry.register(new VanillaAdapter());
+    NHAIFrameworkRegistry.use('vanilla');
+
+    const adapter = NHAIFrameworkRegistry.getCurrent();
+    const resultDiv = document.getElementById('result');
+
+    function showResult(success, message) {
+      resultDiv.innerHTML = `${success ? '✅' : '❌'} ${message}`;
+      resultDiv.style.background = success ? '#e8f5e9' : '#ffebee';
+      resultDiv.style.color = success ? '#2e7d32' : '#c62828';
+    }
+
+    async function runTests() {
+      try {
+        // 测试 1: 基础菜单项
+        const test1Div = document.getElementById('test1');
+        const menuBar1 = new MaterialMenuBar();
+        menuBar1
+          .addItem({ id: 'file', type: MenuItemType.ITEM, label: '文件' })
+          .addItem({ id: 'edit', type: MenuItemType.ITEM, label: '编辑' })
+          .addItem({ id: 'view', type: MenuItemType.ITEM, label: '视图' });
+        
+        const menuBarElement1 = menuBar1.render();
+        test1Div.appendChild(menuBarElement1);
+        console.log('✅ 测试 1 完成: 基础菜单项');
+
+        // 测试 2: 嵌入按钮控件
+        const test2Div = document.getElementById('test2');
+        const menuBar2 = new MaterialMenuBar();
+        
+        const button1 = new MaterialButton('保存');
+        const button2 = new MaterialButton('取消');
+        
+        menuBar2
+          .addItem({ id: 'menu1', type: MenuItemType.ITEM, label: '文件' })
+          .addItem({ id: 'menu2', type: MenuItemType.ITEM, label: '编辑' })
+          .addWidget('save-btn', button1)
+          .addWidget('cancel-btn', button2);
+        
+        const menuBarElement2 = menuBar2.render();
+        test2Div.appendChild(menuBarElement2);
+        console.log('✅ 测试 2 完成: 嵌入按钮控件');
+
+        // 测试 3: 嵌入输入框控件
+        const test3Div = document.getElementById('test3');
+        const menuBar3 = new MaterialMenuBar();
+        
+        const input1 = new MaterialInput('输入关键词...');
+        
+        menuBar3
+          .addItem({ id: 'search-menu', type: MenuItemType.ITEM, label: '搜索' })
+          .addWidget('search-input', input1);
+        
+        const menuBarElement3 = menuBar3.render();
+        test3Div.appendChild(menuBarElement3);
+        console.log('✅ 测试 3 完成: 嵌入输入框控件');
+
+        // 测试 4: 混合控件
+        const test4Div = document.getElementById('test4');
+        const menuBar4 = new MaterialMenuBar();
+        
+        const saveBtn = new MaterialButton('保存');
+        const searchInput = new MaterialInput('搜索...');
+        const switchControl = new MaterialSwitch('启用提示', true);
+        
+        menuBar4
+          .addWidget('save', saveBtn)
+          .addWidget('search', searchInput)
+          .addWidget('switch', switchControl);
+        
+        const menuBarElement4 = menuBar4.render();
+        test4Div.appendChild(menuBarElement4);
+        console.log('✅ 测试 4 完成: 混合控件');
+
+        // 测试 5: 所有控件类型
+        const test5Div = document.getElementById('test5');
+        const menuBar5 = new MaterialMenuBar();
+        
+        const btn = new MaterialButton('按钮');
+        const inp = new MaterialInput('输入');
+        const checkbox = new MaterialCheckbox('复选框', false);
+        const radio = new MaterialRadio('单选框', 'group1', false);
+        const switchCtrl = new MaterialSwitch('开关', true);
+        const slider = new MaterialSlider(50, 0, 100);
+        const rate = new MaterialRate(3);
+        
+        menuBar5
+          .addWidget('button', btn)
+          .addWidget('input', inp)
+          .addWidget('checkbox', checkbox)
+          .addWidget('radio', radio)
+          .addWidget('switch', switchCtrl)
+          .addWidget('slider', slider)
+          .addWidget('rate', rate);
+        
+        const menuBarElement5 = menuBar5.render();
+        test5Div.appendChild(menuBarElement5);
+        console.log('✅ 测试 5 完成: 所有控件类型');
+
+        showResult(true, '所有测试完成！MaterialMenuBar 已成功支持所有控件类型。');
+      } catch (error) {
+        console.error('测试失败:', error);
+        showResult(false, `测试失败: ${error.message}`);
+        resultDiv.innerHTML += `<div class="error">错误详情: ${error.stack}</div>`;
+      }
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

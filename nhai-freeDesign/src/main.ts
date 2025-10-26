@@ -1,4 +1,4 @@
-import { MaterialMenuBar, MenuItemType, NHAIFrameworkRegistry, NHAIObjectFactory, VanillaAdapter } from 'nhai-framework'
+import { MaterialButton, MaterialInput, MaterialMenuBar, MaterialSelect, MaterialSwitch, MenuItemType, NHAIFrameworkRegistry, NHAIObjectFactory, VanillaAdapter } from 'nhai-framework'
 
 // 初始化应用
 class FreeDesignApp {
@@ -62,36 +62,64 @@ class FreeDesignApp {
     if (menuBar && typeof (menuBar as any).addItem === 'function') {
       console.log('开始配置菜单栏...')
       
-      menuBar.horizontal();
-      menuBar.setBackgroundColor('#ffffff');
-      menuBar.setShadow(true);
-      menuBar.setHeight(60);
+      // menuBar.horizontal();
+      // menuBar.setBackgroundColor('#ffffff');
+      // menuBar.setShadow(true);
+      // menuBar.setHeight(60);
       
-      // 添加下拉菜单
-      menuBar.addSubmenu('file', '文件', [
-        { id: 'new', type: MenuItemType.ITEM, label: '新建', shortcut: 'Ctrl+N', onClick: () => console.log('新建文件') },
-        { id: 'open', type: MenuItemType.ITEM, label: '打开', shortcut: 'Ctrl+O', onClick: () => console.log('打开文件') },
-        { id: 'save', type: MenuItemType.ITEM, label: '保存', shortcut: 'Ctrl+S', onClick: () => console.log('保存文件') },
-        // { id: 'sep1', type: MenuItemType.SEPARATOR },
-        { id: 'exit', type: MenuItemType.ITEM, label: '退出', onClick: () => console.log('退出应用') }
-      ]);
+      // // 添加下拉菜单
+      // menuBar.addSubmenu('file', '文件', [
+      //   { id: 'new', type: MenuItemType.ITEM, label: '新建', shortcut: 'Ctrl+N', onClick: () => console.log('新建文件') },
+      //   { id: 'open', type: MenuItemType.ITEM, label: '打开', shortcut: 'Ctrl+O', onClick: () => console.log('打开文件') },
+      //   { id: 'save', type: MenuItemType.ITEM, label: '保存', shortcut: 'Ctrl+S', onClick: () => console.log('保存文件') },
+      //   // { id: 'sep1', type: MenuItemType.SEPARATOR },
+      //   { id: 'exit', type: MenuItemType.ITEM, label: '退出', onClick: () => console.log('退出应用') }
+      // ]);
       
-      menuBar.addSubmenu('edit', '编辑', [
-        { id: 'undo', type: MenuItemType.ITEM, label: '撤销', shortcut: 'Ctrl+Z', onClick: () => console.log('撤销操作') },
-        { id: 'redo', type: MenuItemType.ITEM, label: '重做', shortcut: 'Ctrl+Y', onClick: () => console.log('重做操作') },
-        // { id: 'sep2', type: MenuItemType.SEPARATOR },
-        { id: 'cut', type: MenuItemType.ITEM, label: '剪切', shortcut: 'Ctrl+X', onClick: () => console.log('剪切内容') },
-        { id: 'copy', type: MenuItemType.ITEM, label: '复制', shortcut: 'Ctrl+C', onClick: () => console.log('复制内容') },
-        { id: 'paste', type: MenuItemType.ITEM, label: '粘贴', shortcut: 'Ctrl+V', onClick: () => console.log('粘贴内容') }
-      ]);
+      // menuBar.addSubmenu('edit', '编辑', [
+      //   { id: 'undo', type: MenuItemType.ITEM, label: '撤销', shortcut: 'Ctrl+Z', onClick: () => console.log('撤销操作') },
+      //   { id: 'redo', type: MenuItemType.ITEM, label: '重做', shortcut: 'Ctrl+Y', onClick: () => console.log('重做操作') },
+      //   // { id: 'sep2', type: MenuItemType.SEPARATOR },
+      //   { id: 'cut', type: MenuItemType.ITEM, label: '剪切', shortcut: 'Ctrl+X', onClick: () => console.log('剪切内容') },
+      //   { id: 'copy', type: MenuItemType.ITEM, label: '复制', shortcut: 'Ctrl+C', onClick: () => console.log('复制内容') },
+      //   { id: 'paste', type: MenuItemType.ITEM, label: '粘贴', shortcut: 'Ctrl+V', onClick: () => console.log('粘贴内容') }
+      // ]);
       
-      menuBar.addItem({ id: 'view', type: MenuItemType.ITEM, label: '视图', onClick: () => console.log('视图菜单') });
-      // menuBar.addSeparator('sep1');
-      menuBar.addItem({ id: 'help', type: MenuItemType.ITEM, label: '帮助', onClick: () => console.log('帮助菜单') });
+      // menuBar.addItem({ id: 'view', type: MenuItemType.ITEM, label: '视图', onClick: () => console.log('视图菜单') });
+      // // menuBar.addSeparator('sep1');
+      // menuBar.addItem({ id: 'help', type: MenuItemType.ITEM, label: '帮助', onClick: () => console.log('帮助菜单') });
 
-      console.log('菜单栏:', menuBar) 
+      // menuBar.addItem({ id: 'input', type: MenuItemType.ITEM, label: '输入', onClick: () => console.log('输入菜单') });
 
-      console.log('✓ 菜单栏配置完成')
+      // console.log('菜单栏:', menuBar) 
+
+      // console.log('✓ 菜单栏配置完成')
+
+
+//       // 创建菜单栏
+// const menuBar = new MaterialMenuBar();
+
+// 创建控件
+const saveButton = new MaterialButton('保存');
+const searchInput = new MaterialInput();
+searchInput.setPlaceholder('搜索...');
+const enableSwitch = new MaterialSwitch();
+enableSwitch.setChecked(true);
+const colorSelect = new MaterialSelect();
+colorSelect.setOptions([
+  { label: '红色', value: 'red' },
+  { label: '蓝色', value: 'blue' }
+]);
+colorSelect.setPlaceholder('选择颜色');
+
+// 添加控件到菜单栏
+menuBar
+  // .addItem({ id: 'file', type: MenuItemType.ITEM, label: '文件' })
+  // .addItem({ id: 'edit', type: MenuItemType.ITEM, label: '编辑' })
+  .addWidget('save-btn', saveButton)
+  .addWidget('search-input', searchInput)
+  .addWidget('enable-switch', enableSwitch)
+  .addWidget('color-select', colorSelect);
       
       // 渲染菜单栏到页面
       this.renderMenuBar(menuBar)

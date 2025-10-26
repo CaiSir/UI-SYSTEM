@@ -20,7 +20,8 @@ export enum MenuItemType {
   SEPARATOR = 'separator',        // 分隔符
   CHECKBOX = 'checkbox',          // 复选框菜单项
   RADIO = 'radio',                // 单选菜单项
-  GROUP = 'group'                 // 菜单组
+  GROUP = 'group',                // 菜单组
+  WIDGET = 'widget'               // 嵌入控件
 }
 
 /**
@@ -42,6 +43,11 @@ export interface MenuItem {
   style?: Record<string, any>
   className?: string
   group?: string
+  // 支持嵌入任意 NHAIWidget 控件
+  widget?: NHAIWidget
+  // 控件配置 (用于动态创建控件)
+  widgetType?: string
+  widgetConfig?: Record<string, any>
 }
 
 /**
@@ -428,6 +434,8 @@ export class MaterialMenuBar extends NHAIWidget {
         return this.renderCheckboxItem(adapter, item)
       case MenuItemType.RADIO:
         return this.renderRadioItem(adapter, item)
+      case MenuItemType.WIDGET:
+        return this.renderWidgetItem(adapter, item)
       default:
         return null
     }
@@ -622,6 +630,62 @@ export class MaterialMenuBar extends NHAIWidget {
     }
 
     return itemElement
+  }
+
+  /**
+   * 渲染嵌入控件菜单项
+   */
+  private renderWidgetItem(adapter: any, item: MenuItem): HTMLElement | null {
+    if (!item.widget) {
+      return null
+    }
+
+    // 创建一个容器元素来包含控件，使用与普通菜单项相同的样式
+    const itemElement = adapter.createElement('div', {
+      className: this.buildMenuItemClasses(item),
+      // 如果提供了自定义样式，则使用自定义样式
+      ...(item.style ? { style: item.style } : {})
+    })
+
+    // 渲染控件
+    try {
+      const widgetElement = item.widget.render()
+      if (widgetElement) {
+        // 直接追加渲染的元素
+        if (widgetElement instanceof HTMLElement) {
+          itemElement.appendChild(widgetElement)
+        } else {
+          // 如果返回的不是 HTMLElement，尝试转换
+          console.warn('Widget did not return HTMLElement:', widgetElement)
+        }
+      }
+    } catch (error) {
+      console.error('Error rendering widget in menu item:', error)
+    }
+
+    return itemElement
+  }
+
+  /**
+   * 添加控件菜单项
+   */
+  addWidget(id: string, widget: NHAIWidget, config?: {
+    visible?: boolean
+    enabled?: boolean
+    style?: Record<string, any>
+    className?: string
+  }): MaterialMenuBar {
+    this._items.set(id, {
+      id,
+      type: MenuItemType.WIDGET,
+      widget,
+      visible: config?.visible ?? true,
+      enabled: config?.enabled ?? true,
+      style: config?.style,
+      className: config?.className
+    })
+    this.update()
+    return this
   }
 
   // ========== 子菜单控制 ==========

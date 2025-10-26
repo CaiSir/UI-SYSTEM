@@ -56,6 +56,15 @@ export { SelectType, SelectSize, SelectState } from './basic/Select'
 export { MenuBarLayoutType, MenuItemType } from './menubar/MaterialMenuBar'
 export { ToolbarLayoutType, ToolbarAlignment } from './toolbar/MaterialToolbar'
 
+// MenuItemType 现在包含：
+// - ITEM: 普通菜单项
+// - SUBMENU: 子菜单
+// - SEPARATOR: 分隔符
+// - CHECKBOX: 复选框菜单项
+// - RADIO: 单选菜单项
+// - GROUP: 菜单组
+// - WIDGET: 嵌入控件 (新增)
+
 // ========== 接口类型导出 ==========
 export type { SelectOption, CascadeOption, TreeOption } from './basic/Select'
 export type { TableColumn, TableData } from './data/Table'

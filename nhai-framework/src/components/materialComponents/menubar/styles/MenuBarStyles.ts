@@ -189,6 +189,81 @@ export class MenuBarStyles {
         opacity: 0.5;
       }
 
+      /* 嵌入控件的菜单项样式 */
+      .menu-item-widget {
+        max-width: none !important;
+        min-width: auto !important;
+        padding: 4px 8px !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+        height: 36px !important;
+      }
+
+      /* 菜单栏中嵌入控件的容器样式优化 */
+      .menu-item-widget > * {
+        width: 100%;
+        height: 100%;
+        display: flex !important;
+        align-items: center !important;
+      }
+
+      .menu-item-widget .mui-switch-container,
+      .menu-item-widget .mui-checkbox-container,
+      .menu-item-widget .mui-radio-container,
+      .menu-item-widget .mui-slider-container,
+      .menu-item-widget .mui-button-container {
+        margin: 0;
+        padding: 0;
+        height: 100% !important;
+        min-height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 4px;
+      }
+
+      /* Switch 组件在菜单栏中的样式优化 */
+      .menu-item-widget .mui-switch {
+        margin: 0 !important;
+        flex-shrink: 0;
+        position: relative !important;
+        overflow: visible !important;
+      }
+
+      /* Switch thumb（切换按钮）的样式 */
+      .menu-item-widget .mui-switch-thumb {
+        position: absolute !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
+        z-index: 10 !important;
+      }
+      
+      /* Switch 容器确保有足够空间 */
+      .menu-item-widget .mui-switch-container {
+        overflow: visible !important;
+      }
+
+      /* Switch 标签在菜单栏中的样式 */
+      .menu-item-widget .mui-switch-label {
+        font-size: 13px !important;
+        margin-left: 6px !important;
+        margin-right: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* 优化其他控件标签 */
+      .menu-item-widget .mui-checkbox-label,
+      .menu-item-widget .mui-radio-label,
+      .menu-item-widget .mui-slider-label {
+        font-size: 13px !important;
+        margin: 0 6px 0 0 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
       /* 菜单项标签样式 */
       .nhai-menu-item-label {
         display: inline-block;
@@ -249,6 +324,11 @@ export class MenuBarStyles {
           font-size: 14px;
           min-width: 60px;
           max-width: 120px;
+        }
+
+        .menu-item-widget {
+          min-width: 60px !important;
+          max-width: 200px !important;
         }
         
         .nhai-submenu-container {
