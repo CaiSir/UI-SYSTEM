@@ -1,3 +1,4 @@
+// 导出所有组件（Vue SFC 和命令式 API）
 export { VueButton, VueButtonCommand } from './Button'
 export { VueInput, VueInputCommand } from './Input'
 export { VueSelect, VueSelectCommand } from './Select'
@@ -11,10 +12,7 @@ export { VueContainer, VueContainerCommand } from './Container'
 export { VueGrid, VueGridCommand } from './Grid'
 export { VueSplitPanel, VueSplitPanelCommand } from './SplitPanel'
 export { VueLayoutBuilderCommand } from './LayoutBuilder'
-export { createText, createSeparator, createBlankLine } from './UIHelpers'
+
+// 重新导出类型（现在统一从 lib/types 导入）
 export type { SelectOption } from './Select'
-export type { BreadcrumbItem } from './Breadcrumb'
-export type { TabItem } from './Tabs'
-export type { MenuItem } from './MenuBar'
-export type { LayoutItem } from './LayoutBuilder'
 

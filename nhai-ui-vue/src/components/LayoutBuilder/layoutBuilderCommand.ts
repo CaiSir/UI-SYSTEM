@@ -1,3 +1,5 @@
+import { BaseCommand } from '../../lib/BaseCommand'
+
 /**
  * 布局项接口
  */
@@ -11,7 +13,7 @@ export interface LayoutItem {
  * Vue 布局构建器（命令式 API，完全解耦）
  * 参考 nhai-framework 的设计，不依赖 Vue 的具体实现
  */
-export class VueLayoutBuilderCommand {
+export class VueLayoutBuilderCommand extends BaseCommand {
   private layoutType: 'vbox' | 'hbox' | 'grid' | 'container' = 'vbox'
   private direction: 'row' | 'column' = 'column'
   private spacing: number = 0
@@ -155,8 +157,15 @@ export class VueLayoutBuilderCommand {
     this.onItemClick = callback
   }
 
+  override unmount(): void {
+    super.unmount()
+    // LayoutBuilder 不需要特殊的卸载逻辑
+  }
+
   render(): HTMLElement {
     const container = document.createElement('div')
+    this._element = container
+    this._mounted = true
     
     // 应用默认样式
     container.style.display = 'flex'

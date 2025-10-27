@@ -167,7 +167,7 @@ import {
   createSeparator,
   createBlankLine,
   createText
-} from './components'
+} from './lib'
 
 const inputValue = ref('')
 const passwordValue = ref('')
