@@ -146,10 +146,10 @@ export class MaterialDirectorySidebar extends NHAIWidget {
         height: '100%',
         width: this._collapsed ? '64px' : `${this._sidebarWidth}px`, // 只包含sidebar宽度
         backgroundColor: '#ffffff',
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
-        borderRadius: '12px',
+        boxShadow: 'none',
+        borderRadius: '0',
         overflow: 'visible', // 允许内容区域溢出
-        border: '1px solid rgba(0, 0, 0, 0.06)',
+        border: 'none',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }
     }
@@ -164,12 +164,12 @@ export class MaterialDirectorySidebar extends NHAIWidget {
         position: 'relative',
         width: this._collapsed ? '64px' : `${this._sidebarWidth}px`,
         backgroundColor: '#fafafa',
-        borderRight: '1px solid rgba(0, 0, 0, 0.08)',
+        borderRight: 'none',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
         transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        boxShadow: this._collapsed ? 'none' : 'inset -1px 0 0 0 rgba(0, 0, 0, 0.05)'
+        boxShadow: 'none'
       }
     }
 

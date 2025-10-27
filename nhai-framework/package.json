@@ -65,6 +65,8 @@
     "@mui/material": "^5.15.0",
     "@mui/icons-material": "^5.15.0",
     "@emotion/react": "^11.11.0",
-    "@emotion/styled": "^11.11.0"
+    "@emotion/styled": "^11.11.0",
+    "vue": "^3.4.21",
+    "element-plus": "^2.8.0"
   }
 }

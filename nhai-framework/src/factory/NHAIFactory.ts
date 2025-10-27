@@ -21,6 +21,9 @@ import {
   ButtonType, InputType,
   SelectType
 } from '../components/materialComponents'
+import {
+  VueButton, VueButtonType, VueButtonSize
+} from '../components/vueComponents'
 
 // React 版本的 Material UI 组件暂时移除
 // 需要安装 React 和 @mui/material 依赖后才能使用
@@ -376,6 +379,13 @@ export class NHAIObjectFactory {
   // ========== React 版本的 Material UI 组件工厂方法 ==========
   // 注意：React 版本的组件需要安装 React 和 @mui/material 依赖
   // 目前暂时移除，等待依赖安装完成后重新实现
+
+  // ========== Vue + Element UI 组件工厂方法 ==========
+  
+  // 创建 Vue 按钮
+  static createVueButton(text: string = '', parent?: NHAIObject): VueButton {
+    return new VueButton(text, parent)
+  }
 }
 
 // 导出工厂实例

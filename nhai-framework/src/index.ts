@@ -82,3 +82,6 @@ export {
 
 // 导出 Material 组件
 export * from './components/materialComponents'
+
+// 导出 Vue + Element UI 组件
+export * from './components/vueComponents'

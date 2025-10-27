@@ -142,9 +142,9 @@ export class MenuBarStyles {
         height: 50px;
         box-sizing: border-box;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        padding: 0 0 0 8px !important;
+        padding: 0 !important;
         background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+        box-shadow: none !important;
         min-height: 50px;
         user-select: none;
         position: relative;
@@ -152,8 +152,9 @@ export class MenuBarStyles {
         overflow: visible;
         max-width: 100vw;
         backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        border: none !important;
         margin: 0 !important;
+        outline: none !important;
     }
 
       /* 菜单项基础样式 */

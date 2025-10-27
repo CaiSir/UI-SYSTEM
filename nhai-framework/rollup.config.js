@@ -18,7 +18,7 @@ const config = [
         declarationMap: false
       })
     ],
-    external: ['vue', 'react', 'svelte']
+    external: ['vue', 'react', 'svelte', 'element-plus']
   },
   // CommonJS build
   {
@@ -36,7 +36,7 @@ const config = [
         declarationMap: false
       })
     ],
-    external: ['vue', 'react', 'svelte']
+    external: ['vue', 'react', 'svelte', 'element-plus']
   },
   // UMD build
   {
@@ -49,7 +49,8 @@ const config = [
       globals: {
         vue: 'Vue',
         react: 'React',
-        svelte: 'Svelte'
+        svelte: 'Svelte',
+        'element-plus': 'ElementPlus'
       }
     },
     plugins: [
@@ -59,7 +60,7 @@ const config = [
         declarationMap: false
       })
     ],
-    external: ['vue', 'react', 'svelte']
+    external: ['vue', 'react', 'svelte', 'element-plus']
   },
   // TypeScript declarations
   {
@@ -69,7 +70,7 @@ const config = [
       format: 'esm'
     },
     plugins: [dts()],
-    external: ['vue', 'react', 'svelte']
+    external: ['vue', 'react', 'svelte', 'element-plus']
   }
 ]
 

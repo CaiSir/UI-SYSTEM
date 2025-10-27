@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自定义布局示例 - NHAI UI Vue</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .demo-section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    h2 {
+      margin-bottom: 16px;
+      color: #333;
+    }
+    
+    .code-block {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+    
+    .btn-demo {
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>NHAI UI Vue - 自定义布局示例</h1>
+  <p style="margin: 16px 0; color: #666;">通过命令式 API 动态组合组件创建布局</p>
+  
+  <div class="demo-section">
+    <h2>1. 垂直布局（VBox）</h2>
+    <div id="vbox-demo" class="btn-demo"></div>
+    <div class="code-block">
+const vbox = new VueLayoutBuilderCommand('vbox')
+vbox.setSpacing(2)
+vbox.setPadding('20px')
+
+const btn1 = new VueButtonCommand('提交')
+btn1.setType('primary')
+vbox.addWidget('btn1', btn1)
+
+const input = new VueInputCommand('用户名')
+vbox.addWidget('input', input)
+
+element.appendChild(vbox.render())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>2. 水平工具栏</h2>
+    <div id="toolbar-demo" class="btn-demo"></div>
+    <div class="code-block">
+const toolbar = new VueLayoutBuilderCommand('hbox')
+toolbar.setDirection('row')
+toolbar.setGap('12px')
+toolbar.setPadding('12px')
+toolbar.setBackgroundColor('#f5f5f5')
+
+const saveBtn = new VueButtonCommand('保存')
+saveBtn.setType('primary')
+toolbar.addWidget('save', saveBtn)
+
+const cancelBtn = new VueButtonCommand('取消')
+toolbar.addWidget('cancel', cancelBtn)
+
+element.appendChild(toolbar.render())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>3. 网格布局</h2>
+    <div id="grid-demo" class="btn-demo"></div>
+    <div class="code-block">
+const grid = new VueLayoutBuilderCommand('grid')
+grid.setSpacing(3)
+grid.setGap('16px')
+
+for (let i = 1; i <= 6; i++) {
+  const card = new VueCardCommand(`卡片${i}`, `内容${i}`)
+  grid.addWidget(`card${i}`, card)
+}
+
+element.appendChild(grid.render())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>4. 嵌套布局</h2>
+    <div id="nested-demo" class="btn-demo"></div>
+    <div class="code-block">
+// 外层垂直布局
+const outer = new VueLayoutBuilderCommand('vbox')
+outer.setSpacing(2)
+
+// 内层水平布局
+const inner = new VueLayoutBuilderCommand('hbox')
+inner.setDirection('row')
+
+const btn1 = new VueButtonCommand('按钮1')
+inner.addWidget('btn1', btn1)
+
+const btn2 = new VueButtonCommand('按钮2')
+inner.addWidget('btn2', btn2)
+
+outer.addWidget('inner', inner)
+
+element.appendChild(outer.render())
+    </div>
+  </div>
+
+  <script type="module">
+    import { 
+      VueLayoutBuilderCommand,
+      VueButtonCommand,
+      VueInputCommand,
+      VueCardCommand
+    } from '../src/components/index.ts'
+    
+    // 1. 垂直布局
+    const vbox = new VueLayoutBuilderCommand('vbox')
+    vbox.setSpacing(2)
+    vbox.setPadding('20px')
+    
+    const btn1 = new VueButtonCommand('提交')
+    btn1.setType('primary')
+    vbox.addWidget('btn1', btn1)
+    
+    const input = new VueInputCommand('用户名')
+    vbox.addWidget('input', input)
+    
+    document.getElementById('vbox-demo').appendChild(vbox.render())
+    
+    // 2. 水平工具栏
+    const toolbar = new VueLayoutBuilderCommand('hbox')
+    toolbar.setDirection('row')
+    toolbar.setGap('12px')
+    toolbar.setPadding('12px')
+    toolbar.setBackgroundColor('#f5f5f5')
+    
+    const saveBtn = new VueButtonCommand('保存')
+    saveBtn.setType('primary')
+    toolbar.addWidget('save', saveBtn)
+    
+    const cancelBtn = new VueButtonCommand('取消')
+    toolbar.addWidget('cancel', cancelBtn)
+    
+    const deleteBtn = new VueButtonCommand('删除')
+    deleteBtn.setType('danger')
+    toolbar.addWidget('delete', deleteBtn)
+    
+    document.getElementById('toolbar-demo').appendChild(toolbar.render())
+    
+    // 3. 网格布局
+    const grid = new VueLayoutBuilderCommand('grid')
+    grid.setSpacing(3)
+    grid.setGap('16px')
+    
+    for (let i = 1; i <= 6; i++) {
+      const card = new VueCardCommand(`卡片${i}`, `这是卡片${i}的内容`)
+      grid.addWidget(`card${i}`, card)
+    }
+    
+    document.getElementById('grid-demo').appendChild(grid.render())
+    
+    // 4. 嵌套布局
+    const outer = new VueLayoutBuilderCommand('vbox')
+    outer.setSpacing(2)
+    outer.setPadding('20px')
+    outer.setBackgroundColor('#f8f9fa')
+    
+    const title = document.createElement('h3')
+    title.textContent = '嵌套布局示例'
+    title.style.marginBottom = '12px'
+    outer.addChild('title', title)
+    
+    const inner = new VueLayoutBuilderCommand('hbox')
+    inner.setDirection('row')
+    inner.setGap('12px')
+    
+    const btn2_1 = new VueButtonCommand('按钮1')
+    btn2_1.setType('primary')
+    inner.addWidget('btn1', btn2_1)
+    
+    const btn2_2 = new VueButtonCommand('按钮2')
+    btn2_2.setType('success')
+    inner.addWidget('btn2', btn2_2)
+    
+    const btn2_3 = new VueButtonCommand('按钮3')
+    btn2_3.setType('warning')
+    inner.addWidget('btn3', btn2_3)
+    
+    outer.addWidget('inner', inner)
+    
+    document.getElementById('nested-demo').appendChild(outer.render())
+  </script>
+</body>
+</html>
+

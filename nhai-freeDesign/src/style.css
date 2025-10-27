@@ -257,16 +257,16 @@ body {
 .nhai-vbox-layout {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
+  gap: 1px;
+  padding: 1px;
 }
 
 .nhai-hbox-layout {
   display: flex;
   flex-direction: row;
-  gap: 8px;
-  padding: 8px;
-  align-items: center;
+  gap: 1px;
+  padding: 1px;
+  align-items: stretch;
 }
 
 /* 容器组件样式 */
