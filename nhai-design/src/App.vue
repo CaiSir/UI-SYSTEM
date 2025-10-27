@@ -3226,45 +3226,39 @@ button2.setStyle({
             id: 'material-button',
             title: 'Material按钮',
             description: 'Material Design风格的按钮组件',
-            code: `// Material按钮示例
-import { MaterialButton, ButtonType } from 'nhai-framework'
+            code: `// Material按钮示例 - 使用命令式API
+import { NHAIObjectFactory, ButtonType } from 'nhai-framework'
+
+// 创建容器
+const container = NHAIObjectFactory.createContainer()
+container.setStyle({ 
+  display: 'flex', 
+  flexDirection: 'column', 
+  gap: '16px', 
+  padding: '20px' 
+})
 
 // 1. 包含按钮 (Contained)
-const containedButton = new MaterialButton({
-  text: '包含按钮',
-  type: ButtonType.CONTAINED,
-  color: 'primary',
-  disabled: false
-})
+const containedButton = NHAIObjectFactory.createMaterialButton('包含按钮', container)
+containedButton.setType(ButtonType.CONTAINED)
+containedButton.setColor('primary')
+containedButton.setDisabled(false)
 
 // 2. 轮廓按钮 (Outlined)
-const outlinedButton = new MaterialButton({
-  text: '轮廓按钮',
-  type: ButtonType.OUTLINED,
-  color: 'primary',
-  disabled: false
-})
+const outlinedButton = NHAIObjectFactory.createMaterialButton('轮廓按钮', container)
+outlinedButton.setType(ButtonType.OUTLINED)
+outlinedButton.setColor('primary')
+outlinedButton.setDisabled(false)
 
 // 3. 文本按钮 (Text)
-const textButton = new MaterialButton({
-  text: '文本按钮',
-  type: ButtonType.TEXT,
-  color: 'primary',
-  disabled: false
-})
+const textButton = NHAIObjectFactory.createMaterialButton('文本按钮', container)
+textButton.setType(ButtonType.TEXT)
+textButton.setColor('primary')
+textButton.setDisabled(false)
 
-// 添加到容器
-const container = document.createElement('div')
-container.style.cssText = \`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 20px;
-\`
-
-container.appendChild(containedButton.render())
-container.appendChild(outlinedButton.render())
-container.appendChild(textButton.render())`,
+// 渲染容器
+const element = container.render()
+demoArea.appendChild(element)`,
             createDemo: () => {
               if (!demoArea.value) return
               
@@ -3277,21 +3271,18 @@ container.appendChild(textButton.render())`,
                   padding: '20px' 
                 })
                 
-                // 创建Material按钮 - 先创建容器，然后用容器作为parent
-                const button1 = new MaterialButton(container as any)
-                button1.setText('包含按钮')
+                // 使用NHAIObjectFactory创建Material按钮
+                const button1 = NHAIObjectFactory.createMaterialButton('包含按钮', container)
                 button1.setType(ButtonType.CONTAINED)
                 button1.setColor('primary')
                 button1.setDisabled(false)
                 
-                const button2 = new MaterialButton(container as any)
-                button2.setText('轮廓按钮')
+                const button2 = NHAIObjectFactory.createMaterialButton('轮廓按钮', container)
                 button2.setType(ButtonType.OUTLINED)
                 button2.setColor('primary')
                 button2.setDisabled(false)
                 
-                const button3 = new MaterialButton(container as any)
-                button3.setText('文本按钮')
+                const button3 = NHAIObjectFactory.createMaterialButton('文本按钮', container)
                 button3.setType(ButtonType.TEXT)
                 button3.setColor('primary')
                 button3.setDisabled(false)
@@ -3308,53 +3299,49 @@ container.appendChild(textButton.render())`,
             id: 'material-input',
             title: 'Material输入框',
             description: 'Material Design风格的输入框组件',
-            code: `// Material输入框示例
-import { MaterialInput, InputType } from 'nhai-framework'
+            code: `// Material输入框示例 - 使用命令式API
+import { NHAIObjectFactory } from 'nhai-framework'
+
+// 创建容器
+const container = NHAIObjectFactory.createContainer()
+container.setStyle({ 
+  display: 'flex', 
+  flexDirection: 'column', 
+  gap: '24px', 
+  padding: '20px', 
+  maxWidth: '400px' 
+})
 
 // 1. 标准输入框
-const standardInput = new MaterialInput({
-  type: InputType.TEXT,
-  label: '标准输入框',
-  placeholder: '请输入内容',
-  helperText: '这是提示信息',
-  required: false,
-  disabled: false
-})
+const standardInput = NHAIObjectFactory.createMaterialInput(container)
+standardInput.setType('text')
+standardInput.setLabel('标准输入框')
+standardInput.setPlaceholder('请输入内容')
+standardInput.setHelperText('这是提示信息')
+standardInput.setRequired(false)
+standardInput.setDisabled(false)
 
 // 2. 数字输入框
-const numberInput = new MaterialInput({
-  type: InputType.NUMBER,
-  label: '数字输入框',
-  placeholder: '请输入数字',
-  helperText: '只能输入数字',
-  required: true,
-  disabled: false
-})
+const numberInput = NHAIObjectFactory.createMaterialInput(container)
+numberInput.setType('number')
+numberInput.setLabel('数字输入框')
+numberInput.setPlaceholder('请输入数字')
+numberInput.setHelperText('只能输入数字')
+numberInput.setRequired(true)
+numberInput.setDisabled(false)
 
 // 3. 密码输入框
-const passwordInput = new MaterialInput({
-  type: InputType.PASSWORD,
-  label: '密码输入框',
-  placeholder: '请输入密码',
-  helperText: '至少8位字符',
-  required: true,
-  disabled: false,
-  showPasswordToggle: true
-})
+const passwordInput = NHAIObjectFactory.createMaterialInput(container)
+passwordInput.setType('password')
+passwordInput.setLabel('密码输入框')
+passwordInput.setPlaceholder('请输入密码')
+passwordInput.setHelperText('至少8位字符')
+passwordInput.setRequired(true)
+passwordInput.setDisabled(false)
 
-// 添加到容器
-const container = document.createElement('div')
-container.style.cssText = \`
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  padding: 20px;
-  max-width: 400px;
-\`
-
-container.appendChild(standardInput.render())
-container.appendChild(numberInput.render())
-container.appendChild(passwordInput.render())`,
+// 渲染容器
+const element = container.render()
+demoArea.appendChild(element)`,
             createDemo: () => {
               if (!demoArea.value) return
               
@@ -3368,8 +3355,8 @@ container.appendChild(passwordInput.render())`,
                   maxWidth: '400px' 
                 })
                 
-                // 创建Material输入框
-                const input1 = new MaterialInput(container as any)
+                // 使用NHAIObjectFactory创建Material输入框
+                const input1 = NHAIObjectFactory.createMaterialInput(container)
                 input1.setType('text')
                 input1.setLabel('标准输入框')
                 input1.setPlaceholder('请输入内容')
@@ -3377,7 +3364,7 @@ container.appendChild(passwordInput.render())`,
                 input1.setRequired(false)
                 input1.setDisabled(false)
                 
-                const input2 = new MaterialInput(container as any)
+                const input2 = NHAIObjectFactory.createMaterialInput(container)
                 input2.setType('number')
                 input2.setLabel('数字输入框')
                 input2.setPlaceholder('请输入数字')
@@ -3385,7 +3372,7 @@ container.appendChild(passwordInput.render())`,
                 input2.setRequired(true)
                 input2.setDisabled(false)
                 
-                const input3 = new MaterialInput(container as any)
+                const input3 = NHAIObjectFactory.createMaterialInput(container)
                 input3.setType('password')
                 input3.setLabel('密码输入框')
                 input3.setPlaceholder('请输入密码')
@@ -3458,20 +3445,20 @@ container.appendChild(disabledSwitch.render())`,
                   maxWidth: '300px' 
                 })
                 
-                // 创建Material开关
-                const switch1 = new MaterialSwitch(container as any)
+                // 使用NHAIObjectFactory创建Material开关
+                const switch1 = NHAIObjectFactory.createMaterialSwitch(container)
                 switch1.setLabel('启用通知')
                 switch1.setChecked(false)
                 switch1.setDisabled(false)
                 switch1.setColor('primary')
                 
-                const switch2 = new MaterialSwitch(container as any)
+                const switch2 = NHAIObjectFactory.createMaterialSwitch(container)
                 switch2.setLabel('自动保存')
                 switch2.setChecked(true)
                 switch2.setDisabled(false)
                 switch2.setColor('primary')
                 
-                const switch3 = new MaterialSwitch(container as any)
+                const switch3 = NHAIObjectFactory.createMaterialSwitch(container)
                 switch3.setLabel('高级设置')
                 switch3.setChecked(false)
                 switch3.setDisabled(true)
@@ -3525,20 +3512,20 @@ disabledCheckbox.setColor('primary')`,
                   maxWidth: '300px' 
                 })
                 
-                // 创建Material复选框
-                const checkbox1 = new MaterialCheckbox(container as any)
+                // 使用NHAIObjectFactory创建Material复选框
+                const checkbox1 = NHAIObjectFactory.createMaterialCheckbox(container)
                 checkbox1.setLabel('启用通知')
                 checkbox1.setChecked(false)
                 checkbox1.setDisabled(false)
                 checkbox1.setColor('primary')
                 
-                const checkbox2 = new MaterialCheckbox(container as any)
+                const checkbox2 = NHAIObjectFactory.createMaterialCheckbox(container)
                 checkbox2.setLabel('自动保存')
                 checkbox2.setChecked(true)
                 checkbox2.setDisabled(false)
                 checkbox2.setColor('primary')
                 
-                const checkbox3 = new MaterialCheckbox(container as any)
+                const checkbox3 = NHAIObjectFactory.createMaterialCheckbox(container)
                 checkbox3.setLabel('高级设置')
                 checkbox3.setChecked(false)
                 checkbox3.setDisabled(true)
@@ -3609,14 +3596,14 @@ container.appendChild(imageCard.render())`,
                   flexWrap: 'wrap' 
                 })
                 
-                // 创建Material卡片
-                const card1 = new MaterialCard(container as any)
+                // 使用NHAIObjectFactory创建Material卡片
+                const card1 = NHAIObjectFactory.createMaterialCard(container)
                 card1.setTitle('卡片标题')
                 card1.setSubtitle('卡片副标题')
                 card1.setContent('这是卡片的内容区域，可以包含任何内容')
                 card1.setElevation(2)
                 
-                const card2 = new MaterialCard(container as any)
+                const card2 = NHAIObjectFactory.createMaterialCard(container)
                 card2.setTitle('带图片的卡片')
                 card2.setSubtitle('带图片的内容')
                 card2.setContent('这是一张带图片的卡片')
@@ -3688,7 +3675,7 @@ container.appendChild(table.render())`,
                   { name: '王五', age: 28, email: 'wangwu@example.com' }
                 ]
                 
-                const table = new MaterialTable(container as any)
+                const table = NHAIObjectFactory.createMaterialTable(container)
                 table.setColumns(columns)
                 table.setData(data)
                 table.setPagination(true)
@@ -3757,8 +3744,8 @@ container.appendChild(menuBar.render())`,
                 const container = NHAIObjectFactory.createContainer()
                 container.setStyle({ width: '100%' })
                 
-                // 创建Material菜单栏
-                const menuBar = new MaterialMenuBar(container as any)
+                // 使用NHAIObjectFactory创建Material菜单栏
+                const menuBar = NHAIObjectFactory.createMaterialMenuBar(container)
                 menuBar.setLayout(MenuBarLayoutType.HORIZONTAL)
                 menuBar.setElevation(2)
                 menuBar.setDense(false)
@@ -3889,6 +3876,11 @@ const selectExample = async (item: any) => {
 
 const createDemo = () => {
   console.log('开始创建演示...')
+  
+  // 清空演示区域
+  if (demoArea.value) {
+    demoArea.value.innerHTML = ''
+  }
   
   // 检查适配器是否已注册
   if (!adapterRegistered.value) {
