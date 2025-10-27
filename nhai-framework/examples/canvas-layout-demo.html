@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas布局示例</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    
+    .section {
+      margin-bottom: 40px;
+    }
+    
+    .section h2 {
+      color: #555;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    .canvas-container {
+      border: 2px solid #ddd;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #fff;
+    }
+    
+    .code-block {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 4px;
+      padding: 15px;
+      margin-top: 15px;
+      overflow-x: auto;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .code-block pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📐 Canvas布局示例</h1>
+    <p style="color: #666; margin-bottom: 30px;">展示如何使用NHAI布局组件来组织多个Canvas</p>
+
+    <!-- 垂直布局示例 -->
+    <div class="section">
+      <h2>1️⃣ 垂直布局 (VBoxLayout)</h2>
+      <div id="vbox-demo" class="canvas-container" style="height: 400px;"></div>
+      <div class="code-block">
+        <pre>// 垂直排列两个Canvas
+const canvas1 = new MaterialCanvas()
+canvas1.setCanvasSize(800, 300)
+canvas1.setBackground('#e3f2fd')
+
+const canvas2 = new MaterialCanvas()
+canvas2.setCanvasSize(800, 300)
+canvas2.setBackground('#fff3e0')
+
+const vbox = NHAIObjectFactory.createVBoxLayout()
+vbox.addWidget(canvas1)
+vbox.addWidget(canvas2)
+vbox.setSpacing(10)
+vbox.setWidth('100%')
+vbox.setHeight(400)
+
+const element = vbox.render()
+container.appendChild(element)</pre>
+      </div>
+    </div>
+
+    <!-- 水平布局示例 -->
+    <div class="section">
+      <h2>2️⃣ 水平布局 (HBoxLayout)</h2>
+      <div id="hbox-demo" class="canvas-container" style="height: 350px;"></div>
+      <div class="code-block">
+        <pre>// 水平排列两个Canvas
+const canvas1 = new MaterialCanvas()
+canvas1.setCanvasSize(600, 300)
+canvas1.setBackground('#e8f5e9')
+
+const canvas2 = new MaterialCanvas()
+canvas2.setCanvasSize(600, 300)
+canvas2.setBackground('#fce4ec')
+
+const hbox = NHAIObjectFactory.createHBoxLayout()
+hbox.addWidget(canvas1)
+hbox.addWidget(canvas2)
+hbox.setSpacing(10)
+hbox.setWidth('100%')
+hbox.setHeight(350)
+
+const element = hbox.render()
+container.appendChild(element)</pre>
+      </div>
+    </div>
+
+    <!-- 网格布局示例 -->
+    <div class="section">
+      <h2>3️⃣ 网格布局 (GridLayout)</h2>
+      <div id="grid-demo" class="canvas-container" style="height: 450px;"></div>
+      <div class="code-block">
+        <pre>// 2x2网格布局
+const canvas1 = new MaterialCanvas()
+canvas1.setCanvasSize(600, 300)
+canvas1.setBackground('#f3e5f5')
+
+const canvas2 = new MaterialCanvas()
+canvas2.setCanvasSize(600, 300)
+canvas2.setBackground('#e0f2f1')
+
+const canvas3 = new MaterialCanvas()
+canvas3.setCanvasSize(600, 300)
+canvas3.setBackground('#fff8e1')
+
+const canvas4 = new MaterialCanvas()
+canvas4.setCanvasSize(600, 300)
+canvas4.setBackground('#ffebee')
+
+const grid = NHAIObjectFactory.createGridLayout()
+grid.setColumns(2)
+grid.addWidget(canvas1)
+grid.addWidget(canvas2)
+grid.addWidget(canvas3)
+grid.addWidget(canvas4)
+grid.setSpacing(10)
+grid.setWidth('100%')
+grid.setHeight(450)
+
+const element = grid.render()
+container.appendChild(element)</pre>
+      </div>
+    </div>
+
+    <!-- 分割面板示例 -->
+    <div class="section">
+      <h2>4️⃣ 分割面板 (SplitPanel)</h2>
+      <div id="split-demo" class="canvas-container" style="height: 400px;"></div>
+      <div class="code-block">
+        <pre>// 可调整大小的分割面板
+const canvas1 = new MaterialCanvas()
+canvas1.setCanvasSize(800, 400)
+canvas1.setBackground('#e1f5fe')
+canvas1.setMode(CanvasMode['2D'])
+
+const canvas2 = new MaterialCanvas()
+canvas2.setCanvasSize(800, 400)
+canvas2.setBackground('#fff9c4')
+canvas2.setMode(CanvasMode['3D'])
+
+const splitPanel = new MaterialSplitPanel()
+splitPanel.setOrientation('horizontal')
+splitPanel.setSplitPosition(50)
+splitPanel.setLeftPanel(canvas1)
+splitPanel.setRightPanel(canvas2)
+splitPanel.setWidth('100%')
+splitPanel.setHeight(400)
+
+const element = splitPanel.render()
+container.appendChild(element)</pre>
+      </div>
+    </div>
+
+    <!-- 嵌套布局示例 -->
+    <div class="section">
+      <h2>5️⃣ 嵌套布局 (VBox + HBox)</h2>
+      <div id="nested-demo" class="canvas-container" style="height: 500px;"></div>
+      <div class="code-block">
+        <pre>// 嵌套布局：顶部VBox包含HBox + Canvas
+const topCanvas = new MaterialCanvas()
+topCanvas.setCanvasSize(1600, 200)
+topCanvas.setBackground('#f1f8e9')
+
+const bottomHBox = NHAIObjectFactory.createHBoxLayout()
+
+const leftCanvas = new MaterialCanvas()
+leftCanvas.setCanvasSize(800, 250)
+leftCanvas.setBackground('#fff3e0')
+
+const rightCanvas = new MaterialCanvas()
+rightCanvas.setCanvasSize(800, 250)
+rightCanvas.setBackground('#e8eaf6')
+
+bottomHBox.addWidget(leftCanvas)
+bottomHBox.addWidget(rightCanvas)
+bottomHBox.setSpacing(10)
+
+const outerVBox = NHAIObjectFactory.createVBoxLayout()
+outerVBox.addWidget(topCanvas)
+outerVBox.addWidget(bottomHBox)
+outerVBox.setSpacing(10)
+
+const element = outerVBox.render()
+container.appendChild(element)</pre>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { 
+      MaterialCanvas, 
+      MaterialSplitPanel, 
+      CanvasMode,
+      NHAIObjectFactory,
+      NHAIFrameworkRegistry,
+      VanillaAdapter 
+    } from '../dist/index.js'
+
+    // 初始化框架
+    NHAIFrameworkRegistry.register('vanilla', new VanillaAdapter())
+    NHAIFrameworkRegistry.use('vanilla')
+
+    // 1. 垂直布局
+    function createVBoxDemo() {
+      const container = document.getElementById('vbox-demo')
+      if (!container) return
+
+      const canvas1 = new MaterialCanvas()
+      canvas1.setCanvasSize(800, 300)
+      canvas1.setBackground('#e3f2fd')
+
+      const canvas2 = new MaterialCanvas()
+      canvas2.setCanvasSize(800, 300)
+      canvas2.setBackground('#fff3e0')
+
+      const vbox = NHAIObjectFactory.createVBoxLayout()
+      vbox.addWidget(canvas1)
+      vbox.addWidget(canvas2)
+      vbox.setSpacing(10)
+      vbox.setWidth('100%')
+      vbox.setHeight(400)
+
+      const element = vbox.render()
+      container.appendChild(element)
+
+      // 绘制内容到canvas
+      const ctx1 = canvas1.getContext2D()
+      if (ctx1) {
+        ctx1.fillStyle = '#1976d2'
+        ctx1.font = '48px Arial'
+        ctx1.fillText('Canvas 1 (Top)', 50, 150)
+      }
+
+      const ctx2 = canvas2.getContext2D()
+      if (ctx2) {
+        ctx2.fillStyle = '#f57c00'
+        ctx2.font = '48px Arial'
+        ctx2.fillText('Canvas 2 (Bottom)', 50, 150)
+      }
+    }
+
+    // 2. 水平布局
+    function createHBoxDemo() {
+      const container = document.getElementById('hbox-demo')
+      if (!container) return
+
+      const canvas1 = new MaterialCanvas()
+      canvas1.setCanvasSize(600, 300)
+      canvas1.setBackground('#e8f5e9')
+
+      const canvas2 = new MaterialCanvas()
+      canvas2.setCanvasSize(600, 300)
+      canvas2.setBackground('#fce4ec')
+
+      const hbox = NHAIObjectFactory.createHBoxLayout()
+      hbox.addWidget(canvas1)
+      hbox.addWidget(canvas2)
+      hbox.setSpacing(10)
+      hbox.setWidth('100%')
+      hbox.setHeight(350)
+
+      const element = hbox.render()
+      container.appendChild(element)
+
+      const ctx1 = canvas1.getContext2D()
+      if (ctx1) {
+        ctx1.fillStyle = '#388e3c'
+        ctx1.font = '36px Arial'
+        ctx1.fillText('Left', 150, 150)
+      }
+
+      const ctx2 = canvas2.getContext2D()
+      if (ctx2) {
+        ctx2.fillStyle = '#c2185b'
+        ctx2.font = '36px Arial'
+        ctx2.fillText('Right', 150, 150)
+      }
+    }
+
+    // 3. 网格布局
+    function createGridDemo() {
+      const container = document.getElementById('grid-demo')
+      if (!container) return
+
+      const colors = ['#f3e5f5', '#e0f2f1', '#fff8e1', '#ffebee']
+      const texts = ['Canvas 1', 'Canvas 2', 'Canvas 3', 'Canvas 4']
+      const canvasColors = ['#7b1fa2', '#00796b', '#f57f17', '#c62828']
+
+      const canvases = []
+      for (let i = 0; i < 4; i++) {
+        const canvas = new MaterialCanvas()
+        canvas.setCanvasSize(600, 300)
+        canvas.setBackground(colors[i])
+        canvases.push(canvas)
+      }
+
+      const grid = NHAIObjectFactory.createGridLayout()
+      grid.setColumns(2)
+      canvases.forEach(c => grid.addWidget(c))
+      grid.setSpacing(10)
+      grid.setWidth('100%')
+      grid.setHeight(450)
+
+      const element = grid.render()
+      container.appendChild(element)
+
+      canvases.forEach((canvas, i) => {
+        const ctx = canvas.getContext2D()
+        if (ctx) {
+          ctx.fillStyle = canvasColors[i]
+          ctx.font = '32px Arial'
+          ctx.fillText(texts[i], 180, 150)
+        }
+      })
+    }
+
+    // 4. 分割面板
+    function createSplitDemo() {
+      const container = document.getElementById('split-demo')
+      if (!container) return
+
+      const canvas1 = new MaterialCanvas()
+      canvas1.setCanvasSize(800, 400)
+      canvas1.setBackground('#e1f5fe')
+
+      const canvas2 = new MaterialCanvas()
+      canvas2.setCanvasSize(800, 400)
+      canvas2.setBackground('#fff9c4')
+
+      const splitPanel = new MaterialSplitPanel()
+      splitPanel.setOrientation('horizontal')
+      splitPanel.setSplitPosition(50)
+      splitPanel.setLeftPanel(canvas1)
+      splitPanel.setRightPanel(canvas2)
+      splitPanel.setWidth('100%')
+      splitPanel.setHeight(400)
+
+      const element = splitPanel.render()
+      container.appendChild(element)
+
+      const ctx1 = canvas1.getContext2D()
+      if (ctx1) {
+        ctx1.fillStyle = '#0277bd'
+        ctx1.font = '32px Arial'
+        ctx1.fillText('Left Panel (2D)', 200, 200)
+      }
+
+      const ctx2 = canvas2.getContext2D()
+      if (ctx2) {
+        ctx2.fillStyle = '#f9a825'
+        ctx2.font = '32px Arial'
+        ctx2.fillText('Right Panel', 200, 200)
+      }
+    }
+
+    // 5. 嵌套布局
+    function createNestedDemo() {
+      const container = document.getElementById('nested-demo')
+      if (!container) return
+
+      const topCanvas = new MaterialCanvas()
+      topCanvas.setCanvasSize(1600, 200)
+      topCanvas.setBackground('#f1f8e9')
+
+      const leftCanvas = new MaterialCanvas()
+      leftCanvas.setCanvasSize(800, 250)
+      leftCanvas.setBackground('#fff3e0')
+
+      const rightCanvas = new MaterialCanvas()
+      rightCanvas.setCanvasSize(800, 250)
+      rightCanvas.setBackground('#e8eaf6')
+
+      const bottomHBox = NHAIObjectFactory.createHBoxLayout()
+      bottomHBox.addWidget(leftCanvas)
+      bottomHBox.addWidget(rightCanvas)
+      bottomHBox.setSpacing(10)
+
+      const outerVBox = NHAIObjectFactory.createVBoxLayout()
+      outerVBox.addWidget(topCanvas)
+      outerVBox.addWidget(bottomHBox)
+      outerVBox.setSpacing(10)
+
+      const element = outerVBox.render()
+      container.appendChild(element)
+
+      const topCtx = topCanvas.getContext2D()
+      if (topCtx) {
+        topCtx.fillStyle = '#558b2f'
+        topCtx.font = '32px Arial'
+        topCtx.fillText('Top Canvas', 50, 100)
+      }
+
+      const leftCtx = leftCanvas.getContext2D()
+      if (leftCtx) {
+        leftCtx.fillStyle = '#ef6c00'
+        leftCtx.font = '28px Arial'
+        leftCtx.fillText('Left Canvas', 150, 125)
+      }
+
+      const rightCtx = rightCanvas.getContext2D()
+      if (rightCtx) {
+        rightCtx.fillStyle = '#5e35b1'
+        rightCtx.font = '28px Arial'
+        rightCtx.fillText('Right Canvas', 150, 125)
+      }
+    }
+
+    // 初始化所有示例
+    createVBoxDemo()
+    createHBoxDemo()
+    createGridDemo()
+    createSplitDemo()
+    createNestedDemo()
+
+    console.log('✅ 所有Canvas布局示例已加载')
+  </script>
+</body>
+</html>
+

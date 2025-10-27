@@ -70,6 +70,12 @@ export class MaterialContainer extends NHAIWidget {
     if (this._id) containerProps.id = this._id
     if (this._className) containerProps.className += ` ${this._className}`
 
+    // 添加右键菜单处理器
+    const contextMenuHandler = this.getContextMenuHandler()
+    if (contextMenuHandler) {
+      containerProps.onContextMenu = contextMenuHandler
+    }
+
     const children: any[] = []
 
     // 渲染子组件

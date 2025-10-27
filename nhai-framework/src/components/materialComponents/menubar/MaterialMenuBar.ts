@@ -245,9 +245,17 @@ export class MaterialMenuBar extends NHAIWidget {
     // 加载CSS样式文件
     this.loadStyles()
 
-    const container = adapter.createElement('div', {
+    const containerProps: any = {
       className: this.buildMenuBarClasses()
-    })
+    }
+
+    // 添加右键菜单处理器
+    const contextMenuHandler = this.getContextMenuHandler()
+    if (contextMenuHandler) {
+      containerProps.onContextMenu = contextMenuHandler
+    }
+
+    const container = adapter.createElement('div', containerProps)
 
     this._container = container
 

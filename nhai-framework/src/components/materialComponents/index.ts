@@ -16,6 +16,7 @@ export { MaterialRadio } from './basic/Radio'
 export { MaterialSwitch } from './basic/Switch'
 export { MaterialSlider } from './basic/Slider'
 export { MaterialRate } from './basic/Rate'
+export { MaterialCanvas, CanvasMode } from './basic/Canvas'
 
 // ========== 数据展示组件导出 ==========
 export { MaterialTable } from './data/Table'

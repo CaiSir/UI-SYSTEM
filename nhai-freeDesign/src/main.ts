@@ -1,4 +1,4 @@
-import { MaterialButton, MaterialDirectorySidebar, MaterialInput, MaterialMenuBar, MaterialSelect, MaterialSwitch, MenuItemType, NHAIFrameworkRegistry, VanillaAdapter } from 'nhai-framework'
+import { CanvasMode, MaterialButton, MaterialCanvas, MaterialDirectorySidebar, MaterialInput, MaterialMenuBar, MaterialSelect, MaterialSwitch, MenuItemType, NHAIFrameworkRegistry, NHAIObject, NHAIObjectFactory, VanillaAdapter } from 'nhai-framework'
 
 // 初始化应用
 class FreeDesignApp {
@@ -8,6 +8,9 @@ class FreeDesignApp {
 
   private menuBar: MaterialMenuBar | null = null
   private directory: MaterialDirectorySidebar | null = null
+  private vbox: NHAIObject | null = null
+  private canvas2D: MaterialCanvas | null = null
+  private canvas3D: MaterialCanvas | null = null
   
   private init(): void {
     console.log('NHAI Free Design 正在初始化...')
@@ -22,37 +25,47 @@ class FreeDesignApp {
     // 设置适配器后才创建组件
     this.directory = this.createDirectorySidebar()
     this.menuBar = this.createMaterialMenuBar()
-    
+    this.canvas3D = this.create3DCanvas()  // 先创建 canvas，再创建布局
+    this.vbox = this.createVBoxLayout()
     this.renderLayout()
     
     // 设置重新渲染回调
     ;(window as any).rerenderDirectorySidebar = () => {
+      // 重新创建vbox以反映最新状态（使用已有的canvas3D）
+      this.vbox = this.createVBoxLayout()
       this.renderLayout()
     }
 
     console.log('NHAI Free Design 初始化完成')
   }
   
+  private createVBoxLayout(): NHAIObject {
+    const vbox = NHAIObjectFactory.createVBoxLayout()
+    // 设置垂直布局间距（可选）
+    vbox.setSpacing(0) // 菜单栏和目录之间间距
+    vbox.addWidget(this.menuBar!)
+    vbox.addWidget(this.createHBoxLayout())
+    return vbox
+  }
+
+  private createHBoxLayout(): NHAIObject {
+    const hbox = NHAIObjectFactory.createHBoxLayout()
+    hbox.setSpacing(0)
+    hbox.addWidget(this.directory!)
+    hbox.addWidget(this.canvas3D!)
+    return hbox
+  }
   private renderLayout(): void {
     const appContainer = document.getElementById('app')
-    if (!appContainer || !this.menuBar || !this.directory) return
+    if (!appContainer || !this.vbox) return
 
     // 清空容器
     appContainer.innerHTML = ''
     
-    // 创建容器样式
-    const container = document.createElement('div')
-    container.style.cssText = 'display: flex; flex-direction: column; width: 100vw; height: 100vh;'
+    // 渲染垂直布局（样式由vbox内部管理）
+    const element = this.vbox.render()
+    appContainer.appendChild(element)
     
-    // 渲染菜单栏
-    const menuBarElement = this.menuBar.render()
-    container.appendChild(menuBarElement)
-    
-    // 渲染目录栏
-    const directoryElement = this.directory.render()
-    container.appendChild(directoryElement)
-    
-    appContainer.appendChild(container)
     console.log('✓ 布局已渲染到页面')
   }
 
@@ -83,6 +96,35 @@ class FreeDesignApp {
     return menuBar
   }
 
+  private create2DCanvas(): MaterialCanvas {
+ // 2D绘图
+    const canvas2D = new MaterialCanvas()
+    canvas2D.setMode(CanvasMode['2D'])
+    canvas2D.setCanvasSize(800, 600)
+    const ctx2D = canvas2D.getContext2D()
+    if (ctx2D) {
+      ctx2D.fillStyle = 'blue'
+      ctx2D.fillRect(10, 10, 100, 100)
+    }
+    return canvas2D
+  }
+
+  private create3DCanvas(): MaterialCanvas {
+    const canvas3D = new MaterialCanvas()
+    canvas3D.setMode(CanvasMode['3D'])
+    canvas3D.setCanvasSize(1200, 800)
+    
+    // 设置背景色为浅灰白（更柔和护眼）
+    canvas3D.setBackground('#f5f5f5')
+    
+    // 启用网格显示
+    canvas3D.setShowGrid(true)
+    canvas3D.setGridSize(20)
+    canvas3D.setGridColor('#e0e0e0')
+    
+    return canvas3D
+  }
+
   private createDirectorySidebar(): MaterialDirectorySidebar {
     const directorySidebar = new MaterialDirectorySidebar()
     const directoryItems = [
@@ -111,29 +153,6 @@ class FreeDesignApp {
     })
     
     return directorySidebar
-  }
-
-  private renderDirectorySidebar(directorySidebar: MaterialDirectorySidebar): void {
-    const appContainer = document.getElementById('app')
-    if (!appContainer) return
-
-    const element = directorySidebar.render()
-    appContainer.appendChild(element)
-    console.log('✓ 目录栏已渲染到页面')
-  }
-
-  private renderMenuBar(menuBar: MaterialMenuBar): void {
-    const appContainer = document.getElementById('app')
-    if (!appContainer) return
-
-    // 清空容器
-    appContainer.innerHTML = ''
-
-    // 渲染菜单栏
-    const element = menuBar.render()
-    appContainer.appendChild(element)
-
-    console.log('✓ 菜单栏已渲染到页面')
   }
 }
 

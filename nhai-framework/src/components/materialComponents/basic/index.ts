@@ -10,5 +10,6 @@ export { MaterialRadio } from './Radio'
 export { MaterialSwitch } from './Switch'
 export { MaterialSlider } from './Slider'
 export { MaterialRate } from './Rate'
+export { MaterialCanvas, CanvasMode } from './Canvas'
 
 export type { SelectOption } from './Select'

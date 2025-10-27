@@ -122,12 +122,18 @@ export class MaterialDirectorySidebar extends NHAIWidget {
         ...this.getMergedStyle(),
         position: 'relative',
         height: '100%',
-        overflow: 'hidden'
+        overflow: 'visible' // 允许内容区域溢出
       }
     }
 
     if (this._id) containerProps.id = this._id
     if (this._className) containerProps.className += ` ${this._className}`
+
+    // 添加右键菜单处理器
+    const contextMenuHandler = this.getContextMenuHandler()
+    if (contextMenuHandler) {
+      containerProps.onContextMenu = contextMenuHandler
+    }
 
     const children: any[] = []
 
@@ -138,11 +144,11 @@ export class MaterialDirectorySidebar extends NHAIWidget {
         position: 'relative',
         display: 'flex',
         height: '100%',
-        width: this._collapsed ? '64px' : `${this._sidebarWidth + this._contentWidth}px`,
+        width: this._collapsed ? '64px' : `${this._sidebarWidth}px`, // 只包含sidebar宽度
         backgroundColor: '#ffffff',
         boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
         borderRadius: '12px',
-        overflow: 'visible',
+        overflow: 'visible', // 允许内容区域溢出
         border: '1px solid rgba(0, 0, 0, 0.06)',
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }
@@ -360,18 +366,24 @@ export class MaterialDirectorySidebar extends NHAIWidget {
 
     // 如果未收起，显示内容区域
     if (!this._collapsed) {
-      // 内容区域
+      // 内容区域 - 绝对定位，覆盖在右侧
       const activeItem = this._items.find(item => item.id === this._activeKey)
       const contentWrapperProps: any = {
         className: 'mui-directory-sidebar__content-wrapper',
         style: {
-          position: 'relative',
+          position: 'absolute',
+          left: this._position === 'left' ? `${this._sidebarWidth}px` : 'auto',
+          right: this._position === 'right' ? `${this._sidebarWidth}px` : 'auto',
+          top: '0',
           width: `${this._contentWidth}px`,
+          height: '100%',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
           backgroundColor: '#ffffff',
-          borderLeft: '1px solid #e0e0e0'
+          borderLeft: '1px solid #e0e0e0',
+          zIndex: 10,
+          boxShadow: '2px 0 8px rgba(0, 0, 0, 0.1)'
         }
       }
       

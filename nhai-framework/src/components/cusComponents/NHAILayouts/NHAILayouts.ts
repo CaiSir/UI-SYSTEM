@@ -74,7 +74,10 @@ export class NHAIVBoxLayout extends NHAILayout {
         flexDirection: 'column',
         gap: `${this._spacing}px`,
         alignItems: this.getAlignmentValue(),
-        justifyContent: 'flex-start'
+        justifyContent: 'flex-start',
+        width: '100%',
+        height: '100%',
+        flex: '1 1 auto' // 自动填充
       }
     }
 
@@ -113,8 +116,13 @@ export class NHAIHBoxLayout extends NHAILayout {
         display: 'flex',
         flexDirection: 'row',
         gap: `${this._spacing}px`,
-        alignItems: 'center',
-        justifyContent: this.getJustifyValue()
+        alignItems: 'stretch', // 拉伸子元素高度
+        justifyContent: this.getJustifyValue(),
+        overflow: 'visible', // 允许子元素溢出
+        position: 'relative',
+        flex: 1, // 自动填充剩余空间
+        width: '100%',
+        height: '100%'
       }
     }
 

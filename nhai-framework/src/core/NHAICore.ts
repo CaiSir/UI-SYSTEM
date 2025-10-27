@@ -240,6 +240,7 @@ export abstract class NHAIWidget extends NHAIObject {
   protected _minHeight: number | string = 'auto'
   protected _maxWidth: number | string = 'none'
   protected _maxHeight: number | string = 'none'
+  protected _onContextMenu?: (e: MouseEvent) => void
 
   setWidth(width: number | string): void {
     this._width = width
@@ -289,6 +290,16 @@ export abstract class NHAIWidget extends NHAIObject {
     return this._maxHeight
   }
 
+  // 设置右键菜单回调
+  setOnContextMenu(handler: (e: MouseEvent) => void): void {
+    this._onContextMenu = handler
+  }
+
+  // 获取右键菜单回调
+  onContextMenu(): ((e: MouseEvent) => void) | undefined {
+    return this._onContextMenu
+  }
+
   // 获取控件样式
   getWidgetStyle(): Record<string, any> {
     const style: Record<string, any> = {}
@@ -313,6 +324,29 @@ export abstract class NHAIWidget extends NHAIObject {
     }
 
     return style
+  }
+
+  // 获取通用的右键菜单事件处理器
+  protected getContextMenuHandler(): ((e: MouseEvent) => void) | undefined {
+    if (this._onContextMenu) {
+      return (e: MouseEvent) => {
+        e.preventDefault() // 阻止默认右键菜单
+        this._onContextMenu!(e)
+      }
+    } else {
+      // 如果没有自定义回调，只阻止默认菜单
+      return (e: MouseEvent) => {
+        e.preventDefault()
+      }
+    }
+  }
+
+  // 辅助方法：将右键菜单处理器添加到props中
+  protected applyContextMenuHandler(props: Record<string, any>): void {
+    const contextMenuHandler = this.getContextMenuHandler()
+    if (contextMenuHandler) {
+      props.onContextMenu = contextMenuHandler
+    }
   }
 }
 
