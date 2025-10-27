@@ -6,6 +6,8 @@ export { MaterialContainer } from './Container'
 export { MaterialGrid } from './Grid'
 export { MaterialSplitPanel } from './SplitPanel'
 export { MaterialCollapse } from './Collapse'
+export { MaterialDirectorySidebar } from './DirectorySidebar'
 
 export type { GridItem } from './Grid'
 export type { CollapsePanel } from './Collapse'
+export type { DirectoryItem } from './DirectorySidebar'

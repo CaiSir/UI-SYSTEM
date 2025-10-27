@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Table of Contents 组件示例 - NHAI Framework</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    .demo-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .demo-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .toc-panel {
+      width: 300px;
+    }
+
+    .content-panel {
+      flex: 1;
+      min-height: 800px;
+    }
+
+    h1 {
+      color: #1976d2;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    h2 {
+      color: #424242;
+      margin: 30px 0 15px;
+      font-size: 20px;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 5px;
+    }
+
+    h3 {
+      color: #616161;
+      margin: 20px 0 10px;
+      font-size: 16px;
+    }
+
+    p {
+      color: #757575;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+      padding: 20px;
+      background: #fafafa;
+      border-radius: 4px;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #fff3e0;
+      border-radius: 4px;
+      border-left: 4px solid #ff9800;
+    }
+
+    button {
+      background: #1976d2;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    button:active {
+      background: #0d47a1;
+    }
+
+    .info {
+      margin-top: 10px;
+      padding: 10px;
+      background: #e3f2fd;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #1565c0;
+    }
+
+    #container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <!-- 目录栏面板 -->
+    <div class="demo-panel toc-panel">
+      <h1>目录栏组件</h1>
+      <div class="controls">
+        <button onclick="expandAll()">展开全部</button>
+        <button onclick="collapseAll()">折叠全部</button>
+        <button onclick="toggleCompact()">紧凑模式</button>
+        <button onclick="changeSize()">切换尺寸</button>
+        <div class="info">点击目录项可跳转到相应章节</div>
+      </div>
+      <div id="container"></div>
+    </div>
+
+    <!-- 内容面板 -->
+    <div class="demo-panel content-panel">
+      <h1>文档内容</h1>
+
+      <div id="section1" class="section">
+        <h2>第一章：NHAI 框架介绍</h2>
+        <p>
+          NHAI（Next-generation Human-Computer Interaction）框架是一个现代化的UI框架，
+          旨在提供灵活、高效的组件开发体验。
+        </p>
+        <p>
+          本框架支持多种前端框架适配，包括 React、Vue、Svelte 和原生 JavaScript，
+          让开发者可以在不同的技术栈中无缝使用相同的组件。
+        </p>
+        <h3>核心特性</h3>
+        <p>
+          - 命令式 API：简洁直观的组件调用方式
+          - 多框架适配：一套组件，多端使用
+          - Material Design：遵循 Material Design 设计规范
+          - TypeScript 支持：完整的类型定义
+        </p>
+      </div>
+
+      <div id="section2" class="section">
+        <h2>第二章：目录栏组件使用</h2>
+        <p>
+          目录栏（Table of Contents）组件用于展示文档或页面的层级结构，
+          帮助用户快速导航到感兴趣的章节。
+        </p>
+        <h3>基本用法</h3>
+        <p>
+          创建目录栏组件需要定义一个包含标题和层级的数组，
+          每个项目可以包含子项目，形成树形结构。
+        </p>
+        <h3>高级功能</h3>
+        <p>
+          - 可折叠：支持展开和折叠子节点
+          - 活动状态：自动高亮当前浏览位置
+          - 锚点跳转：点击目录项自动滚动到对应内容
+          - 多种样式：提供默认、边框和紧凑三种样式
+        </p>
+      </div>
+
+      <div id="section3" class="section">
+        <h2>第三章：组件 API</h2>
+        <p>
+          本节介绍目录栏组件的主要 API 和使用方法。
+        </p>
+        <h3>创建组件</h3>
+        <p>
+          使用 new MaterialTableOfContents() 创建目录栏实例。
+        </p>
+        <h3>配置选项</h3>
+        <p>
+          - setItems(): 设置目录项
+          - setVariant(): 设置样式变体
+          - setSize(): 设置尺寸大小
+          - setCollapsible(): 设置是否可折叠
+          - setDefaultExpandAll(): 设置默认展开所有项
+        </p>
+      </div>
+
+      <div id="section4" class="section">
+        <h2>第四章：最佳实践</h2>
+        <p>
+          在使用目录栏组件时，有一些最佳实践值得遵循。
+        </p>
+        <h3>内容组织</h3>
+        <p>
+          确保内容的层级结构清晰，避免过深的嵌套层级。
+          建议控制在 3-4 级以内，以保证良好的用户体验。
+        </p>
+        <h3>交互设计</h3>
+        <p>
+          考虑用户的使用场景，合理设置默认展开状态。
+          对于较长的文档，默认折叠所有项，让用户按需展开。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { NHAICore, VanillaAdapter } from '../dist/index.esm.js'
+
+    // 初始化框架
+    const core = new NHAICore()
+    core.registerAdapter('vanilla', new VanillaAdapter())
+
+    // 定义目录结构
+    const tocItems = [
+      {
+        id: 'section1',
+        label: '第一章：NHAI 框架介绍',
+        level: 1,
+        href: '#section1',
+        children: [
+          {
+            id: 'section1-1',
+            label: '核心特性',
+            level: 2,
+            href: '#section1-1'
+          }
+        ]
+      },
+      {
+        id: 'section2',
+        label: '第二章：目录栏组件使用',
+        level: 1,
+        href: '#section2',
+        children: [
+          {
+            id: 'section2-1',
+            label: '基本用法',
+            level: 2,
+            href: '#section2-1'
+          },
+          {
+            id: 'section2-2',
+            label: '高级功能',
+            level: 2,
+            href: '#section2-2'
+          }
+        ]
+      },
+      {
+        id: 'section3',
+        label: '第三章：组件 API',
+        level: 1,
+        href: '#section3',
+        children: [
+          {
+            id: 'section3-1',
+            label: '创建组件',
+            level: 2,
+            href: '#section3-1'
+          },
+          {
+            id: 'section3-2',
+            label: '配置选项',
+            level: 2,
+            href: '#section3-2'
+          }
+        ]
+      },
+      {
+        id: 'section4',
+        label: '第四章：最佳实践',
+        level: 1,
+        href: '#section4',
+        children: [
+          {
+            id: 'section4-1',
+            label: '内容组织',
+            level: 2,
+            href: '#section4-1'
+          },
+          {
+            id: 'section4-2',
+            label: '交互设计',
+            level: 2,
+            href: '#section4-2'
+          }
+        ]
+      }
+    ]
+
+    // 创建目录栏组件
+    const toc = core.create('MaterialTableOfContents')
+    toc.setItems(tocItems)
+    toc.setCollapsible(true)
+    toc.setDefaultExpandAll(false)
+    toc.setSize('medium')
+    toc.setVariant('default')
+
+    // 渲染组件
+    const container = document.getElementById('container')
+    const renderer = core.getRenderer()
+    const element = toc.render(renderer)
+    container.appendChild(element)
+
+    // 将组件保存到全局，供按钮使用
+    window.toc = toc
+  </script>
+
+  <script>
+    let isCompact = false
+    let currentSize = 0
+    const sizes = ['small', 'medium', 'large']
+
+    function expandAll() {
+      if (window.toc) {
+        window.toc.expandAll()
+      }
+    }
+
+    function collapseAll() {
+      if (window.toc) {
+        window.toc.collapseAll()
+      }
+    }
+
+    function toggleCompact() {
+      isCompact = !isCompact
+      if (window.toc) {
+        window.toc.setVariant(isCompact ? 'compact' : 'default')
+      }
+    }
+
+    function changeSize() {
+      currentSize = (currentSize + 1) % sizes.length
+      if (window.toc) {
+        window.toc.setSize(sizes[currentSize])
+      }
+    }
+
+    // 监听滚动，自动设置活动项
+    let activeSection = null
+    function updateActiveSection() {
+      const sections = document.querySelectorAll('.section')
+      const scrollY = window.scrollY
+
+      sections.forEach((section, index) => {
+        const rect = section.getBoundingClientRect()
+        if (rect.top <= 100 && rect.bottom >= 100) {
+          const id = section.id
+          if (id !== activeSection && window.toc) {
+            activeSection = id
+            window.toc.setActiveKey(`section${index + 1}`)
+          }
+        }
+      })
+    }
+
+    window.addEventListener('scroll', updateActiveSection)
+    updateActiveSection()
+  </script>
+</body>
+</html>
+

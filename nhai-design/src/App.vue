@@ -561,6 +561,9 @@ import {
   MaterialCard,
   MaterialTable,
   MaterialMenuBar,
+  MaterialTableOfContents,
+  MaterialTree,
+  MaterialDirectorySidebar,
   ButtonType,
   MenuBarLayoutType
 } from 'nhai-framework'
@@ -3549,41 +3552,39 @@ disabledCheckbox.setColor('primary')`,
             id: 'material-card',
             title: 'Material卡片',
             description: 'Material Design风格的卡片组件',
-            code: `// Material卡片示例
-import { MaterialCard } from 'nhai-framework'
+            code: `// Material卡片示例 - 使用命令式API
+import { NHAIObjectFactory } from 'nhai-framework'
+
+// 创建容器
+const container = NHAIObjectFactory.createContainer()
+container.setStyle({ 
+  display: 'flex', 
+  gap: '20px', 
+  padding: '20px',
+  flexWrap: 'wrap'
+})
 
 // 1. 基础卡片
-const basicCard = new MaterialCard({
-  title: '卡片标题',
-  subtitle: '卡片副标题',
-  content: '这是卡片的内容区域',
-  actions: [
-    { label: '操作', type: 'button' }
-  ]
-})
+const basicCard = NHAIObjectFactory.createMaterialCard(container)
+basicCard.setTitle('卡片标题')
+basicCard.setSubtitle('卡片副标题')
+basicCard.setContent('这是卡片的内容区域')
+basicCard.setElevation(2)
 
 // 2. 带图片的卡片
-const imageCard = new MaterialCard({
-  title: '图片卡片',
-  subtitle: '带图片的内容',
-  image: 'https://via.placeholder.com/300x200',
-  content: '这是一张带图片的卡片',
-  actions: [
-    { label: '分享', type: 'button' },
-    { label: '收藏', type: 'button' }
-  ]
+const imageCard = NHAIObjectFactory.createMaterialCard(container)
+imageCard.setTitle('带图片的卡片')
+imageCard.setSubtitle('带图片的内容')
+imageCard.setContent('这是一张带图片的卡片')
+imageCard.setMedia({ 
+  src: 'https://via.placeholder.com/300x200',
+  alt: '示例图片'
 })
+imageCard.setElevation(4)
 
-// 添加到容器
-const container = document.createElement('div')
-container.style.cssText = \`
-  display: flex;
-  gap: 20px;
-  padding: 20px;
-\`
-
-container.appendChild(basicCard.render())
-container.appendChild(imageCard.render())`,
+// 渲染容器
+const element = container.render()
+demoArea.appendChild(element)`,
             createDemo: () => {
               if (!demoArea.value) return
               
@@ -3607,7 +3608,10 @@ container.appendChild(imageCard.render())`,
                 card2.setTitle('带图片的卡片')
                 card2.setSubtitle('带图片的内容')
                 card2.setContent('这是一张带图片的卡片')
-                card2.setImage('https://via.placeholder.com/300x200')
+                card2.setMedia({ 
+                  src: 'https://via.placeholder.com/300x200',
+                  alt: '示例图片'
+                })
                 card2.setElevation(4)
                 
                 const element = container.render()
@@ -3677,12 +3681,11 @@ container.appendChild(table.render())`,
                 
                 const table = NHAIObjectFactory.createMaterialTable(container)
                 table.setColumns(columns)
-                table.setData(data)
+                table.setDataSource(data)
                 table.setPagination(true)
                 table.setPageSize(10)
-                table.setSortable(true)
-                table.setDense(false)
-                table.setElevation(2)
+                table.setSize('medium')
+                table.setBordered(true)
                 const element = container.render()
                 demoArea.value.appendChild(element)
               } catch (error) {
@@ -3747,35 +3750,583 @@ container.appendChild(menuBar.render())`,
                 // 使用NHAIObjectFactory创建Material菜单栏
                 const menuBar = NHAIObjectFactory.createMaterialMenuBar(container)
                 menuBar.setLayout(MenuBarLayoutType.HORIZONTAL)
-                menuBar.setElevation(2)
-                menuBar.setDense(false)
-                menuBar.setItems([
-                  {
-                    label: '文件',
-                    type: 'SUBMENU',
-                    children: [
-                      { label: '新建', type: 'ITEM' },
-                      { label: '打开', type: 'ITEM' },
-                      { label: '保存', type: 'ITEM' },
-                      { type: 'SEPARATOR' },
-                      { label: '退出', type: 'ITEM' }
-                    ]
-                  },
-                  {
-                    label: '编辑',
-                    type: 'SUBMENU',
-                    children: [
-                      { label: '撤销', type: 'ITEM' },
-                      { label: '重做', type: 'ITEM' }
-                    ]
-                  },
-                  { label: '视图', type: 'ITEM' },
-                  { label: '帮助', type: 'ITEM' }
-                ])
+                menuBar.setShadow(true)
+                menuBar.setTheme('light')
+                
+                console.log('🔧 开始添加菜单项...')
+                
+                // 添加菜单项 - 使用正确的枚举值
+                menuBar.addItem({
+                  id: 'file',
+                  type: 'submenu',
+                  label: '文件',
+                  children: [
+                    { id: 'new', type: 'item', label: '新建' },
+                    { id: 'open', type: 'item', label: '打开' },
+                    { id: 'save', type: 'item', label: '保存' },
+                    { id: 'sep1', type: 'separator' },
+                    { id: 'exit', type: 'item', label: '退出' }
+                  ]
+                })
+                
+                menuBar.addItem({
+                  id: 'edit',
+                  type: 'submenu',
+                  label: '编辑',
+                  children: [
+                    { id: 'undo', type: 'item', label: '撤销' },
+                    { id: 'redo', type: 'item', label: '重做' }
+                  ]
+                })
+                
+                menuBar.addItem({ id: 'view', type: 'item', label: '视图' })
+                menuBar.addItem({ id: 'help', type: 'item', label: '帮助' })
+                
+                console.log('🔧 菜单项添加完成，开始渲染...')
                 const element = container.render()
+                console.log('🔧 渲染完成，element:', element)
                 demoArea.value.appendChild(element)
+                console.log('🔧 已添加到演示区域')
               } catch (error) {
                 console.error('创建Material菜单栏演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          },
+          {
+            id: 'material-toc',
+            title: 'Material目录栏',
+            description: 'Material Design风格的目录栏组件（Table of Contents）',
+            code: `// Material目录栏示例
+import { MaterialTableOfContents } from 'nhai-framework'
+
+// 定义目录结构
+const tocItems = [
+  {
+    id: 'intro',
+    label: '介绍',
+    level: 1,
+    href: '#intro',
+    children: [
+      {
+        id: 'intro-1',
+        label: '快速开始',
+        level: 2,
+        href: '#intro-1'
+      },
+      {
+        id: 'intro-2',
+        label: '安装指南',
+        level: 2,
+        href: '#intro-2'
+      }
+    ]
+  },
+  {
+    id: 'components',
+    label: '组件',
+    level: 1,
+    href: '#components',
+    children: [
+      {
+        id: 'components-1',
+        label: '基础组件',
+        level: 2,
+        href: '#components-1'
+      },
+      {
+        id: 'components-2',
+        label: '导航组件',
+        level: 2,
+        href: '#components-2'
+      }
+    ]
+  }
+]
+
+// 创建目录栏
+const toc = new MaterialTableOfContents()
+toc.setItems(tocItems)
+toc.setCollapsible(true)
+toc.setDefaultExpandAll(true)
+toc.setSize('medium')
+toc.setVariant('default')
+
+// 渲染
+const element = toc.render()
+container.appendChild(element)
+
+// 控制方法
+toc.expandAll()              // 展开所有项
+toc.collapseAll()            // 折叠所有项
+toc.setVariant('bordered')   // 切换样式
+toc.setSize('large')         // 切换尺寸`,
+            createDemo: async () => {
+              if (!demoArea.value) return
+              
+              try {
+                // 定义目录结构
+                const tocItems = [
+                  {
+                    id: 'intro',
+                    label: '第一章：介绍',
+                    level: 1,
+                    href: '#intro',
+                    children: [
+                      {
+                        id: 'intro-1',
+                        label: '快速开始',
+                        level: 2,
+                        href: '#intro-1'
+                      },
+                      {
+                        id: 'intro-2',
+                        label: '安装指南',
+                        level: 2,
+                        href: '#intro-2'
+                      }
+                    ]
+                  },
+                  {
+                    id: 'components',
+                    label: '第二章：组件',
+                    level: 1,
+                    href: '#components',
+                    children: [
+                      {
+                        id: 'components-1',
+                        label: '基础组件',
+                        level: 2,
+                        href: '#components-1',
+                        children: [
+                          {
+                            id: 'components-1-1',
+                            label: '按钮组件',
+                            level: 3,
+                            href: '#components-1-1'
+                          },
+                          {
+                            id: 'components-1-2',
+                            label: '输入框组件',
+                            level: 3,
+                            href: '#components-1-2'
+                          }
+                        ]
+                      },
+                      {
+                        id: 'components-2',
+                        label: '导航组件',
+                        level: 2,
+                        href: '#components-2'
+                      }
+                    ]
+                  },
+                  {
+                    id: 'api',
+                    label: '第三章：API',
+                    level: 1,
+                    href: '#api',
+                    children: [
+                      {
+                        id: 'api-1',
+                        label: '核心API',
+                        level: 2,
+                        href: '#api-1'
+                      }
+                    ]
+                  }
+                ]
+                
+                // 创建目录栏
+                const toc = new MaterialTableOfContents()
+                toc.setItems(tocItems)
+                toc.setCollapsible(true)
+                toc.setDefaultExpandAll(false)
+                toc.setSize('medium')
+                toc.setVariant('default')
+                
+                // 创建容器和控制器
+                const container = document.createElement('div')
+                container.style.cssText = 'padding: 20px; max-width: 400px;'
+                
+                const controls = document.createElement('div')
+                controls.style.cssText = 'margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;'
+                
+                const expandBtn = document.createElement('button')
+                expandBtn.textContent = '展开全部'
+                expandBtn.style.cssText = 'padding: 6px 12px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;'
+                expandBtn.onclick = () => {
+                  toc.expandAll()
+                  // 重新渲染
+                  const tocContainer = container.querySelector('.toc-container')
+                  if (tocContainer) {
+                    tocContainer.innerHTML = ''
+                    const newElement = toc.render()
+                    tocContainer.appendChild(newElement)
+                  }
+                }
+                
+                const collapseBtn = document.createElement('button')
+                collapseBtn.textContent = '折叠全部'
+                collapseBtn.style.cssText = 'padding: 6px 12px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;'
+                collapseBtn.onclick = () => {
+                  toc.collapseAll()
+                  // 重新渲染
+                  const tocContainer = container.querySelector('.toc-container')
+                  if (tocContainer) {
+                    tocContainer.innerHTML = ''
+                    const newElement = toc.render()
+                    tocContainer.appendChild(newElement)
+                  }
+                }
+                
+                const borderedBtn = document.createElement('button')
+                borderedBtn.textContent = '边框样式'
+                borderedBtn.style.cssText = 'padding: 6px 12px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;'
+                borderedBtn.onclick = () => {
+                  toc.setVariant('bordered')
+                  // 重新渲染
+                  const tocContainer = container.querySelector('.toc-container')
+                  if (tocContainer) {
+                    tocContainer.innerHTML = ''
+                    const newElement = toc.render()
+                    tocContainer.appendChild(newElement)
+                  }
+                }
+                
+                controls.appendChild(expandBtn)
+                controls.appendChild(collapseBtn)
+                controls.appendChild(borderedBtn)
+                
+                // 渲染目录栏
+                const tocContainer = document.createElement('div')
+                tocContainer.className = 'toc-container'
+                const tocElement = toc.render()
+                tocContainer.appendChild(tocElement)
+                
+                container.appendChild(controls)
+                container.appendChild(tocContainer)
+                
+                demoArea.value.innerHTML = ''
+                demoArea.value.appendChild(container)
+                
+                // 保存实例供控制按钮使用
+                ;(window as any).currentTOC = toc
+              } catch (error) {
+                console.error('创建Material目录栏演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          },
+          {
+            id: 'material-tree',
+            title: 'Material树形目录',
+            description: 'Material Design风格的树形目录组件',
+            code: `// Material树形组件示例
+import { MaterialTree } from 'nhai-framework'
+
+// 定义树形数据
+const treeData = [
+  {
+    id: 'node1',
+    label: '节点 1',
+    children: [
+      {
+        id: 'node1-1',
+        label: '节点 1-1'
+      },
+      {
+        id: 'node1-2',
+        label: '节点 1-2',
+        children: [
+          { id: 'node1-2-1', label: '节点 1-2-1' }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'node2',
+    label: '节点 2',
+    children: [
+      { id: 'node2-1', label: '节点 2-1' }
+    ]
+  }
+]
+
+// 创建树
+const tree = new MaterialTree()
+tree.setNodes(treeData)
+tree.setSelectable(true)
+tree.setShowCheckbox(true)
+tree.setSize('medium')
+
+// 事件处理
+tree.setOnSelect((selectedKeys, selectedNodes) => {
+  console.log('选中的节点:', selectedKeys)
+})
+
+// 渲染
+const element = tree.render()
+container.appendChild(element)`,
+            createDemo: async () => {
+              if (!demoArea.value) return
+              
+              try {
+                // 定义树形数据 - 示例：文件系统
+                const treeData = [
+                  {
+                    id: 'drive-c',
+                    label: 'C:',
+                    children: [
+                      {
+                        id: 'program-files',
+                        label: 'Program Files',
+                        children: [
+                          {
+                            id: 'windows-apps',
+                            label: 'Windows Apps',
+                            children: [
+                              { id: 'app1', label: 'App 1.exe' },
+                              { id: 'app2', label: 'App 2.exe' }
+                            ]
+                          },
+                          { id: 'common-files', label: 'Common Files' }
+                        ]
+                      },
+                      {
+                        id: 'users',
+                        label: 'Users',
+                        children: [
+                          { id: 'admin', label: 'Administrator' },
+                          { id: 'public', label: 'Public' }
+                        ]
+                      },
+                      { id: 'windows', label: 'Windows' }
+                    ]
+                  },
+                  {
+                    id: 'drive-d',
+                    label: 'D:',
+                    children: [
+                      { id: 'docs', label: 'Documents' },
+                      { id: 'downloads', label: 'Downloads' },
+                      { id: 'projects', label: 'Projects' }
+                    ]
+                  }
+                ]
+
+                // 创建树
+                const tree = new MaterialTree()
+                tree.setNodes(treeData)
+                tree.setSelectable(true)
+                tree.setShowCheckbox(true)
+                tree.setSize('medium')
+                tree.setDefaultExpandAll(true)
+
+                // 创建容器和控制器
+                const container = document.createElement('div')
+                container.style.cssText = 'padding: 20px; max-width: 400px;'
+                
+                // 用于重新渲染的函数
+                const rerender = () => {
+                  const treeContainer = container.querySelector('.tree-container')
+                  if (treeContainer) {
+                    treeContainer.innerHTML = ''
+                    const newElement = tree.render()
+                    treeContainer.appendChild(newElement)
+                    // 重新绑定事件
+                    bindTreeEvents(newElement as HTMLElement)
+                  }
+                }
+                
+                // 绑定树事件
+                const bindTreeEvents = (treeElement: HTMLElement) => {
+                  treeElement.addEventListener('click', (e: Event) => {
+                    e.stopPropagation()
+                    const target = e.target as HTMLElement
+                    
+                    // 如果点击的是复选框
+                    if (target.tagName === 'INPUT') {
+                      return
+                    }
+                    
+                    const nodeElement = target.closest('.mui-tree-node')
+                    if (!nodeElement) return
+                    
+                    const nodeId = nodeElement.getAttribute('data-node-id')
+                    if (!nodeId) return
+                    
+                    // 找到对应的节点
+                    const node = findNodeById(treeData, nodeId)
+                    if (!node) return
+                    
+                    const hasChildren = node.children && node.children.length > 0
+                    const isExpanded = tree.isNodeExpanded(node.id)
+                    
+                    // 如果是展开图标或切换展开/折叠
+                    if (hasChildren) {
+                      tree.setNodeExpanded(node.id, !isExpanded)
+                      rerender()
+                    }
+                  })
+                }
+                
+                // 辅助函数：查找节点
+                const findNodeById = (nodes: typeof treeData, id: string): typeof treeData[0] | null => {
+                  for (const node of nodes) {
+                    if (String(node.id) === id) {
+                      return node
+                    }
+                    if (node.children) {
+                      const found = findNodeById(node.children, id)
+                      if (found) return found
+                    }
+                  }
+                  return null
+                }
+                
+                // 设置重新渲染回调
+                tree.setOnRerender(rerender)
+
+                const controls = document.createElement('div')
+                controls.style.cssText = 'margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;'
+
+                const expandBtn = document.createElement('button')
+                expandBtn.textContent = '展开全部'
+                expandBtn.style.cssText = 'padding: 6px 12px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;'
+                expandBtn.onclick = () => {
+                  tree.expandAll()
+                  rerender()
+                }
+
+                const collapseBtn = document.createElement('button')
+                collapseBtn.textContent = '折叠全部'
+                collapseBtn.style.cssText = 'padding: 6px 12px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;'
+                collapseBtn.onclick = () => {
+                  tree.collapseAll()
+                  rerender()
+                }
+
+                const checkboxBtn = document.createElement('button')
+                checkboxBtn.textContent = '切换复选框'
+                checkboxBtn.style.cssText = 'padding: 6px 12px; background: #1976d2; color: white; border: none; border-radius: 4px; cursor: pointer;'
+                let showCheckbox = true
+                checkboxBtn.onclick = () => {
+                  showCheckbox = !showCheckbox
+                  tree.setShowCheckbox(showCheckbox)
+                  rerender()
+                }
+
+                controls.appendChild(expandBtn)
+                controls.appendChild(collapseBtn)
+                controls.appendChild(checkboxBtn)
+
+                // 渲染树
+                const treeContainer = document.createElement('div')
+                treeContainer.className = 'tree-container'
+                const treeElement = tree.render()
+                treeContainer.appendChild(treeElement)
+                
+                // 绑定初始事件
+                bindTreeEvents(treeElement as HTMLElement)
+
+                container.appendChild(controls)
+                container.appendChild(treeContainer)
+
+                demoArea.value.innerHTML = ''
+                demoArea.value.appendChild(container)
+
+                // 保存实例
+                ;(window as any).currentTree = tree
+              } catch (error) {
+                console.error('创建Material树形组件演示失败:', error)
+                demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
+              }
+            }
+          },
+          {
+            id: 'material-directory-sidebar',
+            title: 'Material目录窗口',
+            description: '带侧边栏和内容区域的目录窗口，支持收起/展开',
+            code: `// Material目录窗口示例
+import { MaterialDirectorySidebar } from 'nhai-framework'
+
+// 定义目录项
+const directoryItems = [
+  { id: 'library', label: '素材库', icon: '📚', active: true },
+  { id: 'product', label: '产品库', icon: '📦' },
+  { id: 'component', label: '组件库', icon: '🧩' },
+  { id: 'assembly', label: '装配库', icon: '🔧' },
+  { id: 'mixed', label: '混合库', icon: '🎯' }
+]
+
+// 创建目录窗口
+const directorySidebar = new MaterialDirectorySidebar()
+directorySidebar.setItems(directoryItems)
+directorySidebar.setActiveKey('library')
+directorySidebar.setSidebarWidth(240)
+directorySidebar.setContentWidth(600)
+directorySidebar.setPosition('left') // 'left' 或 'right'
+
+// 设置内容渲染器
+directorySidebar.setContentRenderer((activeItem) => {
+  // 自定义内容
+  return \`<div style="padding: 24px;">
+    <h2>欢迎使用 \${activeItem?.label}</h2>
+    <p>这里是 \${activeItem?.label} 的内容区域</p>
+  </div>\`
+})
+
+// 渲染
+const element = directorySidebar.render()
+container.appendChild(element)`,
+            createDemo: async () => {
+              if (!demoArea.value) return
+              
+              try {
+                // 定义目录项
+                const directoryItems = [
+                  { id: 'library', label: '素材库', icon: '📚', active: true },
+                  { id: 'product', label: '产品库', icon: '📦' },
+                  { id: 'component', label: '组件库', icon: '🧩' },
+                  { id: 'assembly', label: '装配库', icon: '🔧' },
+                  { id: 'mixed', label: '混合库', icon: '🎯' }
+                ]
+
+                // 创建目录窗口
+                const directory = new MaterialDirectorySidebar()
+                directory.setItems(directoryItems)
+                directory.setActiveKey('library')
+                directory.setSidebarWidth(240)
+                directory.setContentWidth(600)
+                directory.setPosition('left') // 左侧显示
+                directory.setCollapsed(false) // 默认展开
+
+                // 创建容器
+                const container = document.createElement('div')
+                container.style.cssText = 'position: relative; width: 100%; height: 600px; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden; background: #f5f5f5;'
+
+                // 用于重新渲染的函数
+                const rerender = () => {
+                  container.innerHTML = ''
+                  const newElement = directory.render()
+                  container.appendChild(newElement)
+                }
+                
+                // 设置重新渲染回调
+                ;(window as any).rerenderDirectorySidebar = rerender
+
+                // 渲染
+                const element = directory.render()
+                container.appendChild(element)
+
+                demoArea.value.innerHTML = ''
+                demoArea.value.appendChild(container)
+
+                // 保存实例
+                ;(window as any).currentDirectory = directory
+              } catch (error) {
+                console.error('创建Material目录窗口演示失败:', error)
                 demoArea.value.innerHTML = `<div style="color: red; padding: 20px;">演示创建失败: ${error}</div>`
               }
             }
