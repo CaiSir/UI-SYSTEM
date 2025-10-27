@@ -17,11 +17,12 @@ export class MaterialDirectorySidebar extends NHAIWidget {
   private _items: DirectoryItem[] = []
   private _activeKey?: string | number
   private _collapsed: boolean = false
-  private _sidebarWidth: number = 240
+  private _sidebarWidth: number = 180
   private _contentWidth: number = 600
   private _position: 'left' | 'right' = 'left'
   private _onItemClick?: (item: DirectoryItem, index: number) => void
   private _renderContent?: (activeItem?: DirectoryItem) => any
+  private _contentWidget?: NHAIWidget
 
   constructor(parent?: NHAIObject) {
     super(parent)
@@ -100,6 +101,11 @@ export class MaterialDirectorySidebar extends NHAIWidget {
     this._renderContent = renderer
   }
 
+  // 设置内容区域显示NHAIWidget
+  setContentWidget(widget: NHAIWidget): void {
+    this._contentWidget = widget
+  }
+
   render(_context?: NHAIRenderContext): any {
     const adapter = NHAIFrameworkRegistry.getCurrent()
     if (!adapter) {
@@ -132,13 +138,13 @@ export class MaterialDirectorySidebar extends NHAIWidget {
         position: 'relative',
         display: 'flex',
         height: '100%',
-        width: this._collapsed ? `${this._sidebarWidth}px` : `${this._sidebarWidth + this._contentWidth}px`,
+        width: this._collapsed ? '64px' : `${this._sidebarWidth + this._contentWidth}px`,
         backgroundColor: '#ffffff',
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        border: '1px solid #e0e0e0',
-        transition: 'all 0.3s ease'
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04)',
+        borderRadius: '12px',
+        overflow: 'visible',
+        border: '1px solid rgba(0, 0, 0, 0.06)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
       }
     }
     
@@ -150,29 +156,33 @@ export class MaterialDirectorySidebar extends NHAIWidget {
       className: 'mui-directory-sidebar__sidebar',
       style: {
         position: 'relative',
-        width: `${this._sidebarWidth}px`,
-        backgroundColor: '#f8f9fa',
-        borderRight: '1px solid #e0e0e0',
+        width: this._collapsed ? '64px' : `${this._sidebarWidth}px`,
+        backgroundColor: '#fafafa',
+        borderRight: '1px solid rgba(0, 0, 0, 0.08)',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: this._collapsed ? 'none' : 'inset -1px 0 0 0 rgba(0, 0, 0, 0.05)'
       }
     }
 
     const sidebarChildren: any[] = []
     
-    // 标题栏（可选）
+    // 标题栏（可选，收起状态下隐藏）
     const headerProps: any = {
       style: {
-        height: '56px',
-        display: 'flex',
+        height: this._collapsed ? '0' : '56px',
+        display: this._collapsed ? 'none' : 'flex',
         alignItems: 'center',
         padding: '0 16px',
         backgroundColor: '#ffffff',
         borderBottom: '1px solid #e0e0e0',
         fontSize: '16px',
         fontWeight: '500',
-        color: 'rgba(0, 0, 0, 0.87)'
+        color: 'rgba(0, 0, 0, 0.87)',
+        overflow: 'hidden',
+        transition: 'all 0.3s ease'
       }
     }
     sidebarChildren.push(adapter.createElement('div', headerProps, ['目录']))
@@ -182,7 +192,7 @@ export class MaterialDirectorySidebar extends NHAIWidget {
       style: {
         flex: 1,
         overflowY: 'auto',
-        padding: '8px 0'
+        padding: this._collapsed ? '12px 0' : '8px 0'
       }
     }
 
@@ -190,20 +200,24 @@ export class MaterialDirectorySidebar extends NHAIWidget {
     const itemsList: any[] = []
     this._items.forEach((item, index) => {
       const itemProps: any = {
-        className: `mui-directory-sidebar__item ${item.active ? 'active' : ''} ${item.disabled ? 'disabled' : ''}`,
+        className: `mui-directory-sidebar__item ${item.active ? 'active' : ''} ${item.disabled ? 'disabled' : ''} ${this._collapsed ? 'collapsed' : ''}`,
+        'data-item-id': String(item.id),
         style: {
-          height: '44px',
+          height: '48px',
           display: 'flex',
           alignItems: 'center',
-          padding: '0 12px 0 20px',
+          padding: this._collapsed ? '0 12px' : '0 16px 0 16px',
           cursor: item.disabled ? 'not-allowed' : 'pointer',
-          backgroundColor: item.active ? '#e3f2fd' : 'transparent',
-          margin: '2px 8px',
-          borderRadius: '8px',
-          transition: 'all 0.2s ease',
-          position: 'relative'
+          backgroundColor: item.active ? 'rgba(25, 118, 210, 0.08)' : 'transparent',
+          margin: '4px 8px',
+          borderRadius: '12px',
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'relative',
+          justifyContent: this._collapsed ? 'center' : 'flex-start',
+          boxShadow: item.active ? '0 2px 8px rgba(25, 118, 210, 0.15)' : 'none'
         },
-        onClick: () => {
+        onClick: (e: Event) => {
+          e.stopPropagation() // 阻止事件冒泡
           if (!item.disabled) {
             // 如果内容窗口被收起了，点击时自动展开
             if (this._collapsed) {
@@ -224,12 +238,14 @@ export class MaterialDirectorySidebar extends NHAIWidget {
         },
         onMouseEnter: () => {
           if (!item.active && !item.disabled) {
-            itemProps.style.backgroundColor = '#f5f5f5'
+            itemProps.style.backgroundColor = 'rgba(0, 0, 0, 0.04)'
+            itemProps.style.transform = 'translateX(2px)'
           }
         },
         onMouseLeave: () => {
           if (!item.active && !item.disabled) {
             itemProps.style.backgroundColor = 'transparent'
+            itemProps.style.transform = 'translateX(0)'
           }
         },
         title: item.label
@@ -240,28 +256,34 @@ export class MaterialDirectorySidebar extends NHAIWidget {
       // 图标
       if (item.icon) {
         const iconProps: any = {
+          className: 'mui-directory-sidebar__icon',
           style: {
-            fontSize: '20px',
+            fontSize: '22px',
             marginRight: '12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             minWidth: '24px',
             width: '24px',
-            height: '24px'
+            height: '24px',
+            flexShrink: 0,
+            color: item.active ? '#1976d2' : 'rgba(0, 0, 0, 0.6)',
+            transition: 'color 0.25s ease'
           }
         }
         itemChildren.push(adapter.createElement('span', iconProps, [item.icon]))
       } else {
         // 默认图标占位
         const defaultIconProps: any = {
+          className: 'mui-directory-sidebar__icon',
           style: {
             width: '24px',
             height: '24px',
-            borderRadius: '6px',
-            backgroundColor: item.active ? '#1976d2' : '#dee2e6',
+            borderRadius: '8px',
+            backgroundColor: item.active ? 'rgba(25, 118, 210, 0.1)' : 'rgba(0, 0, 0, 0.06)',
             marginRight: '12px',
-            flexShrink: 0
+            flexShrink: 0,
+            transition: 'background-color 0.25s ease'
           }
         }
         itemChildren.push(adapter.createElement('span', defaultIconProps))
@@ -269,14 +291,18 @@ export class MaterialDirectorySidebar extends NHAIWidget {
 
       // 文本标签
       const labelProps: any = {
+        className: 'mui-directory-sidebar__label',
         style: {
           flex: 1,
           fontSize: '14px',
-          fontWeight: item.active ? '500' : '400',
-          color: item.disabled ? 'rgba(0, 0, 0, 0.38)' : (item.active ? '#1976d2' : 'rgba(0, 0, 0, 0.87)'),
+          fontWeight: item.active ? '600' : '500',
+          color: item.disabled ? 'rgba(0, 0, 0, 0.38)' : (item.active ? '#1976d2' : 'rgba(0, 0, 0, 0.75)'),
           whiteSpace: 'nowrap',
           overflow: 'hidden',
-          textOverflow: 'ellipsis'
+          textOverflow: 'ellipsis',
+          opacity: this._collapsed ? '0' : '1',
+          maxWidth: this._collapsed ? '0' : 'none',
+          transition: 'opacity 0.3s ease, max-width 0.3s ease, color 0.25s ease'
         }
       }
       itemChildren.push(adapter.createElement('span', labelProps, [item.label]))
@@ -379,7 +405,9 @@ export class MaterialDirectorySidebar extends NHAIWidget {
       const toggleBtnProps: any = {
         className: 'mui-directory-sidebar__toggle',
         style: toggleBtnStyle,
-        onClick: () => {
+        onClick: (e: Event) => {
+          e.stopPropagation()
+          console.log('收起按钮被点击')
           this.toggleCollapse()
           if ((window as any).rerenderDirectorySidebar) {
             ;(window as any).rerenderDirectorySidebar()
@@ -400,7 +428,12 @@ export class MaterialDirectorySidebar extends NHAIWidget {
       }
 
       let contentChildren: any[] = []
-      if (this._renderContent) {
+      if (this._contentWidget) {
+        // 优先渲染NHAIWidget
+        const widgetElement = this._contentWidget.render(_context)
+        contentChildren = Array.isArray(widgetElement) ? widgetElement : [widgetElement]
+      } else if (this._renderContent) {
+        // 使用自定义渲染函数
         const customContent = this._renderContent(activeItem)
         if (customContent) {
           contentChildren = Array.isArray(customContent) ? customContent : [customContent]
@@ -485,12 +518,42 @@ export class MaterialDirectorySidebar extends NHAIWidget {
         
         /* 目录项激活状态 */
         .mui-directory-sidebar__item.active {
-          background-color: #e3f2fd !important;
+          background: linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(25, 118, 210, 0.05) 100%) !important;
+          border-left: 3px solid #1976d2 !important;
         }
         
-        .mui-directory-sidebar__item.active span {
+        .mui-directory-sidebar__item.active .mui-directory-sidebar__icon {
           color: #1976d2 !important;
-          font-weight: 500 !important;
+          transform: scale(1.05);
+        }
+        
+        .mui-directory-sidebar__item.active .mui-directory-sidebar__label {
+          color: #1976d2 !important;
+          font-weight: 600 !important;
+        }
+        
+        /* 收起状态下目录项的悬停效果 */
+        .mui-directory-sidebar__item.collapsed:hover {
+          background-color: rgba(227, 242, 253, 0.5) !important;
+        }
+        
+        .mui-directory-sidebar__item.collapsed:hover .mui-directory-sidebar__label {
+          opacity: 1 !important;
+          max-width: 200px !important;
+          margin-left: 8px !important;
+        }
+        
+        /* 收起状态下的文字样式 */
+        .mui-directory-sidebar__item.collapsed .mui-directory-sidebar__label {
+          position: absolute !important;
+          left: 100% !important;
+          background: #fff !important;
+          padding: 8px 12px !important;
+          border-radius: 6px !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+          white-space: nowrap !important;
+          z-index: 1000 !important;
+          margin-left: 8px !important;
         }
       `
       document.head.appendChild(style)

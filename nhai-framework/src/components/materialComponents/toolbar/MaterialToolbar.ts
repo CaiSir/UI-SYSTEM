@@ -1,5 +1,4 @@
 import { NHAIWidget, NHAIObject, NHAIRenderContext, NHAIFrameworkRegistry } from '../../../core/NHAICore'
-import { NHAIObjectFactory } from '../../../factory/NHAIFactory'
 
 /**
  * 工具栏布局类型枚举
@@ -180,6 +179,11 @@ export class MaterialToolbar extends NHAIWidget {
    * 添加按钮
    */
   addButton(id: string, text: string, onClick?: () => void, options?: Partial<ToolbarItem>): MaterialToolbar {
+    // 动态导入避免循环依赖
+    const NHAIObjectFactory = (window as any).NHAI?.NHAIObjectFactory
+    if (!NHAIObjectFactory) {
+      throw new Error('NHAIObjectFactory not available. Make sure to initialize NHAI.')
+    }
     const button = NHAIObjectFactory.createMaterialButton(text)
     if (onClick) {
       button.setOnClick(onClick)
@@ -203,6 +207,10 @@ export class MaterialToolbar extends NHAIWidget {
    * 添加图标按钮
    */
   addIconButton(id: string, icon: string, onClick?: () => void, options?: Partial<ToolbarItem>): MaterialToolbar {
+    const NHAIObjectFactory = (window as any).NHAI?.NHAIObjectFactory
+    if (!NHAIObjectFactory) {
+      throw new Error('NHAIObjectFactory not available. Make sure to initialize NHAI.')
+    }
     const button = NHAIObjectFactory.createMaterialIconButton(icon)
     if (onClick) {
       button.setOnClick(onClick)
@@ -226,6 +234,10 @@ export class MaterialToolbar extends NHAIWidget {
    * 添加输入框
    */
   addInput(id: string, placeholder?: string, onChange?: (value: string) => void, options?: Partial<ToolbarItem>): MaterialToolbar {
+    const NHAIObjectFactory = (window as any).NHAI?.NHAIObjectFactory
+    if (!NHAIObjectFactory) {
+      throw new Error('NHAIObjectFactory not available. Make sure to initialize NHAI.')
+    }
     const input = NHAIObjectFactory.createMaterialInput()
     if (placeholder) {
       input.setPlaceholder(placeholder)
@@ -251,6 +263,10 @@ export class MaterialToolbar extends NHAIWidget {
    * 添加选择框
    */
   addSelect(id: string, options: Array<{ value: string | number; label: string }>, onChange?: (value: any) => void, selectOptions?: Partial<ToolbarItem>): MaterialToolbar {
+    const NHAIObjectFactory = (window as any).NHAI?.NHAIObjectFactory
+    if (!NHAIObjectFactory) {
+      throw new Error('NHAIObjectFactory not available. Make sure to initialize NHAI.')
+    }
     const select = NHAIObjectFactory.createMaterialSelect()
     select.setOptions(options)
     if (onChange) {
@@ -294,6 +310,10 @@ export class MaterialToolbar extends NHAIWidget {
    * 添加标签
    */
   addLabel(id: string, text: string, options?: Partial<ToolbarItem>): MaterialToolbar {
+    const NHAIObjectFactory = (window as any).NHAI?.NHAIObjectFactory
+    if (!NHAIObjectFactory) {
+      throw new Error('NHAIObjectFactory not available. Make sure to initialize NHAI.')
+    }
     const label = NHAIObjectFactory.createLabel(text)
     
     const item: ToolbarItem = {

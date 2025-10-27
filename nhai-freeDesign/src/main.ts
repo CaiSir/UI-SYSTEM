@@ -1,4 +1,4 @@
-import { MaterialButton, MaterialInput, MaterialMenuBar, MaterialSelect, MaterialSwitch, MenuItemType, NHAIFrameworkRegistry, NHAIObjectFactory, VanillaAdapter } from 'nhai-framework'
+import { MaterialButton, MaterialDirectorySidebar, MaterialInput, MaterialMenuBar, MaterialSelect, MaterialSwitch, MenuItemType, NHAIFrameworkRegistry, VanillaAdapter } from 'nhai-framework'
 
 // 初始化应用
 class FreeDesignApp {
@@ -6,134 +6,120 @@ class FreeDesignApp {
     this.init()
   }
 
+  private menuBar: MaterialMenuBar | null = null
+  private directory: MaterialDirectorySidebar | null = null
+  
   private init(): void {
     console.log('NHAI Free Design 正在初始化...')
-    
+
     // 注册并设置 Vanilla 适配器
     const adapter = new VanillaAdapter()
     NHAIFrameworkRegistry.register(adapter)
     console.log('✓ Vanilla 适配器已注册')
-    
     const currentAdapter = NHAIFrameworkRegistry.use('vanilla')
     console.log('✓ 当前适配器已设置:', currentAdapter.name)
     
-    // 尝试直接创建 MaterialMenuBar 实例
-    let menuBar: MaterialMenuBar | undefined
-    try {
-      console.log('正在创建 MaterialMenuBar...')
-      console.log('MaterialMenuBar 构造函数:', MaterialMenuBar)
-      console.log('MaterialMenuBar 类型:', typeof MaterialMenuBar)
-      
-      // 检查 MaterialMenuBar 是否为函数
-      if (typeof MaterialMenuBar !== 'function') {
-        console.error('❌ MaterialMenuBar 不是一个函数:', typeof MaterialMenuBar)
-        return
-      }
-      
-      menuBar = new MaterialMenuBar()
-      console.log('✓ Material 菜单栏已创建:', menuBar)
-      console.log('✓ MaterialMenuBar 类型:', typeof menuBar)
-      console.log('✓ MaterialMenuBar 构造函数:', menuBar.constructor.name)
-      
-      // 检查 menuBar 是否为 undefined
-      if (!menuBar) {
-        console.error('❌ MaterialMenuBar 创建失败，返回了 undefined')
-        return
-      }
-      
-      // 测试基本方法
-      console.log('测试 horizontal 方法...')
-      const result = menuBar.horizontal()
-      console.log('horizontal 方法返回:', result)
-      console.log('horizontal 方法返回类型:', typeof result)
-      
-    } catch (error) {
-      console.error('❌ MaterialMenuBar 创建失败:', error)
-      return
-    }
+    // 设置适配器后才创建组件
+    this.directory = this.createDirectorySidebar()
+    this.menuBar = this.createMaterialMenuBar()
     
-    // 确保 menuBar 已定义
-    if (!menuBar) {
-      console.error('❌ menuBar 未定义')
-      return
-    }
+    this.renderLayout()
     
-    // 测试菜单栏功能
-    if (menuBar && typeof (menuBar as any).addItem === 'function') {
-      console.log('开始配置菜单栏...')
-      
-      // menuBar.horizontal();
-      // menuBar.setBackgroundColor('#ffffff');
-      // menuBar.setShadow(true);
-      // menuBar.setHeight(60);
-      
-      // // 添加下拉菜单
-      // menuBar.addSubmenu('file', '文件', [
-      //   { id: 'new', type: MenuItemType.ITEM, label: '新建', shortcut: 'Ctrl+N', onClick: () => console.log('新建文件') },
-      //   { id: 'open', type: MenuItemType.ITEM, label: '打开', shortcut: 'Ctrl+O', onClick: () => console.log('打开文件') },
-      //   { id: 'save', type: MenuItemType.ITEM, label: '保存', shortcut: 'Ctrl+S', onClick: () => console.log('保存文件') },
-      //   // { id: 'sep1', type: MenuItemType.SEPARATOR },
-      //   { id: 'exit', type: MenuItemType.ITEM, label: '退出', onClick: () => console.log('退出应用') }
-      // ]);
-      
-      // menuBar.addSubmenu('edit', '编辑', [
-      //   { id: 'undo', type: MenuItemType.ITEM, label: '撤销', shortcut: 'Ctrl+Z', onClick: () => console.log('撤销操作') },
-      //   { id: 'redo', type: MenuItemType.ITEM, label: '重做', shortcut: 'Ctrl+Y', onClick: () => console.log('重做操作') },
-      //   // { id: 'sep2', type: MenuItemType.SEPARATOR },
-      //   { id: 'cut', type: MenuItemType.ITEM, label: '剪切', shortcut: 'Ctrl+X', onClick: () => console.log('剪切内容') },
-      //   { id: 'copy', type: MenuItemType.ITEM, label: '复制', shortcut: 'Ctrl+C', onClick: () => console.log('复制内容') },
-      //   { id: 'paste', type: MenuItemType.ITEM, label: '粘贴', shortcut: 'Ctrl+V', onClick: () => console.log('粘贴内容') }
-      // ]);
-      
-      // menuBar.addItem({ id: 'view', type: MenuItemType.ITEM, label: '视图', onClick: () => console.log('视图菜单') });
-      // // menuBar.addSeparator('sep1');
-      // menuBar.addItem({ id: 'help', type: MenuItemType.ITEM, label: '帮助', onClick: () => console.log('帮助菜单') });
-
-      // menuBar.addItem({ id: 'input', type: MenuItemType.ITEM, label: '输入', onClick: () => console.log('输入菜单') });
-
-      // console.log('菜单栏:', menuBar) 
-
-      // console.log('✓ 菜单栏配置完成')
-
-
-//       // 创建菜单栏
-// const menuBar = new MaterialMenuBar();
-
-// 创建控件
-const saveButton = new MaterialButton('保存');
-const searchInput = new MaterialInput();
-searchInput.setPlaceholder('搜索...');
-const enableSwitch = new MaterialSwitch();
-enableSwitch.setChecked(true);
-const colorSelect = new MaterialSelect();
-colorSelect.setOptions([
-  { label: '红色', value: 'red' },
-  { label: '蓝色', value: 'blue' }
-]);
-colorSelect.setPlaceholder('选择颜色');
-
-// 添加控件到菜单栏
-menuBar
-  // .addItem({ id: 'file', type: MenuItemType.ITEM, label: '文件' })
-  // .addItem({ id: 'edit', type: MenuItemType.ITEM, label: '编辑' })
-  .addWidget('save-btn', saveButton)
-  .addWidget('search-input', searchInput)
-  .addWidget('enable-switch', enableSwitch)
-  .addWidget('color-select', colorSelect);
-      
-      // 渲染菜单栏到页面
-      this.renderMenuBar(menuBar)
-    } else {
-      console.error('❌ menuBar 对象无效或 addItem 方法不存在')
-      console.log('menuBar:', menuBar)
-      console.log('addItem 方法:', typeof (menuBar as any)?.addItem)
-      console.log('menuBar 类型:', typeof menuBar)
-      if (menuBar) {
-        console.log('menuBar 的方法:', Object.getOwnPropertyNames(Object.getPrototypeOf(menuBar)))
-      }
+    // 设置重新渲染回调
+    ;(window as any).rerenderDirectorySidebar = () => {
+      this.renderLayout()
     }
-    
+
     console.log('NHAI Free Design 初始化完成')
+  }
+  
+  private renderLayout(): void {
+    const appContainer = document.getElementById('app')
+    if (!appContainer || !this.menuBar || !this.directory) return
+
+    // 清空容器
+    appContainer.innerHTML = ''
+    
+    // 创建容器样式
+    const container = document.createElement('div')
+    container.style.cssText = 'display: flex; flex-direction: column; width: 100vw; height: 100vh;'
+    
+    // 渲染菜单栏
+    const menuBarElement = this.menuBar.render()
+    container.appendChild(menuBarElement)
+    
+    // 渲染目录栏
+    const directoryElement = this.directory.render()
+    container.appendChild(directoryElement)
+    
+    appContainer.appendChild(container)
+    console.log('✓ 布局已渲染到页面')
+  }
+
+  private createMaterialMenuBar(): MaterialMenuBar {
+    let menuBar: MaterialMenuBar | undefined
+    menuBar = new MaterialMenuBar()
+    const saveButton = new MaterialButton('保存');
+    const searchInput = new MaterialInput();
+    searchInput.setPlaceholder('搜索...');
+    const enableSwitch = new MaterialSwitch();
+    enableSwitch.setChecked(true);
+    const colorSelect = new MaterialSelect();
+    colorSelect.setOptions([
+      { label: '红色', value: 'red' },
+      { label: '蓝色', value: 'blue' }
+    ]);
+    colorSelect.setPlaceholder('选择颜色');
+
+    // 添加控件到菜单栏
+    menuBar
+      .addItem({ id: 'file', type: MenuItemType.ITEM, label: '文件' })
+      .addItem({ id: 'edit', type: MenuItemType.ITEM, label: '编辑' })
+      .addWidget('save-btn', saveButton)
+      .addWidget('search-input', searchInput)
+      .addWidget('enable-switch', enableSwitch)
+      .addWidget('color-select', colorSelect);
+
+    return menuBar
+  }
+
+  private createDirectorySidebar(): MaterialDirectorySidebar {
+    const directorySidebar = new MaterialDirectorySidebar()
+    const directoryItems = [
+      { id: 'library', label: '素材库', icon: '📚', active: true },
+      { id: 'product', label: '产品库', icon: '📦' },
+      { id: 'component', label: '组件库', icon: '🧩' },
+      { id: 'assembly', label: '装配库', icon: '🔧' },
+      { id: 'mixed', label: '混合库', icon: '🎯' }
+    ]
+    directorySidebar.setItems(directoryItems)
+    directorySidebar.setActiveKey('library')
+    directorySidebar.setSidebarWidth(180)
+    directorySidebar.setContentWidth(600)
+    directorySidebar.setPosition('left') // 'left' 或 'right'
+    directorySidebar.setCollapsed(false) // 默认展开
+    
+    // 设置点击事件监听，点击后重新渲染整个布局
+    directorySidebar.setOnItemClick(() => {
+      // 延迟重新渲染，避免重复触发
+      if ((window as any).rerenderTimeout) {
+        clearTimeout((window as any).rerenderTimeout)
+      }
+      ;(window as any).rerenderTimeout = setTimeout(() => {
+        this.renderLayout()
+      }, 50)
+    })
+    
+    return directorySidebar
+  }
+
+  private renderDirectorySidebar(directorySidebar: MaterialDirectorySidebar): void {
+    const appContainer = document.getElementById('app')
+    if (!appContainer) return
+
+    const element = directorySidebar.render()
+    appContainer.appendChild(element)
+    console.log('✓ 目录栏已渲染到页面')
   }
 
   private renderMenuBar(menuBar: MaterialMenuBar): void {
@@ -142,11 +128,11 @@ menuBar
 
     // 清空容器
     appContainer.innerHTML = ''
-    
+
     // 渲染菜单栏
     const element = menuBar.render()
     appContainer.appendChild(element)
-    
+
     console.log('✓ 菜单栏已渲染到页面')
   }
 }

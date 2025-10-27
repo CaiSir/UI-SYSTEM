@@ -4264,11 +4264,11 @@ const directoryItems = [
 const directorySidebar = new MaterialDirectorySidebar()
 directorySidebar.setItems(directoryItems)
 directorySidebar.setActiveKey('library')
-directorySidebar.setSidebarWidth(240)
+directorySidebar.setSidebarWidth(180)
 directorySidebar.setContentWidth(600)
 directorySidebar.setPosition('left') // 'left' 或 'right'
 
-// 设置内容渲染器
+// 设置内容渲染器（可选）
 directorySidebar.setContentRenderer((activeItem) => {
   // 自定义内容
   return \`<div style="padding: 24px;">
@@ -4277,9 +4277,18 @@ directorySidebar.setContentRenderer((activeItem) => {
   </div>\`
 })
 
-// 渲染
+// 或者设置内容NHAIWidget（可选）
+// directorySidebar.setContentWidget(yourWidget)
+
+// 创建容器
+const container = document.createElement('div')
+container.style.cssText = 'width: 100%; height: 600px;'
+
+// 渲染并添加到容器
 const element = directorySidebar.render()
-container.appendChild(element)`,
+container.appendChild(element)
+
+// 将容器添加到页面（如：document.body.appendChild(container)）`,
             createDemo: async () => {
               if (!demoArea.value) return
               
@@ -4297,7 +4306,7 @@ container.appendChild(element)`,
                 const directory = new MaterialDirectorySidebar()
                 directory.setItems(directoryItems)
                 directory.setActiveKey('library')
-                directory.setSidebarWidth(240)
+                directory.setSidebarWidth(180)
                 directory.setContentWidth(600)
                 directory.setPosition('left') // 左侧显示
                 directory.setCollapsed(false) // 默认展开
