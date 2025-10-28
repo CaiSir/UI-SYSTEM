@@ -1,15 +1,16 @@
 import { createApp, h, defineComponent } from 'vue'
 import Card from './Card.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueCardCommand {
+export class VueCardCommand extends BaseCommand {
   private header?: string
   private shadow: 'always' | 'hover' | 'never' = 'always'
   private bodyStyle?: Record<string, any>
   private content?: string
   private cardClass?: string
-  private _appInstance: any = null
 
   constructor(header?: string, content?: string) {
+    super()
     this.header = header
     this.content = content
   }
@@ -53,15 +54,15 @@ export class VueCardCommand {
     const app = createApp(CardWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 

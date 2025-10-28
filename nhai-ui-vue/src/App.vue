@@ -151,6 +151,9 @@ import {
   VueContainer,
   VueGrid,
   VueSplitPanel,
+  VueLayoutBuilder
+} from './components'
+import {
   VueButtonCommand, 
   VueInputCommand, 
   VueSelectCommand,
@@ -163,7 +166,9 @@ import {
   VueContainerCommand,
   VueGridCommand,
   VueSplitPanelCommand,
-  VueLayoutBuilderCommand,
+  VueLayoutBuilderCommand
+} from './components'
+import {
   createSeparator,
   createBlankLine,
   createText
@@ -255,7 +260,7 @@ onMounted(() => {
     
     // 使用 UIHelpers 创建分隔符，无需关心 document.createElement
     const separator = createSeparator('vertical')
-    toolbar.addChild('sep', separator)
+    toolbar.addElement('sep', separator)
     
     const editBtn = new VueButtonCommand('编辑')
     editBtn.setType('warning')

@@ -1,14 +1,15 @@
 import { createApp, h, defineComponent } from 'vue'
 import Breadcrumb from './Breadcrumb.vue'
 import type { BreadcrumbItem } from './Breadcrumb.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueBreadcrumbCommand {
+export class VueBreadcrumbCommand extends BaseCommand {
   private items: BreadcrumbItem[] = []
   private separator: string = '/'
   private onItemClick?: (item: BreadcrumbItem, index: number) => void
-  private _appInstance: any = null
 
   constructor(items: BreadcrumbItem[] = []) {
+    super()
     this.items = items
   }
 
@@ -53,15 +54,15 @@ export class VueBreadcrumbCommand {
     const app = createApp(BreadcrumbWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 

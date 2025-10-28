@@ -1,5 +1,6 @@
 import { createApp, h, defineComponent } from 'vue'
 import Select from './Select.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
 export interface SelectOption {
   label: string
@@ -9,7 +10,7 @@ export interface SelectOption {
 /**
  * Vue 选择框的命令式封装
  */
-export class VueSelectCommand {
+export class VueSelectCommand extends BaseCommand {
   private value: string | number | Array<string | number> = ''
   private placeholder: string = '请选择'
   private disabled: boolean = false
@@ -18,9 +19,9 @@ export class VueSelectCommand {
   private size: 'large' | 'default' | 'small' = 'default'
   private options: SelectOption[] = []
   private onChange?: (value: any) => void
-  private _appInstance: any = null
 
   constructor(placeholder: string = '请选择') {
+    super()
     this.placeholder = placeholder
   }
 
@@ -86,15 +87,15 @@ export class VueSelectCommand {
     const app = createApp(SelectWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 
   renderFallback(): HTMLElement {

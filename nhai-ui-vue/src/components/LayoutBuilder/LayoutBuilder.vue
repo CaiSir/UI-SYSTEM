@@ -12,7 +12,7 @@ interface Props {
   direction?: 'row' | 'column'
   spacing?: number
   padding?: string
-  gap?: string
+  gap?: number | string  // 支持 number 和 string
   width?: string
   height?: string
   backgroundColor?: string
@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
   direction: 'column',
   spacing: 0,
   padding: '0',
-  gap: '8px'
+  gap: 1
 })
 
 const layoutClass = computed(() => {
@@ -35,7 +35,7 @@ const layoutStyle = computed(() => {
     display: 'flex',
     flexDirection: props.direction,
     padding: props.padding,
-    gap: props.gap
+    gap: typeof props.gap === 'number' ? `${props.gap * 8}px` : props.gap
   }
 
   if (props.width) {

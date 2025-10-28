@@ -12,7 +12,7 @@
     @edit="handleEdit"
   >
     <el-tab-pane
-      v-for="tab in tabs"
+      v-for="tab in items"
       :key="tab.name"
       :label="tab.label"
       :name="tab.name"

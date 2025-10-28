@@ -1,7 +1,8 @@
 import { createApp, h, defineComponent } from 'vue'
 import Switch from './Switch.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueSwitchCommand {
+export class VueSwitchCommand extends BaseCommand {
   private value: boolean = false
   private disabled: boolean = false
   private size: 'large' | 'default' | 'small' = 'default'
@@ -10,9 +11,9 @@ export class VueSwitchCommand {
   private activeColor?: string
   private inactiveColor?: string
   private onChange?: (value: boolean) => void
-  private _appInstance: any = null
 
   constructor(value: boolean = false) {
+    super()
     this.value = value
   }
 
@@ -74,15 +75,15 @@ export class VueSwitchCommand {
     const app = createApp(SwitchWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 

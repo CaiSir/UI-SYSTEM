@@ -1,8 +1,9 @@
 import { createApp, h, defineComponent } from 'vue'
 import MenuBar from './MenuBar.vue'
 import type { MenuItem } from './MenuBar.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueMenuBarCommand {
+export class VueMenuBarCommand extends BaseCommand {
   private items: MenuItem[] = []
   private mode: 'horizontal' | 'vertical' = 'horizontal'
   private defaultActive?: string
@@ -11,9 +12,9 @@ export class VueMenuBarCommand {
   private router: boolean = false
   private collapseTransition: boolean = true
   private onSelect?: (index: string, indexPath: string[]) => void
-  private _appInstance: any = null
 
   constructor(items: MenuItem[] = []) {
+    super()
     this.items = items
   }
 
@@ -83,15 +84,15 @@ export class VueMenuBarCommand {
     const app = createApp(MenuBarWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 

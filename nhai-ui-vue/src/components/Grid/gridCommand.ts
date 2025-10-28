@@ -1,16 +1,17 @@
 import { createApp, h, defineComponent } from 'vue'
 import Grid from './Grid.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueGridCommand {
+export class VueGridCommand extends BaseCommand {
   private container: boolean = false
   private spacing: number = 2
   private direction: 'row' | 'column' | 'row-reverse' | 'column-reverse' = 'row'
   private justify: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly' = 'flex-start'
   private alignItems: 'flex-start' | 'center' | 'flex-end' | 'stretch' | 'baseline' = 'stretch'
   private wrap: 'nowrap' | 'wrap' | 'wrap-reverse' = 'wrap'
-  private _appInstance: any = null
 
   constructor(container: boolean = false) {
+    super()
     this.container = container
   }
 
@@ -58,15 +59,15 @@ export class VueGridCommand {
     const app = createApp(GridWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 

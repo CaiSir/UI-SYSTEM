@@ -1,7 +1,8 @@
 import { createApp, h, defineComponent } from 'vue'
 import Checkbox from './Checkbox.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueCheckboxCommand {
+export class VueCheckboxCommand extends BaseCommand {
   private value: boolean = false
   private label?: string | number
   private text: string = ''
@@ -9,9 +10,9 @@ export class VueCheckboxCommand {
   private size: 'large' | 'default' | 'small' = 'default'
   private indeterminate: boolean = false
   private onChange?: (value: boolean) => void
-  private _appInstance: any = null
 
   constructor(text: string = '') {
+    super()
     this.text = text
   }
 
@@ -68,15 +69,15 @@ export class VueCheckboxCommand {
     const app = createApp(CheckboxWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 

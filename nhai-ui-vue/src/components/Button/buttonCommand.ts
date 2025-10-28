@@ -1,11 +1,13 @@
 import { createApp, h, defineComponent } from 'vue'
 import Button from './Button.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
 /**
  * Vue 按钮的命令式封装
  * 提供命令式 API 用于在非 Vue 环境中使用
+ * 继承 BaseCommand 获得统一的接口和生命周期
  */
-export class VueButtonCommand {
+export class VueButtonCommand extends BaseCommand {
   private text: string = ''
   private type: 'default' | 'primary' | 'success' | 'info' | 'warning' | 'danger' = 'primary'
   private size: 'large' | 'default' | 'small' = 'default'
@@ -16,9 +18,9 @@ export class VueButtonCommand {
   private disabled: boolean = false
   private icon?: string
   private onClick?: () => void
-  private _appInstance: any = null
 
   constructor(text: string = '') {
+    super()
     this.text = text
   }
 
@@ -135,18 +137,15 @@ export class VueButtonCommand {
     const app = createApp(ButtonWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  /**
-   * 卸载组件
-   */
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 
   /**

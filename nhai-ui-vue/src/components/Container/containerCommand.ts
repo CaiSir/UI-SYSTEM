@@ -1,14 +1,15 @@
 import { createApp, h, defineComponent } from 'vue'
 import Container from './Container.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueContainerCommand {
+export class VueContainerCommand extends BaseCommand {
   private maxWidth: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false = 'lg'
   private fixed: boolean = false
   private disableGutters: boolean = false
   private content?: string
-  private _appInstance: any = null
 
   constructor(content?: string) {
+    super()
     this.content = content
   }
 
@@ -46,15 +47,15 @@ export class VueContainerCommand {
     const app = createApp(ContainerWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 

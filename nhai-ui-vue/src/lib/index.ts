@@ -1,4 +1,5 @@
 export { BaseCommand } from './BaseCommand'
+export { ComponentRegistry, Component } from './ComponentRegistry'
 export { UIHelpers } from './UIHelpers'
 
 // 导出便捷函数

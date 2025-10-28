@@ -16,17 +16,18 @@ export interface LayoutItem {
 export class VueLayoutBuilderCommand extends BaseCommand {
   private layoutType: 'vbox' | 'hbox' | 'grid' | 'container' = 'vbox'
   private direction: 'row' | 'column' = 'column'
-  private spacing: number = 0
+  private _spacing: number = 0
   private padding: string = '0'
   private gap: string = '8px'
   private width?: string
   private height?: string
   private backgroundColor?: string
   private items: LayoutItem[] = []
-  private onItemClick?: (item: LayoutItem) => void
+  private _onItemClick?: (item: LayoutItem) => void
   private customStyle: Record<string, string> = {}  // 自定义样式
 
   constructor(layoutType: 'vbox' | 'hbox' | 'grid' | 'container' = 'vbox') {
+    super()
     this.layoutType = layoutType
     if (layoutType === 'hbox') {
       this.direction = 'row'
@@ -47,8 +48,12 @@ export class VueLayoutBuilderCommand extends BaseCommand {
   }
 
   setSpacing(spacing: number): void {
-    this.spacing = spacing
+    this._spacing = spacing
     this.gap = `${spacing * 8}px`
+  }
+
+  getSpacing(): number {
+    return this._spacing
   }
 
   setPadding(padding: string): void {
@@ -91,7 +96,7 @@ export class VueLayoutBuilderCommand extends BaseCommand {
    * @param element - DOM 元素
    * @param data - 附加数据
    */
-  addChild(id: string, element: HTMLElement, data?: any): void {
+  addElement(id: string, element: HTMLElement, data?: any): void {
     this.items.push({ id, element, data })
   }
 
@@ -102,6 +107,26 @@ export class VueLayoutBuilderCommand extends BaseCommand {
     if (widget && typeof widget.render === 'function') {
       const element = widget.render()
       this.items.push({ id, element, data })
+      
+      // 同时添加为子组件（兼容 BaseCommand 的 addChild）
+      super.addChild(widget as BaseCommand)
+    }
+  }
+
+  /**
+   * 重写 addChild 以兼容 BaseCommand
+   */
+  override addChild(child: BaseCommand): void {
+    // 添加为子组件
+    super.addChild(child)
+    
+    // 如果已渲染，添加到 items
+    if (child.isMounted() && child.getElement()) {
+      this.items.push({ 
+        id: `${Date.now()}-${Math.random()}`,
+        element: child.getElement()!,
+        data: child.getProperties()
+      })
     }
   }
 
@@ -154,7 +179,7 @@ export class VueLayoutBuilderCommand extends BaseCommand {
   }
 
   setOnItemClick(callback: (item: LayoutItem) => void): void {
-    this.onItemClick = callback
+    this._onItemClick = callback
   }
 
   override unmount(): void {
@@ -215,8 +240,8 @@ export class VueLayoutBuilderCommand extends BaseCommand {
       const child = item.element.cloneNode(true) as HTMLElement
       
       // 绑定点击事件
-      if (this.onItemClick) {
-        child.addEventListener('click', () => this.onItemClick!(item))
+      if (this._onItemClick) {
+        child.addEventListener('click', () => this._onItemClick!(item))
       }
       
       container.appendChild(child)

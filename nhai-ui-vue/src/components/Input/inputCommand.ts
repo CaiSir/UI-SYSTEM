@@ -1,10 +1,11 @@
 import { createApp, h, defineComponent } from 'vue'
 import Input from './Input.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
 /**
  * Vue 输入框的命令式封装
  */
-export class VueInputCommand {
+export class VueInputCommand extends BaseCommand {
   private value: string = ''
   private type: 'text' | 'textarea' | 'password' = 'text'
   private placeholder: string = '请输入'
@@ -17,9 +18,9 @@ export class VueInputCommand {
   private onBlur?: (event: FocusEvent) => void
   private onChange?: (value: string) => void
   private onFocus?: (event: FocusEvent) => void
-  private _appInstance: any = null
 
   constructor(placeholder: string = '请输入') {
+    super()
     this.placeholder = placeholder
   }
 
@@ -101,15 +102,15 @@ export class VueInputCommand {
     const app = createApp(InputWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 
   renderFallback(): HTMLElement {

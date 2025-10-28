@@ -1,8 +1,9 @@
 import { createApp, h, defineComponent } from 'vue'
 import Tabs from './Tabs.vue'
 import type { TabItem } from './Tabs.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueTabsCommand {
+export class VueTabsCommand extends BaseCommand {
   private value: string = ''
   private items: TabItem[] = []
   private type: 'card' | 'border-card' | '' = ''
@@ -14,9 +15,9 @@ export class VueTabsCommand {
   private onTabRemove?: (name: string) => void
   private onTabAdd?: (name: string) => void
   private onEdit?: (name: string, action: 'add' | 'remove') => void
-  private _appInstance: any = null
 
   constructor(items: TabItem[] = []) {
+    super()
     this.items = items
     if (items.length > 0) {
       this.value = items[0].name
@@ -111,15 +112,15 @@ export class VueTabsCommand {
     const app = createApp(TabsWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 

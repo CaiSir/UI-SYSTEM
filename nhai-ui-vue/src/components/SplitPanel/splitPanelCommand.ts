@@ -1,7 +1,8 @@
 import { createApp, h, defineComponent } from 'vue'
 import SplitPanel from './SplitPanel.vue'
+import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueSplitPanelCommand {
+export class VueSplitPanelCommand extends BaseCommand {
   private orientation: 'horizontal' | 'vertical' = 'horizontal'
   private splitPosition: number = 50
   private minSize: number = 20
@@ -11,13 +12,13 @@ export class VueSplitPanelCommand {
   private leftContent?: string
   private rightContent?: string
   private onResize?: (position: number) => void
-  private _appInstance: any = null
 
   constructor(
     leftContent?: string,
     rightContent?: string,
     orientation: 'horizontal' | 'vertical' = 'horizontal'
   ) {
+    super()
     this.leftContent = leftContent
     this.rightContent = rightContent
     this.orientation = orientation
@@ -89,15 +90,15 @@ export class VueSplitPanelCommand {
     const app = createApp(SplitPanelWrapper)
     app.mount(container)
     this._appInstance = app
+    
+    this._element = container
+    this._mounted = true
 
     return container
   }
 
-  unmount(): void {
-    if (this._appInstance) {
-      this._appInstance.unmount()
-      this._appInstance = null
-    }
+  override unmount(): void {
+    super.unmount()
   }
 }
 
