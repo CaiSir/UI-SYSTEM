@@ -15,14 +15,16 @@
         :index="String(item.id)"
         :disabled="item.disabled"
       >
-        <el-icon v-if="item.icon"><component :is="item.icon" /></el-icon>
+        <el-icon v-if="item.icon && typeof item.icon === 'object'"><component :is="item.icon" /></el-icon>
+        <span v-if="item.icon && typeof item.icon === 'string'" class="menu-icon-text">{{ item.icon }}</span>
         <span>{{ item.label }}</span>
       </el-menu-item>
 
       <!-- 多级菜单 -->
       <el-sub-menu v-else :index="String(item.id)">
         <template #title>
-          <el-icon v-if="item.icon"><component :is="item.icon" /></el-icon>
+          <el-icon v-if="item.icon && typeof item.icon === 'object'"><component :is="item.icon" /></el-icon>
+          <span v-if="item.icon && typeof item.icon === 'string'" class="menu-icon-text">{{ item.icon }}</span>
           <span>{{ item.label }}</span>
         </template>
         
@@ -32,7 +34,9 @@
           :index="String(child.id)"
           :disabled="child.disabled"
         >
-          {{ child.label }}
+          <el-icon v-if="child.icon && typeof child.icon === 'object'"><component :is="child.icon" /></el-icon>
+          <span v-if="child.icon && typeof child.icon === 'string'" class="menu-icon-text">{{ child.icon }}</span>
+          <span>{{ child.label }}</span>
         </el-menu-item>
       </el-sub-menu>
     </template>
@@ -72,5 +76,9 @@ const handleSelect = (index: string, indexPath: string[]) => {
 </script>
 
 <style scoped>
+.menu-icon-text {
+  display: inline-block;
+  margin-right: 4px;
+}
 </style>
 

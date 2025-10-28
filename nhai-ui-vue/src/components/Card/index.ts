@@ -1,3 +1,3 @@
 export { default as VueCard } from './Card.vue'
-export { VueCardCommand } from './cardCommand'
+export { NhaiCardCommand } from './cardCommand'
 

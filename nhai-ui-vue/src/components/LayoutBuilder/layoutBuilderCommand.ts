@@ -14,7 +14,7 @@ export interface LayoutItem {
  * 提供灵活的布局管理，支持 vbox、hbox、grid、container 等布局方式
  * 允许通过命令式 API 动态构建和管理复杂布局
  */
-export class VueLayoutBuilderCommand extends BaseCommand {
+export class NhaiLayoutBuilderCommand extends BaseCommand {
   private layoutType: 'vbox' | 'hbox' | 'grid' | 'container' = 'vbox'
   private direction: 'row' | 'column' = 'column'
   private _spacing: number = 0
@@ -256,5 +256,5 @@ export class VueLayoutBuilderCommand extends BaseCommand {
   }
 }
 
-export default VueLayoutBuilderCommand
+export default NhaiLayoutBuilderCommand
 

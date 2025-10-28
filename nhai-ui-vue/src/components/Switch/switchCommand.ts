@@ -2,7 +2,7 @@ import { createApp, h, defineComponent } from 'vue'
 import Switch from './Switch.vue'
 import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueSwitchCommand extends BaseCommand {
+export class NhaiSwitchCommand extends BaseCommand {
   private value: boolean = false
   private disabled: boolean = false
   private size: 'large' | 'default' | 'small' = 'default'
@@ -87,5 +87,5 @@ export class VueSwitchCommand extends BaseCommand {
   }
 }
 
-export default VueSwitchCommand
+export default NhaiSwitchCommand
 

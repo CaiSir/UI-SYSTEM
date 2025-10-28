@@ -154,19 +154,19 @@ import {
   VueLayoutBuilder
 } from './components'
 import {
-  VueButtonCommand, 
-  VueInputCommand, 
-  VueSelectCommand,
-  VueSwitchCommand,
-  VueCheckboxCommand,
-  VueCardCommand,
-  VueBreadcrumbCommand,
-  VueTabsCommand,
-  VueMenuBarCommand,
-  VueContainerCommand,
-  VueGridCommand,
-  VueSplitPanelCommand,
-  VueLayoutBuilderCommand
+  NhaiButtonCommand, 
+  NhaiInputCommand, 
+  NhaiSelectCommand,
+  NhaiSwitchCommand,
+  NhaiCheckboxCommand,
+  NhaiCardCommand,
+  NhaiBreadcrumbCommand,
+  NhaiTabsCommand,
+  NhaiMenuBarCommand,
+  NhaiContainerCommand,
+  NhaiGridCommand,
+  NhaiSplitPanelCommand,
+  NhaiLayoutBuilderCommand
 } from './components'
 import {
   createSeparator,
@@ -241,19 +241,19 @@ const handleButtonClick = () => {
 onMounted(() => {
   // 14. 创建自定义工具栏布局
   if (customToolbar.value) {
-    const toolbar = new VueLayoutBuilderCommand('hbox')
+    const toolbar = new NhaiLayoutBuilderCommand('hbox')
     toolbar.setDirection('row')
     toolbar.setGap('12px')
     toolbar.setPadding('12px')
     
-    const saveBtn = new VueButtonCommand('保存')
+    const saveBtn = new NhaiButtonCommand('保存')
     saveBtn.setType('primary')
     toolbar.addWidget('save', saveBtn)
     
-    const cancelBtn = new VueButtonCommand('取消')
+    const cancelBtn = new NhaiButtonCommand('取消')
     toolbar.addWidget('cancel', cancelBtn)
     
-    const deleteBtn = new VueButtonCommand('删除')
+    const deleteBtn = new NhaiButtonCommand('删除')
     deleteBtn.setType('danger')
     toolbar.addWidget('delete', deleteBtn)
     
@@ -261,7 +261,7 @@ onMounted(() => {
     const separator = createSeparator('vertical')
     toolbar.addElement('sep', separator)
     
-    const editBtn = new VueButtonCommand('编辑')
+    const editBtn = new NhaiButtonCommand('编辑')
     editBtn.setType('warning')
     toolbar.addWidget('edit', editBtn)
     
@@ -271,11 +271,11 @@ onMounted(() => {
   // 15. 创建完整的应用布局
   if (fullAppLayout.value) {
     // 外层容器
-    const appLayout = new VueLayoutBuilderCommand('vbox')
+    const appLayout = new NhaiLayoutBuilderCommand('vbox')
     appLayout.setHeight('100%')
     
     // 顶部菜单栏
-    const topMenu = new VueMenuBarCommand([
+    const topMenu = new NhaiMenuBarCommand([
       { id: 'home', label: '首页' },
       { id: 'products', label: '产品' },
       { id: 'about', label: '关于' }
@@ -284,15 +284,15 @@ onMounted(() => {
     appLayout.addWidget('menu', topMenu)
     
     // 中间内容区（水平布局）
-    const contentLayout = new VueLayoutBuilderCommand('hbox')
+    const contentLayout = new NhaiLayoutBuilderCommand('hbox')
     contentLayout.setDirection('row')
     contentLayout.setSpacing(1)
     
     // 左侧面板
-    const leftPanel = new VueCardCommand('左侧面板', '这里可以放置工具列表')
+    const leftPanel = new NhaiCardCommand('左侧面板', '这里可以放置工具列表')
     
     // 主内容区
-    const mainContent = new VueCardCommand('主内容区', '这里放置主要内容')
+    const mainContent = new NhaiCardCommand('主内容区', '这里放置主要内容')
     
     contentLayout.addWidget('left', leftPanel)
     contentLayout.addWidget('main', mainContent)
@@ -304,77 +304,77 @@ onMounted(() => {
   }
 
   // 16. 命令式创建各种组件
-  const button = new VueButtonCommand('命令式按钮')
+  const button = new NhaiButtonCommand('命令式按钮')
   button.setType('primary')
   button.setOnClick(() => console.log('命令式按钮点击'))
   
-  const input = new VueInputCommand('命令式输入框')
+  const input = new NhaiInputCommand('命令式输入框')
   input.setValue('默认值')
   input.setOnChange((value) => console.log('输入值变化:', value))
 
-  const select = new VueSelectCommand('命令式选择')
+  const select = new NhaiSelectCommand('命令式选择')
   select.setOptions([
     { label: '选项A', value: 'a' },
     { label: '选项B', value: 'b' }
   ])
   select.setOnChange((value) => console.log('选择值变化:', value))
 
-  const switch_ = new VueSwitchCommand(true)
+  const switch_ = new NhaiSwitchCommand(true)
   switch_.setActiveText('开')
   switch_.setInactiveText('关')
   switch_.setOnChange((value) => console.log('Switch变化:', value))
 
-  const checkbox = new VueCheckboxCommand('命令式Checkbox')
+  const checkbox = new NhaiCheckboxCommand('命令式Checkbox')
   checkbox.setValue(false)
   checkbox.setOnChange((value) => console.log('Checkbox变化:', value))
 
-  const card = new VueCardCommand('卡片标题', '卡片内容')
+  const card = new NhaiCardCommand('卡片标题', '卡片内容')
 
-  const breadcrumb = new VueBreadcrumbCommand([
+  const breadcrumb = new NhaiBreadcrumbCommand([
     { label: '首页', href: '/' },
     { label: '产品', href: '/products' },
     { label: '详情' }
   ])
   breadcrumb.setSeparator('>')
 
-  const tabs = new VueTabsCommand([
+  const tabs = new NhaiTabsCommand([
     { name: 'tab1', label: '命令式标签1', content: '内容1' },
     { name: 'tab2', label: '命令式标签2', content: '内容2' }
   ])
   tabs.setType('card')
 
-  const menuBar = new VueMenuBarCommand([
+  const menuBar = new NhaiMenuBarCommand([
     { id: '1', label: '命令式菜单1' },
     { id: '2', label: '命令式菜单2' }
   ])
   menuBar.setMode('vertical')
 
-  const container = new VueContainerCommand('命令式容器内容')
+  const container = new NhaiContainerCommand('命令式容器内容')
   container.setMaxWidth('md')
 
-  const grid = new VueGridCommand(true)
+  const grid = new NhaiGridCommand(true)
   grid.setSpacing(3)
   grid.setJustify('space-between')
 
-  const splitPanel = new VueSplitPanelCommand('左侧内容', '右侧内容', 'horizontal')
+  const splitPanel = new NhaiSplitPanelCommand('左侧内容', '右侧内容', 'horizontal')
   splitPanel.setSplitPosition(40)
 
   // 命令式布局构建器
-  const layoutBuilder = new VueLayoutBuilderCommand('vbox')
+  const layoutBuilder = new NhaiLayoutBuilderCommand('vbox')
   layoutBuilder.setSpacing(2)
   layoutBuilder.setPadding('20px')
   layoutBuilder.setBackgroundColor('#f8f9fa')
   
   // 添加组件（使用 addWidget，自动调用 render）
-  const btn1 = new VueButtonCommand('布局按钮1')
+  const btn1 = new NhaiButtonCommand('布局按钮1')
   btn1.setType('primary')
   layoutBuilder.addWidget('btn1', btn1)
 
-  const btn2 = new VueButtonCommand('布局按钮2')
+  const btn2 = new NhaiButtonCommand('布局按钮2')
   btn2.setType('success')
   layoutBuilder.addWidget('btn2', btn2)
 
-  const input1 = new VueInputCommand('布局输入框')
+  const input1 = new NhaiInputCommand('布局输入框')
   layoutBuilder.addWidget('input1', input1)
   
   if (commandDemo.value) {
@@ -427,7 +427,7 @@ onMounted(() => {
     commandDemo.value.appendChild(createBlankLine())
     
     // 创建布局容器（使用 LayoutBuilder 代替 createElement）
-    const layoutContainerWrapper = new VueLayoutBuilderCommand('vbox')
+    const layoutContainerWrapper = new NhaiLayoutBuilderCommand('vbox')
     layoutContainerWrapper.setPadding('20px')
     layoutContainerWrapper.setBackgroundColor('#f8f9fa')
     layoutContainerWrapper.setStyle({

@@ -2,7 +2,7 @@ import { createApp, h, defineComponent } from 'vue'
 import SplitPanel from './SplitPanel.vue'
 import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueSplitPanelCommand extends BaseCommand {
+export class NhaiSplitPanelCommand extends BaseCommand {
   private orientation: 'horizontal' | 'vertical' = 'horizontal'
   private splitPosition: number = 50
   private minSize: number = 20
@@ -102,5 +102,5 @@ export class VueSplitPanelCommand extends BaseCommand {
   }
 }
 
-export default VueSplitPanelCommand
+export default NhaiSplitPanelCommand
 

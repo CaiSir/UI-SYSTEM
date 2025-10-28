@@ -2,7 +2,7 @@ import { createApp, h, defineComponent } from 'vue'
 import Grid from './Grid.vue'
 import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueGridCommand extends BaseCommand {
+export class NhaiGridCommand extends BaseCommand {
   private container: boolean = false
   private spacing: number = 2
   private direction: 'row' | 'column' | 'row-reverse' | 'column-reverse' = 'row'
@@ -71,5 +71,5 @@ export class VueGridCommand extends BaseCommand {
   }
 }
 
-export default VueGridCommand
+export default NhaiGridCommand
 

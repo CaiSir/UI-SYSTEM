@@ -2,7 +2,7 @@ import { createApp, h, defineComponent } from 'vue'
 import Container from './Container.vue'
 import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueContainerCommand extends BaseCommand {
+export class NhaiContainerCommand extends BaseCommand {
   private maxWidth: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false = 'lg'
   private fixed: boolean = false
   private disableGutters: boolean = false
@@ -59,5 +59,5 @@ export class VueContainerCommand extends BaseCommand {
   }
 }
 
-export default VueContainerCommand
+export default NhaiContainerCommand
 

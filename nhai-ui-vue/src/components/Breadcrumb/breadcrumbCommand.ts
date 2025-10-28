@@ -7,7 +7,7 @@ import { BaseCommand } from '../../lib/BaseCommand'
  * 面包屑组件命令式 API
  * 用于显示当前页面路径，提供导航功能
  */
-export class VueBreadcrumbCommand extends BaseCommand {
+export class NhaiBreadcrumbCommand extends BaseCommand {
   private items: BreadcrumbItem[] = []
   private separator: string = '/'
   private onItemClick?: (item: BreadcrumbItem, index: number) => void
@@ -98,6 +98,6 @@ export class VueBreadcrumbCommand extends BaseCommand {
   }
 }
 
-export default VueBreadcrumbCommand
+export default NhaiBreadcrumbCommand
 export type { BreadcrumbItem }
 

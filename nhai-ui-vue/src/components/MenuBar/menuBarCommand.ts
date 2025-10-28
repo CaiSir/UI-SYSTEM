@@ -1,9 +1,10 @@
 import { createApp, h, defineComponent } from 'vue'
+import ElementPlus from 'element-plus'
 import MenuBar from './MenuBar.vue'
 import type { MenuItem } from './types'
 import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueMenuBarCommand extends BaseCommand {
+export class NhaiMenuBarCommand extends BaseCommand {
   private items: MenuItem[] = []
   private mode: 'horizontal' | 'vertical' = 'horizontal'
   private defaultActive?: string
@@ -82,6 +83,7 @@ export class VueMenuBarCommand extends BaseCommand {
     })
 
     const app = createApp(MenuBarWrapper)
+    app.use(ElementPlus)
     app.mount(container)
     this._appInstance = app
     
@@ -96,6 +98,6 @@ export class VueMenuBarCommand extends BaseCommand {
   }
 }
 
-export default VueMenuBarCommand
+export default NhaiMenuBarCommand
 export type { MenuItem }
 

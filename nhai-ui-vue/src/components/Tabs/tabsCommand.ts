@@ -7,7 +7,7 @@ import { BaseCommand } from '../../lib/BaseCommand'
  * 标签页组件命令式 API
  * 支持多种样式、可编辑、可添加/删除标签等功能
  */
-export class VueTabsCommand extends BaseCommand {
+export class NhaiTabsCommand extends BaseCommand {
   private value: string = ''
   private items: TabItem[] = []
   private type: 'card' | 'border-card' | '' = ''
@@ -192,6 +192,6 @@ export class VueTabsCommand extends BaseCommand {
   }
 }
 
-export default VueTabsCommand
+export default NhaiTabsCommand
 export type { TabItem }
 

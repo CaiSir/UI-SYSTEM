@@ -68,21 +68,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
-import { showcaseData } from './showcaseData'
+import { showcaseData } from './showcaseData.ts'
 import { 
   AbsolutePanelCommand,
-  VueButtonCommand,
-  VueInputCommand,
-  VueSelectCommand,
-  VueSwitchCommand,
-  VueCheckboxCommand,
-  VueCardCommand,
-  VueBreadcrumbCommand,
-  VueTabsCommand,
-  VueMenuBarCommand,
-  VueSplitPanelCommand,
-  VueGridCommand,
-  VueContainerCommand
+  NhaiButtonCommand,
+  NhaiInputCommand,
+  NhaiSelectCommand,
+  NhaiSwitchCommand,
+  NhaiCheckboxCommand,
+  NhaiCardCommand,
+  NhaiBreadcrumbCommand,
+  NhaiTabsCommand,
+  NhaiMenuBarCommand,
+  NhaiSplitPanelCommand,
+  NhaiGridCommand,
+  NhaiContainerCommand
 } from '../components'
 let editor: any = null
 
@@ -181,18 +181,18 @@ const resetCode = () => {
 onMounted(async () => {
   // 暴露所有组件类到全局作用域，以便代码执行
   ;(window as any).AbsolutePanelCommand = AbsolutePanelCommand
-  ;(window as any).VueButtonCommand = VueButtonCommand
-  ;(window as any).VueInputCommand = VueInputCommand
-  ;(window as any).VueSelectCommand = VueSelectCommand
-  ;(window as any).VueSwitchCommand = VueSwitchCommand
-  ;(window as any).VueCheckboxCommand = VueCheckboxCommand
-  ;(window as any).VueCardCommand = VueCardCommand
-  ;(window as any).VueBreadcrumbCommand = VueBreadcrumbCommand
-  ;(window as any).VueTabsCommand = VueTabsCommand
-  ;(window as any).VueMenuBarCommand = VueMenuBarCommand
-  ;(window as any).VueSplitPanelCommand = VueSplitPanelCommand
-  ;(window as any).VueGridCommand = VueGridCommand
-  ;(window as any).VueContainerCommand = VueContainerCommand
+  ;(window as any).NhaiButtonCommand = NhaiButtonCommand
+  ;(window as any).NhaiInputCommand = NhaiInputCommand
+  ;(window as any).NhaiSelectCommand = NhaiSelectCommand
+  ;(window as any).NhaiSwitchCommand = NhaiSwitchCommand
+  ;(window as any).NhaiCheckboxCommand = NhaiCheckboxCommand
+  ;(window as any).NhaiCardCommand = NhaiCardCommand
+  ;(window as any).NhaiBreadcrumbCommand = NhaiBreadcrumbCommand
+  ;(window as any).NhaiTabsCommand = NhaiTabsCommand
+  ;(window as any).NhaiMenuBarCommand = NhaiMenuBarCommand
+  ;(window as any).NhaiSplitPanelCommand = NhaiSplitPanelCommand
+  ;(window as any).NhaiGridCommand = NhaiGridCommand
+  ;(window as any).NhaiContainerCommand = NhaiContainerCommand
   
   console.log('所有组件类已暴露到全局作用域')
   
@@ -217,6 +217,7 @@ onMounted(async () => {
 .showcase-header {
   background: white;
   padding: 12px 24px;
+  padding-right: 64px;
   display: flex;
   justify-content: space-between;
   align-items: center;

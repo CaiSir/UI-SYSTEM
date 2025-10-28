@@ -4,6 +4,9 @@
  * 统一导出入口
  */
 
+// 导入 Element Plus 样式
+import 'element-plus/dist/index.css'
+
 // 导出所有组件
 export * from './components'
 

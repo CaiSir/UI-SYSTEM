@@ -20,7 +20,7 @@ export const showcaseData: Category[] = [
         id: 'button-demo',
         title: 'Button - 按钮组件',
         description: '创建不同类型的按钮',
-        code: `const { VueButtonCommand } = window
+        code: `const { NhaiButtonCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -28,18 +28,18 @@ container.style.display = 'flex'
 container.style.gap = '10px'
 container.style.flexWrap = 'wrap'
 
-const btn1 = new VueButtonCommand('主要按钮')
+const btn1 = new NhaiButtonCommand('主要按钮')
 btn1.setType('primary')
 btn1.setOnClick(() => alert('主要按钮被点击！'))
 
-const btn2 = new VueButtonCommand('成功按钮')
+const btn2 = new NhaiButtonCommand('成功按钮')
 btn2.setType('success')
 btn2.setOnClick(() => alert('成功按钮被点击！'))
 
-const btn3 = new VueButtonCommand('警告按钮')
+const btn3 = new NhaiButtonCommand('警告按钮')
 btn3.setType('warning')
 
-const btn4 = new VueButtonCommand('危险按钮')
+const btn4 = new NhaiButtonCommand('危险按钮')
 btn4.setType('danger')
 
 container.appendChild(btn1.render())
@@ -53,7 +53,7 @@ return container`
         id: 'input-demo',
         title: 'Input - 输入框组件',
         description: '创建不同类型的输入框',
-        code: `const { VueInputCommand } = window
+        code: `const { NhaiInputCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -61,16 +61,16 @@ container.style.display = 'flex'
 container.style.flexDirection = 'column'
 container.style.gap = '15px'
 
-const input1 = new VueInputCommand()
+const input1 = new NhaiInputCommand()
 input1.setPlaceholder('请输入用户名')
 input1.setSize('large')
 
-const input2 = new VueInputCommand()
+const input2 = new NhaiInputCommand()
 input2.setPlaceholder('请输入密码')
 input2.setType('password')
 input2.setShowPassword(true)
 
-const input3 = new VueInputCommand()
+const input3 = new NhaiInputCommand()
 input3.setPlaceholder('请输入邮箱')
 input3.setClearable(true)
 
@@ -84,7 +84,7 @@ return container`
         id: 'select-demo',
         title: 'Select - 选择框组件',
         description: '创建下拉选择框',
-        code: `const { VueSelectCommand } = window
+        code: `const { NhaiSelectCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -92,7 +92,7 @@ container.style.display = 'flex'
 container.style.flexDirection = 'column'
 container.style.gap = '15px'
 
-const select1 = new VueSelectCommand()
+const select1 = new NhaiSelectCommand()
 select1.setOptions([
   { label: '选项 1', value: '1' },
   { label: '选项 2', value: '2' },
@@ -100,7 +100,7 @@ select1.setOptions([
 ])
 select1.setPlaceholder('请选择一个选项')
 
-const select2 = new VueSelectCommand()
+const select2 = new NhaiSelectCommand()
 select2.setOptions([
   { label: '红色', value: 'red' },
   { label: '蓝色', value: 'blue' },
@@ -118,7 +118,7 @@ return container`
         id: 'switch-demo',
         title: 'Switch - 开关组件',
         description: '创建开关组件',
-        code: `const { VueSwitchCommand } = window
+        code: `const { NhaiSwitchCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -126,15 +126,15 @@ container.style.display = 'flex'
 container.style.flexDirection = 'column'
 container.style.gap = '15px'
 
-const switch1 = new VueSwitchCommand()
+const switch1 = new NhaiSwitchCommand()
 switch1.setActiveText('开启')
 switch1.setInactiveText('关闭')
 
-const switch2 = new VueSwitchCommand()
+const switch2 = new NhaiSwitchCommand()
 switch2.setValue(true)
 switch2.setActiveColor('#67c23a')
 
-const switch3 = new VueSwitchCommand()
+const switch3 = new NhaiSwitchCommand()
 switch3.setValue(true)
 switch3.setActiveText('开')
 switch3.setInactiveText('关')
@@ -149,7 +149,7 @@ return container`
         id: 'checkbox-demo',
         title: 'Checkbox - 复选框组件',
         description: '创建复选框组件',
-        code: `const { VueCheckboxCommand } = window
+        code: `const { NhaiCheckboxCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -157,13 +157,13 @@ container.style.display = 'flex'
 container.style.flexDirection = 'column'
 container.style.gap = '15px'
 
-const checkbox1 = new VueCheckboxCommand('同意用户协议')
+const checkbox1 = new NhaiCheckboxCommand('同意用户协议')
 checkbox1.setValue(true)
 
-const checkbox2 = new VueCheckboxCommand('记住我')
+const checkbox2 = new NhaiCheckboxCommand('记住我')
 checkbox2.setText('记住我的登录状态')
 
-const checkbox3 = new VueCheckboxCommand('接收通知')
+const checkbox3 = new NhaiCheckboxCommand('接收通知')
 checkbox3.setText('允许接收系统通知')
 
 container.appendChild(checkbox1.render())
@@ -182,20 +182,20 @@ return container`
         id: 'absolute-panel-basic',
         title: 'AbsolutePanel - 基础绝对定位',
         description: '创建绝对定位面板，自由放置组件',
-        code: `const { AbsolutePanelCommand, VueButtonCommand } = window
+        code: `const { AbsolutePanelCommand, NhaiButtonCommand } = window
 
 const panel = new AbsolutePanelCommand('800px', '600px')
 panel.setBackgroundColor('#f0f0f0')
 
-const button1 = new VueButtonCommand('按钮 1')
+const button1 = new NhaiButtonCommand('按钮 1')
 button1.setType('primary')
 panel.addWidgetAt('btn1', button1, { x: 50, y: 50 }, { width: 100, height: 40 })
 
-const button2 = new VueButtonCommand('按钮 2')
+const button2 = new NhaiButtonCommand('按钮 2')
 button2.setType('success')
 panel.addWidgetAt('btn2', button2, { x: 200, y: 50 }, { width: 100, height: 40 })
 
-const button3 = new VueButtonCommand('按钮 3')
+const button3 = new NhaiButtonCommand('按钮 3')
 button3.setType('warning')
 panel.addWidgetAt('btn3', button3, { x: 50, y: 120 }, { width: 100, height: 40 })
 
@@ -205,20 +205,20 @@ return panel.render()`
         id: 'absolute-panel-multi',
         title: 'AbsolutePanel - 多组件布局',
         description: '在一个面板中放置多个不同类型的组件',
-        code: `const { AbsolutePanelCommand, VueButtonCommand, VueInputCommand, VueSelectCommand } = window
+        code: `const { AbsolutePanelCommand, NhaiButtonCommand, NhaiInputCommand, NhaiSelectCommand } = window
 
 const panel = new AbsolutePanelCommand('100%', '600px')
 panel.setBackgroundColor('#f5f5f5')
 
-const button = new VueButtonCommand('主要按钮')
+const button = new NhaiButtonCommand('主要按钮')
 button.setType('primary')
 panel.addWidgetAt('btn1', button, { x: 50, y: 50 }, { width: 120, height: 40 })
 
-const input = new VueInputCommand()
+const input = new NhaiInputCommand()
 input.setPlaceholder('请输入文本...')
 panel.addWidgetAt('input1', input, { x: 50, y: 110 }, { width: 250, height: 40 })
 
-const select = new VueSelectCommand()
+const select = new NhaiSelectCommand()
 select.setOptions([
   { label: '选项 1', value: '1' },
   { label: '选项 2', value: '2' },
@@ -233,9 +233,9 @@ return panel.render()`
         id: 'split-panel-demo',
         title: 'SplitPanel - 分割面板',
         description: '创建可调整大小的分割面板',
-        code: `const { VueSplitPanelCommand } = window
+        code: `const { NhaiSplitPanelCommand } = window
 
-const splitPanel = new VueSplitPanelCommand()
+const splitPanel = new NhaiSplitPanelCommand()
 splitPanel.setOrientation('horizontal')
 splitPanel.setSplitPosition(50)
 splitPanel.setMinSize(100)
@@ -250,9 +250,9 @@ return splitPanel.render()`
         id: 'grid-demo',
         title: 'Grid - 网格布局',
         description: '创建网格布局容器',
-        code: `const { VueGridCommand } = window
+        code: `const { NhaiGridCommand } = window
 
-const grid = new VueGridCommand()
+const grid = new NhaiGridCommand()
 grid.setContainer(true)
 grid.setSpacing(16)
 grid.setDirection('row')
@@ -284,9 +284,9 @@ return container`
         id: 'container-demo',
         title: 'Container - 容器组件',
         description: '创建响应式容器',
-        code: `const { VueContainerCommand } = window
+        code: `const { NhaiContainerCommand } = window
 
-const container = new VueContainerCommand()
+const container = new NhaiContainerCommand()
 container.setMaxWidth('lg')
 container.setFixed(false)
 container.setDisableGutters(false)
@@ -304,9 +304,9 @@ return container.render()`
         id: 'card-demo',
         title: 'Card - 卡片组件',
         description: '创建卡片组件',
-        code: `const { VueCardCommand } = window
+        code: `const { NhaiCardCommand } = window
 
-const card = new VueCardCommand()
+const card = new NhaiCardCommand()
 card.setHeader('卡片标题')
 card.setShadow('hover')
 card.setContent('这是卡片的内容区域，可以放置任何内容。')
@@ -318,9 +318,9 @@ return card.render()`
         id: 'breadcrumb-demo',
         title: 'Breadcrumb - 面包屑',
         description: '创建面包屑导航',
-        code: `const { VueBreadcrumbCommand } = window
+        code: `const { NhaiBreadcrumbCommand } = window
 
-const breadcrumb = new VueBreadcrumbCommand([
+const breadcrumb = new NhaiBreadcrumbCommand([
   { label: '首页', href: '/' },
   { label: '产品列表', href: '/products' },
   { label: '详情', disabled: true }
@@ -332,9 +332,9 @@ return breadcrumb.render()`
         id: 'tabs-demo',
         title: 'Tabs - 标签页',
         description: '创建标签页组件',
-        code: `const { VueTabsCommand } = window
+        code: `const { NhaiTabsCommand } = window
 
-const tabs = new VueTabsCommand([
+const tabs = new NhaiTabsCommand([
   { name: 'tab1', label: '标签 1', content: '这是第一个标签页的内容' },
   { name: 'tab2', label: '标签 2', content: '这是第二个标签页的内容' },
   { name: 'tab3', label: '标签 3', content: '这是第三个标签页的内容' }
@@ -350,9 +350,9 @@ return tabs.render()`
         id: 'menubar-demo',
         title: 'MenuBar - 菜单栏',
         description: '创建菜单栏组件',
-        code: `const { VueMenuBarCommand } = window
+        code: `const { NhaiMenuBarCommand } = window
 
-const menuBar = new VueMenuBarCommand([
+const menuBar = new NhaiMenuBarCommand([
   { id: '1', label: '首页', icon: 'el-icon-home' },
   { id: '2', label: '关于', icon: 'el-icon-info' },
   { id: '3', label: '帮助', icon: 'el-icon-question' }

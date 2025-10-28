@@ -5,7 +5,7 @@ import { BaseCommand } from '../../lib/BaseCommand'
  * 使用原生 DOM 实现，避免 Vue 框架开销
  * DOM 节点数减少约 80%，性能提升约 5-10 倍
  */
-export class LightweightButtonCommand extends BaseCommand {
+export class customButtonCommand extends BaseCommand {
   private text: string = ''
   private type: 'default' | 'primary' | 'success' | 'info' | 'warning' | 'danger' = 'primary'
   private size: 'large' | 'default' | 'small' = 'default'
@@ -125,5 +125,5 @@ export class LightweightButtonCommand extends BaseCommand {
   }
 }
 
-export default LightweightButtonCommand
+export default customButtonCommand
 

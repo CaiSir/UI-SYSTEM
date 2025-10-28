@@ -2,7 +2,7 @@ import { createApp, h, defineComponent } from 'vue'
 import Checkbox from './Checkbox.vue'
 import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueCheckboxCommand extends BaseCommand {
+export class NhaiCheckboxCommand extends BaseCommand {
   private value: boolean = false
   private label?: string | number
   private text: string = ''
@@ -81,5 +81,5 @@ export class VueCheckboxCommand extends BaseCommand {
   }
 }
 
-export default VueCheckboxCommand
+export default NhaiCheckboxCommand
 

@@ -5,7 +5,7 @@ import { BaseCommand } from '../../lib/BaseCommand'
 /**
  * Vue 输入框的命令式封装
  */
-export class VueInputCommand extends BaseCommand {
+export class NhaiInputCommand extends BaseCommand {
   private value: string = ''
   private type: 'text' | 'textarea' | 'password' = 'text'
   private placeholder: string = '请输入'
@@ -131,5 +131,5 @@ export class VueInputCommand extends BaseCommand {
   }
 }
 
-export default VueInputCommand
+export default NhaiInputCommand
 

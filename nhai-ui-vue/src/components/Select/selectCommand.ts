@@ -7,7 +7,7 @@ import { BaseCommand } from '../../lib/BaseCommand'
  * 下拉选择框组件命令式 API
  * 支持单选、多选、可清除、可搜索等功能
  */
-export class VueSelectCommand extends BaseCommand {
+export class NhaiSelectCommand extends BaseCommand {
   private value: string | number | Array<string | number> = ''
   private placeholder: string = '请选择'
   private disabled: boolean = false
@@ -125,5 +125,5 @@ export class VueSelectCommand extends BaseCommand {
   }
 }
 
-export default VueSelectCommand
+export default NhaiSelectCommand
 

@@ -9,14 +9,14 @@ export abstract class BaseCommand {
   protected _element?: HTMLElement
   protected _appInstance?: any
   
-  // 父子关系（类似 Qt 的 QObject parent/children）
+  // 父子关系（
   protected _children: BaseCommand[] = []
   protected _parent?: BaseCommand
   
-  // 属性系统（类似 Qt 的 property system）
+  // 属性系统（
   private props: Record<string, any> = {}
   
-  // 事件系统（类似 Qt 的 signal/slot）
+  // 事件系统
   private events: Map<string, Function[]> = new Map()
 
   /**
@@ -61,7 +61,7 @@ export abstract class BaseCommand {
   }
 
   /**
-   * 设置组件ID（类似 Qt 的 setObjectName）
+   * 设置组件ID
    */
   setId(id: string): void {
     if (this._element) {
@@ -99,7 +99,7 @@ export abstract class BaseCommand {
   // ==================== 属性系统（类似 Qt） ====================
 
   /**
-   * 设置属性（类似 Qt 的 setProperty）
+   * 设置属性
    */
   setProperty(key: string, value: any): void {
     this.props[key] = value
@@ -110,7 +110,7 @@ export abstract class BaseCommand {
   }
 
   /**
-   * 获取属性（类似 Qt 的 property）
+   * 获取属性
    */
   getProperty(key: string): any {
     return this.props[key]
@@ -123,10 +123,10 @@ export abstract class BaseCommand {
     return { ...this.props }
   }
 
-  // ==================== 事件系统（类似 Qt 的 signal/slot） ====================
+  // ==================== 事件系统 ====================
 
   /**
-   * 监听事件（类似 Qt 的 connect）
+   * 监听事件
    */
   on(event: string, handler: Function): void {
     if (!this.events.has(event)) {
@@ -155,7 +155,7 @@ export abstract class BaseCommand {
   }
 
   /**
-   * 触发事件（类似 Qt 的 emit）
+   * 触发事件
    */
   emit(event: string, ...args: any[]): void {
     const handlers = this.events.get(event)
@@ -164,10 +164,10 @@ export abstract class BaseCommand {
     }
   }
 
-  // ==================== 父子关系（类似 Qt 的 QObject） ====================
+  // ==================== 父子关系 ====================
 
   /**
-   * 添加子组件（类似 Qt 的 addChild）
+   * 添加子组件
    */
   addChild(child: BaseCommand): void {
     if (child._parent) {
@@ -221,7 +221,7 @@ export abstract class BaseCommand {
   }
 
   /**
-   * 查找子组件（类似 Qt 的 findChild）
+   * 查找子组件
    */
   findChild(predicate: (child: BaseCommand) => boolean): BaseCommand | undefined {
     return this._children.find(predicate)

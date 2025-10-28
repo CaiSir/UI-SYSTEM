@@ -2,7 +2,7 @@ import { createApp, h, defineComponent } from 'vue'
 import Card from './Card.vue'
 import { BaseCommand } from '../../lib/BaseCommand'
 
-export class VueCardCommand extends BaseCommand {
+export class NhaiCardCommand extends BaseCommand {
   private header?: string
   private shadow: 'always' | 'hover' | 'never' = 'always'
   private bodyStyle?: Record<string, any>
@@ -66,5 +66,5 @@ export class VueCardCommand extends BaseCommand {
   }
 }
 
-export default VueCardCommand
+export default NhaiCardCommand
 
