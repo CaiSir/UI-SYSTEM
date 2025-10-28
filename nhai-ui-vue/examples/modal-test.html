@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模态遮罩测试</title>
+  <link rel="stylesheet" href="/node_modules/element-plus/dist/index.css">
+  <style>
+    body {
+      padding: 40px;
+      font-family: Arial, sans-serif;
+    }
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      background: #409eff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #66b1ff;
+    }
+    .result {
+      margin: 20px 0;
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>模态遮罩测试页面</h1>
+  
+  <div>
+    <button onclick="testNormalDialog()">测试普通遮罩（默认半透明黑）</button>
+    <button onclick="testDarkDialog()">测试深色遮罩（80% 不透明）</button>
+    <button onclick="testColorDialog()">测试彩色遮罩（蓝色半透明）</button>
+    <button onclick="testTransparentDialog()">测试透明遮罩（无背景）</button>
+  </div>
+
+  <div class="result" id="result">等待测试...</div>
+
+  <script type="module">
+    import { NhaiDialogCommand } from '/src/components/index.ts'
+    
+    console.log('模块已加载')
+    
+    window.testNormalDialog = function() {
+      document.getElementById('result').textContent = '打开普通遮罩对话框...'
+      const dialog = new NhaiDialogCommand('普通遮罩', '这是默认的半透明黑色遮罩层')
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.render()
+      console.log('对话框已打开')
+    }
+    
+    window.testDarkDialog = function() {
+      document.getElementById('result').textContent = '打开深色遮罩对话框...'
+      const dialog = new NhaiDialogCommand('深色遮罩', '这是深色的遮罩层（80% 不透明）')
+      dialog.setModalStyle({ backgroundColor: 'rgba(0, 0, 0, 0.8)' })
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.render()
+      console.log('深色对话框已打开')
+    }
+    
+    window.testColorDialog = function() {
+      document.getElementById('result').textContent = '打开彩色遮罩对话框...'
+      const dialog = new NhaiDialogCommand('彩色遮罩', '这是蓝色的遮罩层')
+      dialog.setModalStyle({ backgroundColor: 'rgba(64, 158, 255, 0.5)' })
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.render()
+      console.log('彩色对话框已打开')
+    }
+    
+    window.testTransparentDialog = function() {
+      document.getElementById('result').textContent = '打开透明遮罩对话框...'
+      const dialog = new NhaiDialogCommand('透明遮罩', '这是透明的遮罩层（无背景色）')
+      dialog.setModalBackdrop(false)
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.render()
+      console.log('透明对话框已打开')
+    }
+    
+    document.getElementById('result').textContent = '模块已加载，可以开始测试'
+  </script>
+</body>
+</html>
+

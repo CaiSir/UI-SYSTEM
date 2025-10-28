@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dialog 调试</title>
+  <!-- Element Plus 样式 -->
+  <link rel="stylesheet" href="/node_modules/element-plus/dist/index.css">
+  <style>
+    body {
+      padding: 40px;
+      font-family: Arial, sans-serif;
+    }
+    #status {
+      background: #f0f0f0;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    button {
+      padding: 12px 24px;
+      margin: 5px;
+      background: #409eff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #66b1ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dialog 组件调试页面</h1>
+  <div id="status">等待模块加载...</div>
+  <button id="testBtn">测试对话框</button>
+
+  <script type="module">
+    const statusDiv = document.getElementById('status')
+    const testBtn = document.getElementById('testBtn')
+    
+    statusDiv.textContent = '开始导入模块...'
+    
+    try {
+      // 动态导入模块
+      import('/src/components/index.ts').then(module => {
+        statusDiv.textContent = '模块导入成功'
+        console.log('模块:', module)
+        
+        const { NhaiDialogCommand } = module
+        console.log('NhaiDialogCommand:', NhaiDialogCommand)
+        
+        if (!NhaiDialogCommand) {
+          statusDiv.textContent = '错误: NhaiDialogCommand 未找到'
+          return
+        }
+        
+        statusDiv.textContent = 'NhaiDialogCommand 已加载，可以测试'
+        
+        // 设置测试函数
+        testBtn.onclick = function() {
+          console.log('创建对话框')
+          statusDiv.textContent = '正在创建对话框...'
+          
+          try {
+            const dialog = new NhaiDialogCommand('测试对话框', '这是一个测试')
+            console.log('对话框已创建:', dialog)
+            
+            // 设置为显示状态
+            dialog.setModelValue(true)
+            console.log('modelValue 已设置为 true')
+            
+            // 设置挂载到 body
+            dialog.setAppendToBody(true)
+            console.log('appendToBody 已设置为 true')
+            
+            // 绑定事件
+            dialog.on('open', () => {
+              console.log('事件: 对话框打开')
+              statusDiv.textContent = '对话框已打开'
+            })
+            
+            dialog.on('closed', () => {
+              console.log('事件: 对话框已关闭')
+              statusDiv.textContent = '对话框已关闭'
+              dialog.unmount()
+            })
+            
+            // 渲染
+            const element = dialog.render()
+            console.log('对话框已渲染，元素:', element)
+            console.log('容器内容:', container.innerHTML)
+            statusDiv.textContent = '对话框已渲染，等待打开...'
+            
+          } catch (error) {
+            console.error('创建对话框失败:', error)
+            statusDiv.textContent = '错误: ' + error.message
+          }
+        }
+        
+      }).catch(error => {
+        console.error('导入模块失败:', error)
+        statusDiv.textContent = '导入失败: ' + error.message
+      })
+      
+    } catch (error) {
+      console.error('脚本执行失败:', error)
+      statusDiv.textContent = '脚本错误: ' + error.message
+    }
+  </script>
+</body>
+</html>
+

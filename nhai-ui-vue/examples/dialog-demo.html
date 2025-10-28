@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dialog 组件示例 - NHAI UI Vue</title>
+  <!-- Element Plus 样式 -->
+  <link rel="stylesheet" href="/node_modules/element-plus/dist/index.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .demo-section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    h2 {
+      margin-bottom: 16px;
+      color: #333;
+      font-size: 18px;
+    }
+    
+    .code-block {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .description {
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    button {
+      padding: 8px 16px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background: #f5f5f5;
+    }
+
+    button.primary {
+      background: #409eff;
+      color: white;
+      border-color: #409eff;
+    }
+
+    button.primary:hover {
+      background: #66b1ff;
+    }
+  </style>
+</head>
+<body>
+  <h1>NHAI UI Vue - Dialog 组件示例</h1>
+  <p class="description">通过命令式 API 使用 Dialog 组件的各种示例</p>
+  
+  <div class="demo-section">
+    <h2>1. 基础对话框</h2>
+    <button class="primary" onclick="openBasicDialog()">打开基础对话框</button>
+    <div class="code-block">
+const dialog = new NhaiDialogCommand('提示', '这是一个基础对话框')
+dialog.setModelValue(true)
+dialog.render()
+document.body.appendChild(dialog.getElement())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>2. 带确认和取消按钮的对话框</h2>
+    <button class="primary" onclick="openConfirmDialog()">打开确认对话框</button>
+    <div class="code-block">
+const dialog = new NhaiDialogCommand('确认', '确定要执行此操作吗？')
+dialog.setShowFooter(true)
+dialog.setModelValue(true)
+dialog.on('confirm', () => {
+  alert('用户点击了确认')
+})
+dialog.on('cancel', () => {
+  alert('用户点击了取消')
+})
+dialog.render()
+document.body.appendChild(dialog.getElement())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>3. 可拖动的对话框</h2>
+    <button class="primary" onclick="openDraggableDialog()">打开可拖动对话框</button>
+    <div class="code-block">
+const dialog = new NhaiDialogCommand('可拖动对话框', '这个对话框可以拖动位置')
+dialog.setDraggable(true)
+dialog.setModelValue(true)
+dialog.render()
+document.body.appendChild(dialog.getElement())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>4. 全屏对话框</h2>
+    <button class="primary" onclick="openFullscreenDialog()">打开全屏对话框</button>
+    <div class="code-block">
+const dialog = new NhaiDialogCommand('全屏对话框', '这是一个全屏对话框')
+dialog.setFullscreen(true)
+dialog.setModelValue(true)
+dialog.render()
+document.body.appendChild(dialog.getElement())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>5. 自定义宽度对话框</h2>
+    <button class="primary" onclick="openCustomWidthDialog()">打开自定义宽度对话框</button>
+    <div class="code-block">
+const dialog = new NhaiDialogCommand('自定义宽度', '这个对话框宽度为 70%')
+dialog.setWidth('70%')
+dialog.setModelValue(true)
+dialog.render()
+document.body.appendChild(dialog.getElement())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>6. HTML 内容对话框</h2>
+    <button class="primary" onclick="openHtmlDialog()">打开 HTML 内容对话框</button>
+    <div class="code-block">
+const dialog = new NhaiDialogCommand('HTML 内容', 
+  '&lt;div style="color: red;"&gt;这是红色文字&lt;/div&gt;&lt;br&gt;这是普通文字')
+dialog.setModelValue(true)
+dialog.render()
+document.body.appendChild(dialog.getElement())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>7. 事件监听示例</h2>
+    <button class="primary" onclick="openEventDialog()">打开带事件的对话框</button>
+    <div class="code-block">
+const dialog = new NhaiDialogCommand('事件示例', '这个对话框会触发各种事件')
+dialog.setModelValue(true)
+dialog.on('open', () => console.log('对话框打开'))
+dialog.on('opened', () => console.log('对话框完全打开'))
+dialog.on('close', () => console.log('对话框关闭'))
+dialog.on('closed', () => console.log('对话框完全关闭'))
+dialog.render()
+document.body.appendChild(dialog.getElement())
+    </div>
+  </div>
+
+  <div class="demo-section">
+    <h2>8. 模态样式自定义</h2>
+    <button class="primary" onclick="openDarkModalDialog()">深色遮罩</button>
+    <button class="primary" onclick="openColorModalDialog()">彩色遮罩</button>
+    <button class="primary" onclick="openTransparentModalDialog()">透明遮罩</button>
+    <button class="primary" onclick="openCloseableModalDialog()">可点击遮罩关闭</button>
+    <div class="code-block">
+// 深色遮罩层
+dialog.setModalStyle({ backgroundColor: 'rgba(0, 0, 0, 0.8)' })
+
+// 彩色遮罩层
+dialog.setModalStyle({ backgroundColor: 'rgba(64, 158, 255, 0.5)' })
+
+// 透明遮罩层
+dialog.setModalBackdrop(false)
+    </div>
+  </div>
+
+  <script type="module">
+    import { NhaiDialogCommand } from '/src/components/index.ts'
+    
+    // 存储已创建的对话框，避免重复创建
+    const dialogs = []
+    
+    console.log('Dialog 模块已加载', NhaiDialogCommand)
+
+    // 直接在全局作用域定义函数
+    window.openBasicDialog = function() {
+      const dialog = new NhaiDialogCommand('提示', '这是一个基础对话框')
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.render()
+      dialog.on('closed', () => dialog.unmount())
+      dialogs.push(dialog)
+    }
+
+    window.openConfirmDialog = function() {
+      const dialog = new NhaiDialogCommand('确认', '确定要执行此操作吗？')
+      dialog.setShowFooter(true)
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('confirm', () => {
+        alert('用户点击了确认')
+        dialog.unmount()
+      })
+      dialog.on('cancel', () => {
+        alert('用户点击了取消')
+      })
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    window.openDraggableDialog = function() {
+      const dialog = new NhaiDialogCommand('可拖动对话框', '这个对话框可以拖动位置')
+      dialog.setDraggable(true)
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    window.openFullscreenDialog = function() {
+      const dialog = new NhaiDialogCommand('全屏对话框', '这是一个全屏对话框')
+      dialog.setFullscreen(true)
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    window.openCustomWidthDialog = function() {
+      const dialog = new NhaiDialogCommand('自定义宽度', '这个对话框宽度为 70%')
+      dialog.setWidth('70%')
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    window.openHtmlDialog = function() {
+      const dialog = new NhaiDialogCommand('HTML 内容', 
+        '<div style="color: red; font-weight: bold;">这是红色粗体文字</div><br>这是普通文字<br><br>还可以包含<strong>粗体</strong>和<em>斜体</em>文本')
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    window.openEventDialog = function() {
+      const dialog = new NhaiDialogCommand('事件示例', '这个对话框会触发各种事件，请查看浏览器控制台')
+      dialog.setModelValue(true)
+      dialog.setShowFooter(true)
+      dialog.setAppendToBody(true)
+      dialog.on('open', () => console.log('对话框打开'))
+      dialog.on('opened', () => console.log('对话框完全打开'))
+      dialog.on('close', () => console.log('对话框关闭'))
+      dialog.on('closed', () => {
+        console.log('对话框完全关闭')
+        dialog.unmount()
+      })
+      dialog.on('confirm', () => console.log('用户点击确认'))
+      dialog.on('cancel', () => console.log('用户点击取消'))
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    window.openDarkModalDialog = function() {
+      const dialog = new NhaiDialogCommand('深色遮罩', '这是一个深色遮罩层的对话框')
+      dialog.setModalStyle({ backgroundColor: 'rgba(0, 0, 0, 0.8)' })
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    window.openColorModalDialog = function() {
+      const dialog = new NhaiDialogCommand('彩色遮罩', '这是一个蓝色遮罩层的对话框')
+      dialog.setModalStyle({ backgroundColor: 'rgba(64, 158, 255, 0.5)' })
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    window.openTransparentModalDialog = function() {
+      const dialog = new NhaiDialogCommand('透明遮罩', '这是一个透明遮罩层的对话框')
+      dialog.setModalBackdrop(false)
+      // 默认点击遮罩不关闭（模态框行为）
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+
+    // 添加一个示例：可点击遮罩关闭的对话框
+    window.openCloseableModalDialog = function() {
+      const dialog = new NhaiDialogCommand('可点击遮罩关闭', '这个对话框点击遮罩层可以关闭')
+      dialog.setCloseOnClickModal(true) // 允许点击遮罩关闭
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.on('closed', () => dialog.unmount())
+      dialog.render()
+      dialogs.push(dialog)
+    }
+    
+    console.log('所有对话框函数已加载到全局作用域')
+  </script>
+</body>
+</html>
+

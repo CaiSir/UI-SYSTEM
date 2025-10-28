@@ -13,6 +13,7 @@ export { VueGrid, NhaiGridCommand } from './Grid'
 export { VueSplitPanel, NhaiSplitPanelCommand } from './SplitPanel'
 export { VueLayoutBuilder, NhaiLayoutBuilderCommand } from './LayoutBuilder'
 export { VueAbsolutePanel, AbsolutePanelCommand } from './AbsolutePanel'
+export { VueDialog, NhaiDialogCommand } from './Dialog'
 
 // 重新导出类型
 export type { SelectOption } from './Select'
