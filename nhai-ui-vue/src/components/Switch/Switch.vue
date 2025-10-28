@@ -46,8 +46,9 @@ watch(switchValue, (newValue) => {
   emit('update:modelValue', newValue)
 })
 
-const handleChange = (value: boolean) => {
-  emit('change', value)
+const handleChange = (value: string | number | boolean) => {
+  const boolValue = typeof value === 'boolean' ? value : Boolean(value)
+  emit('change', boolValue)
 }
 </script>
 

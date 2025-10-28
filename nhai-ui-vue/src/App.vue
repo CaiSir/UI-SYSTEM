@@ -170,8 +170,7 @@ import {
 } from './components'
 import {
   createSeparator,
-  createBlankLine,
-  createText
+  createBlankLine
 } from './lib'
 
 const inputValue = ref('')

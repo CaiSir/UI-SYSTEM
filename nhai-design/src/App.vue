@@ -567,6 +567,12 @@ import {
   ButtonType,
   MenuBarLayoutType
 } from 'nhai-framework'
+import { 
+  AbsolutePanelCommand,
+  VueButtonCommand,
+  VueInputCommand,
+  VueSelectCommand
+} from 'nhai-ui-vue'
 import OnlineEditor from './components/ui/OnlineEditor.vue'
 import FreeDesign from './components/ui/FreeDesign.vue'
 
@@ -4742,7 +4748,15 @@ onMounted(async () => {
     ;(window as any).NHAIObjectFactory = NHAIObjectFactory
     ;(window as any).ModernNHAIButton = ModernNHAIButton
     ;(window as any).NHAIComponentComposer = NHAIComponentComposer
+    
+    // 将 nhai-ui-vue 的类暴露到全局作用域
+    ;(window as any).AbsolutePanelCommand = AbsolutePanelCommand
+    ;(window as any).VueButtonCommand = VueButtonCommand
+    ;(window as any).VueInputCommand = VueInputCommand
+    ;(window as any).VueSelectCommand = VueSelectCommand
+    
     console.log('✓ NHAIObjectFactory、ModernNHAIButton 和 NHAIComponentComposer 已暴露到全局作用域')
+    console.log('✓ AbsolutePanelCommand 和其他 nhai-ui-vue 类已暴露到全局作用域')
     
     // 监听组件选择事件
     window.addEventListener('componentSelected', (event: any) => {

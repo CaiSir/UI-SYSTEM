@@ -41,14 +41,7 @@
 
 <script setup lang="ts">
 import { ElMenu, ElMenuItem, ElSubMenu, ElIcon } from 'element-plus'
-
-export interface MenuItem {
-  id: string | number
-  label: string
-  icon?: string
-  disabled?: boolean
-  children?: MenuItem[]
-}
+import type { MenuItem } from './types'
 
 interface Props {
   items: MenuItem[]
@@ -60,7 +53,7 @@ interface Props {
   collapseTransition?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   items: () => [],
   mode: 'horizontal',
   collapse: false,

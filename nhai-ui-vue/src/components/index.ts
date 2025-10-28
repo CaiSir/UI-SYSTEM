@@ -1,5 +1,5 @@
 // 导出所有组件（Vue SFC 和命令式 API）
-export { VueButton, VueButtonCommand } from './Button'
+export { VueButton, VueButtonCommand, LightweightButtonCommand } from './Button'
 export { VueInput, VueInputCommand } from './Input'
 export { VueSelect, VueSelectCommand } from './Select'
 export { VueSwitch, VueSwitchCommand } from './Switch'

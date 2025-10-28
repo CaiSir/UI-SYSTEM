@@ -21,11 +21,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElSelect, ElOption } from 'element-plus'
-
-interface SelectOption {
-  label: string
-  value: string | number
-}
+import type { SelectOption } from './types'
 
 interface Props {
   modelValue?: string | number | Array<string | number>

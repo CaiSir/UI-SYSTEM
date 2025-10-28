@@ -29,7 +29,7 @@ interface Props {
   icon?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   type: 'primary',
   size: 'default',
   plain: false,

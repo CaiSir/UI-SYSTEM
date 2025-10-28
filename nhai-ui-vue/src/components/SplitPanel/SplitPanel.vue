@@ -61,37 +61,66 @@ const currentPosition = ref(props.splitPosition)
 const isDragging = ref(false)
 
 const leftPanelStyle = computed(() => {
-  return {
+  const styles: Record<string, string | number> = {
     position: 'absolute',
     left: 0,
     top: 0,
-    [props.orientation === 'horizontal' ? 'width' : 'height']: `${currentPosition.value}%`,
-    [props.orientation === 'horizontal' ? 'height' : 'width']: '100%',
     overflow: 'auto'
   }
+  
+  if (props.orientation === 'horizontal') {
+    styles.width = `${currentPosition.value}%`
+    styles.height = '100%'
+  } else {
+    styles.height = `${currentPosition.value}%`
+    styles.width = '100%'
+  }
+  
+  return styles
 })
 
 const rightPanelStyle = computed(() => {
-  return {
+  const styles: Record<string, string | number> = {
     position: 'absolute',
-    [props.orientation === 'horizontal' ? 'left' : 'top']: `${currentPosition.value + (props.resizable ? 5 : 0)}%`,
-    [props.orientation === 'horizontal' ? 'right' : 'bottom']: 0,
-    [props.orientation === 'horizontal' ? 'width' : 'height']: `${100 - currentPosition.value - (props.resizable ? 5 : 0)}%`,
-    [props.orientation === 'horizontal' ? 'height' : 'width']: '100%',
     overflow: 'auto'
   }
+  
+  const offset = props.resizable ? 5 : 0
+  
+  if (props.orientation === 'horizontal') {
+    styles.left = `${currentPosition.value + offset}%`
+    styles.right = 0
+    styles.width = `${100 - currentPosition.value - offset}%`
+    styles.height = '100%'
+  } else {
+    styles.top = `${currentPosition.value + offset}%`
+    styles.bottom = 0
+    styles.height = `${100 - currentPosition.value - offset}%`
+    styles.width = '100%'
+  }
+  
+  return styles
 })
 
 const splitterStyle = computed(() => {
-  return {
+  const styles: Record<string, string | number> = {
     position: 'absolute',
-    [props.orientation === 'horizontal' ? 'left' : 'top']: `${currentPosition.value}%`,
-    [props.orientation === 'horizontal' ? 'width' : 'height']: '5px',
-    [props.orientation === 'horizontal' ? 'height' : 'width']: '100%',
     cursor: props.orientation === 'horizontal' ? 'col-resize' : 'row-resize',
     backgroundColor: '#e0e0e0',
     userSelect: 'none'
   }
+  
+  if (props.orientation === 'horizontal') {
+    styles.left = `${currentPosition.value}%`
+    styles.width = '5px'
+    styles.height = '100%'
+  } else {
+    styles.top = `${currentPosition.value}%`
+    styles.height = '5px'
+    styles.width = '100%'
+  }
+  
+  return styles
 })
 
 const leftPanelClass = computed(() => [
@@ -115,7 +144,7 @@ const handleMouseDown = (e: MouseEvent) => {
   e.preventDefault()
 }
 
-const handleMouseMove = (e: MouseEvent) => {
+const handleMouseMove = () => {
   if (!isDragging.value || props.disabled) return
   
   // 计算新位置

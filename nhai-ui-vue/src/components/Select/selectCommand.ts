@@ -1,14 +1,11 @@
 import { createApp, h, defineComponent } from 'vue'
 import Select from './Select.vue'
+import type { SelectOption } from './types'
 import { BaseCommand } from '../../lib/BaseCommand'
 
-export interface SelectOption {
-  label: string
-  value: string | number
-}
-
 /**
- * Vue 选择框的命令式封装
+ * 下拉选择框组件命令式 API
+ * 支持单选、多选、可清除、可搜索等功能
  */
 export class VueSelectCommand extends BaseCommand {
   private value: string | number | Array<string | number> = ''

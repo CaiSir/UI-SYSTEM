@@ -28,14 +28,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElTabs, ElTabPane } from 'element-plus'
-
-export interface TabItem {
-  name: string
-  label: string
-  content?: string
-  disabled?: boolean
-  closable?: boolean
-}
+import type { TabItem } from './types'
 
 interface Props {
   modelValue?: string
@@ -74,20 +67,21 @@ watch(activeTab, (newValue) => {
   emit('update:modelValue', newValue)
 })
 
-const handleTabClick = (tab: TabItem) => {
-  emit('tabClick', tab)
+const handleTabClick = (...args: any[]) => {
+  // Element Plus provides complex tab click event, we'll emit a simplified version
+  emit('tabClick', args[0])
 }
 
-const handleTabRemove = (name: string) => {
-  emit('tabRemove', name)
+const handleTabRemove = (name: string | number) => {
+  emit('tabRemove', String(name))
 }
 
-const handleTabAdd = (name: string) => {
-  emit('tabAdd', name)
+const handleTabAdd = () => {
+  emit('tabAdd', '')
 }
 
-const handleEdit = (name: string, action: 'add' | 'remove') => {
-  emit('edit', name, action)
+const handleEdit = (name: string | number | undefined, action: 'add' | 'remove') => {
+  emit('edit', name ? String(name) : '', action)
 }
 </script>
 

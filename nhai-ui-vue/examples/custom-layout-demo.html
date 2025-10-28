@@ -136,7 +136,13 @@ element.appendChild(outer.render())
       VueButtonCommand,
       VueInputCommand,
       VueCardCommand
-    } from '../src/components/index.ts'
+    } from '/src/components/index.ts'
+    
+    // 暴露到全局，以便可以复用
+    window.VueLayoutBuilderCommand = VueLayoutBuilderCommand
+    window.VueButtonCommand = VueButtonCommand
+    window.VueInputCommand = VueInputCommand
+    window.VueCardCommand = VueCardCommand
     
     // 1. 垂直布局
     const vbox = new VueLayoutBuilderCommand('vbox')

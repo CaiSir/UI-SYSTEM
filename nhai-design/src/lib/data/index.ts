@@ -1,6 +1,7 @@
 import type { Category } from '../types'
-import { buttonControlsData } from './components/buttons/ButtonData'
-import { labelControlsData } from './components/labels/LabelData'
+import { buttonControlsData } from '../../components/examples/buttons/ButtonData'
+import { labelControlsData } from '../../components/examples/labels/LabelData'
+import { absolutePanelData } from '../../components/examples/layouts/AbsolutePanelData'
 
 // 树形目录数据
 export const treeData: Category[] = [
@@ -192,16 +193,16 @@ window.addChild(label)`,
               if (!demoArea) return
               
               try {
-                const window = (window as any).NHAIObjectFactory.createWindow()
-                window.setTitle('示例窗口')
-                window.setWidth(300)
-                window.setHeight(200)
+                const win = (window as any).NHAIObjectFactory.createWindow()
+                win.setTitle('示例窗口')
+                win.setWidth(300)
+                win.setHeight(200)
                 
                 const label = (window as any).NHAIObjectFactory.createLabel('窗口内容')
-                window.addChild(label)
+                win.addChild(label)
                 
                 demoArea.innerHTML = ''
-                const element = window.render()
+                const element = win.render()
                 demoArea.appendChild(element)
               } catch (error) {
                 console.error('创建基础窗口演示时出错:', error)
@@ -303,5 +304,15 @@ composer.on('templateSaved', (data) => {
         ]
       }
     ]
+  },
+  {
+    name: 'VUECommand组件',
+    expanded: false,
+    children: [
+      absolutePanelData
+    ]
   }
 ]
+
+// 调试：输出树形数据
+console.log('树形数据已加载，包含 VUECommand组件:', treeData)

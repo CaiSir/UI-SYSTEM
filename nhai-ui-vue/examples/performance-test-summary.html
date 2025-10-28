@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NHAI UI Vue - 性能测试总览</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #1976d2;
+            padding-bottom: 10px;
+        }
+
+        .test-item {
+            margin: 20px 0;
+            padding: 20px;
+            background: #fafafa;
+            border-left: 4px solid #1976d2;
+            border-radius: 4px;
+        }
+
+        .test-item h2 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+
+        .test-item p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 10px 5px 5px 0;
+            background: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background 0.3s;
+        }
+
+        .button:hover {
+            background: #1565c0;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-box h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .stat-box .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        .stat-box .unit {
+            font-size: 14px;
+            color: #999;
+            margin-left: 5px;
+        }
+
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 90%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 NHAI UI Vue - 性能测试总览</h1>
+        
+        <p>这套性能测试工具可以帮助您评估组件的渲染性能和内存占用。</p>
+
+        <div class="test-item">
+            <h2>📊 测试 1：批量按钮渲染（10000个）</h2>
+            <p>
+                测试场景：使用命令式 API 创建 10000 个按钮组件并渲染到页面
+            </p>
+            <p>
+                <strong>测试指标：</strong>
+            </p>
+            <ul>
+                <li>渲染时间（毫秒）</li>
+                <li>内存占用（MB）</li>
+                <li>DOM 节点数量</li>
+                <li>浏览器重绘次数</li>
+            </ul>
+            <a href="performance-test-buttons.html" class="button">开始测试</a>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <h3>预期性能指标</h3>
+                <div class="value">10000<span class="unit">个按钮</span></div>
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">
+                    目标渲染时间 &lt; 5秒
+                </p>
+            </div>
+            <div class="stat-box">
+                <h3>内存占用</h3>
+                <div class="value">~50<span class="unit">MB</span></div>
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">
+                    正常范围：30-80MB
+                </p>
+            </div>
+            <div class="stat-box">
+                <h3>DOM 节点</h3>
+                <div class="value">~50K<span class="unit">节点</span></div>
+                <p style="margin: 10px 0 0 0; font-size: 12px; color: #999;">
+                    10000 个按钮 × 5 节点/按钮
+                </p>
+            </div>
+        </div>
+
+        <div class="test-item">
+            <h2>💡 测试说明</h2>
+            <p>
+                本测试使用 NHAI UI Vue 的命令式 API 批量创建组件。
+                每个按钮都是独立的 Vue 组件实例，使用 Element Plus 渲染。
+            </p>
+            <p>
+                <strong>测试步骤：</strong>
+            </p>
+            <ol>
+                <li>点击"运行测试"按钮</li>
+                <li>系统会创建 10000 个按钮组件</li>
+                <li>等待渲染完成后查看统计信息</li>
+                <li>使用"检查内存"查看详细内存占用</li>
+            </ol>
+        </div>
+
+        <div class="test-item">
+            <h2>🔍 如何使用</h2>
+            <p>
+                1. 确保已安装依赖：<code>npm install</code>
+            </p>
+            <p>
+                2. 启动开发服务器：<code>npm run dev</code>
+            </p>
+            <p>
+                3. 在浏览器中打开测试页面
+            </p>
+            <p>
+                4. <strong>建议使用 Chrome/Edge 浏览器</strong>，以获得完整的内存分析功能
+            </p>
+        </div>
+
+        <div class="test-item">
+            <h2>📈 优化建议</h2>
+            <p>
+                如果测试结果显示性能不理想，可以考虑以下优化方案：
+            </p>
+            <ul>
+                <li>使用虚拟滚动（Virtual Scrolling）减少 DOM 节点</li>
+                <li>使用骨架屏延迟渲染</li>
+                <li>使用 Web Workers 异步处理</li>
+                <li>使用文档碎片（DocumentFragment）批量添加节点</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
+

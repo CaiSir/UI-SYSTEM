@@ -1,6 +1,6 @@
 import { createApp, h, defineComponent } from 'vue'
 import MenuBar from './MenuBar.vue'
-import type { MenuItem } from './MenuBar.vue'
+import type { MenuItem } from './types'
 import { BaseCommand } from '../../lib/BaseCommand'
 
 export class VueMenuBarCommand extends BaseCommand {

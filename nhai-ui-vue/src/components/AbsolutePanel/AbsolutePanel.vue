@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type CSSProperties } from 'vue'
 
 interface Props {
   width?: string
@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<Props>(), {
   height: '100%'
 })
 
-const panelStyle = computed(() => ({
+const panelStyle = computed<CSSProperties>(() => ({
   position: 'relative',
   width: props.width,
   height: props.height,

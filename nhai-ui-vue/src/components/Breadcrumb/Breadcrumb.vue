@@ -14,19 +14,14 @@
 
 <script setup lang="ts">
 import { ElBreadcrumb, ElBreadcrumbItem } from 'element-plus'
-
-export interface BreadcrumbItem {
-  label: string
-  href?: string
-  disabled?: boolean
-}
+import type { BreadcrumbItem } from './types'
 
 interface Props {
   items: BreadcrumbItem[]
   separator?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   items: () => [],
   separator: '/'
 })

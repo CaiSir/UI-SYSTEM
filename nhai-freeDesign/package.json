@@ -10,7 +10,8 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "nhai-framework": "file:../nhai-framework"
+    "nhai-framework": "file:../nhai-framework",
+    "nhai-ui-vue": "file:../nhai-ui-vue"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

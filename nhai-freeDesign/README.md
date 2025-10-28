@@ -14,7 +14,8 @@ nhai-freeDesign/
 │   ├── main.ts          # 主入口文件
 │   ├── style.css        # 样式文件
 │   └── components/      # 组件目录
-├── demo.html            # 演示页面
+├── demo.html            # 组件组合器演示页面
+├── absolute-panel-demo.html  # AbsolutePanel 命令式 API 演示页面
 ├── index.html           # 主页面
 ├── package.json         # 项目配置
 ├── vite.config.ts       # Vite 配置
@@ -92,7 +93,58 @@ npm run build
 npm run preview
 ```
 
+### 5. 查看演示页面
+
+项目包含以下演示页面：
+
+- **index.html** - 主应用（菜单栏 + 目录侧边栏 + 3D 画布）
+- **demo.html** - 组件组合器演示
+- **absolute-panel-demo.html** - AbsolutePanel 命令式 API 演示（支持在线编辑代码和实时预览）
+
 ## API 使用示例
+
+### AbsolutePanel 命令式 API 演示
+
+打开 `absolute-panel-demo.html` 查看完整的在线代码编辑演示，支持：
+- 📝 在线代码编辑器
+- 🎨 实时预览效果
+- 💡 代码示例和使用说明
+
+```typescript
+import { AbsolutePanelCommand, VueButtonCommand, VueInputCommand } from 'nhai-ui-vue'
+
+// 创建绝对定位面板
+const panel = new AbsolutePanelCommand('100%', '600px')
+panel.setBackgroundColor('#f0f0f0')
+
+// 添加按钮到指定位置
+const button = new VueButtonCommand('点击我')
+button.setType('primary')
+panel.addWidgetAt('btn1', button, { x: 50, y: 50 }, { width: 100, height: 40 })
+
+// 添加输入框
+const input = new VueInputCommand()
+input.setPlaceholder('请输入...')
+panel.addWidgetAt('input1', input, { x: 50, y: 120 }, { width: 250, height: 40 })
+
+// 渲染面板
+const element = panel.render()
+document.body.appendChild(element)
+```
+
+### AbsolutePanelCommand 主要方法
+
+- `constructor(width?, height?)` - 创建面板，设置宽高
+- `setWidth(width)` - 设置面板宽度
+- `setHeight(height)` - 设置面板高度
+- `setBackgroundColor(color)` - 设置背景颜色
+- `addWidgetAt(id, widget, position, size?)` - 在指定位置添加组件
+- `setPosition(id, x, y)` - 更新组件位置
+- `getPosition(id)` - 获取组件位置
+- `setSize(id, width, height)` - 更新组件大小
+- `getSize(id)` - 获取组件大小
+- `render()` - 渲染面板为 DOM 元素
+- `unmount()` - 卸载面板
 
 ### 创建组件组合器
 

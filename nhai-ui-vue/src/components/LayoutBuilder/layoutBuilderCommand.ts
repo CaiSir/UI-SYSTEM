@@ -10,8 +10,9 @@ export interface LayoutItem {
 }
 
 /**
- * Vue 布局构建器（命令式 API，完全解耦）
- * 参考 nhai-framework 的设计，不依赖 Vue 的具体实现
+ * 布局构建器命令式 API
+ * 提供灵活的布局管理，支持 vbox、hbox、grid、container 等布局方式
+ * 允许通过命令式 API 动态构建和管理复杂布局
  */
 export class VueLayoutBuilderCommand extends BaseCommand {
   private layoutType: 'vbox' | 'hbox' | 'grid' | 'container' = 'vbox'
@@ -26,6 +27,10 @@ export class VueLayoutBuilderCommand extends BaseCommand {
   private _onItemClick?: (item: LayoutItem) => void
   private customStyle: Record<string, string> = {}  // 自定义样式
 
+  /**
+   * 创建布局构建器
+   * @param layoutType - 布局类型：vbox（垂直）、hbox（水平）、grid（网格）、container（容器）
+   */
   constructor(layoutType: 'vbox' | 'hbox' | 'grid' | 'container' = 'vbox') {
     super()
     this.layoutType = layoutType
