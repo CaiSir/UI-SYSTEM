@@ -313,6 +313,7 @@ const handleDialogDragOver = (event: DragEvent) => {
 // 处理放置
 const handleDrop = async (event: DragEvent) => {
   event.preventDefault()
+  event.stopPropagation() // 防止事件冒泡导致重复触发
   if (!draggedComponent) return
 
   // 检查是否放置到布局组件（Grid、Container）内
@@ -444,34 +445,13 @@ const handleDrop = async (event: DragEvent) => {
           const childInstance = await createChildComponentInstance(draggedComponent)
           if (!childInstance) return
           
-          // 获取子组件元素
-          // createChildComponentInstance 已经渲染了元素（除了 widget 类型）
-          let childElement = childInstance.instance.getElement()
-          
-          // 如果元素不存在，才渲染（避免重复渲染）
-          if (!childElement) {
-            childElement = childInstance.instance.render()
-          } else {
-            // 如果已有元素且在 DOM 中，从 DOM 中移除（因为我们要重新放置到 Widget 中）
-            if (childElement.parentNode) {
-              childElement.parentNode.removeChild(childElement)
-            }
-          }
-          
-          if (!childElement) {
-            console.warn('子组件元素未找到')
-            return
-          }
-          
-          // 重要：在添加到 wrapper 之前，先创建 wrapper 并更新 childElements 映射
-          // 这样 renderChild 就不会再次渲染它了
-          
           // 计算放置位置（相对于 Widget 内容区域）
           const rect = widgetBody.getBoundingClientRect()
           const x = event.clientX - rect.left - 20
           const y = event.clientY - rect.top - 20
           
-          // 创建包装器用于定位
+          // 关键：先创建 wrapper（但不添加内容），并立即更新 childElements 映射
+          // 这样后续调用 addChild 时，renderChild 会检测到 wrapper 并跳过渲染
           const wrapper = document.createElement('div')
           wrapper.className = 'widget-child-component dialog-child-component'
           wrapper.style.cssText = `
@@ -486,13 +466,41 @@ const handleDrop = async (event: DragEvent) => {
             z-index: 10;
           `
           wrapper.setAttribute('data-widget-child', 'true')
-          wrapper.appendChild(childElement)
           
-          // 重要：在添加到 DOM 和 _children 之前，先更新 childElements 映射
-          // 这样后续如果有 renderAllChildren 或 renderChild 调用，会立即检测到并跳过
+          // 关键：在调用 addChild 之前，先设置映射指向 wrapper（空的）
+          // 这样 addChild -> renderChild 会检测到 wrapper 并跳过
           if (widgetComp.widgetInstance.childElements) {
             widgetComp.widgetInstance.childElements.set(childInstance.instance, wrapper)
           }
+          
+          // 现在可以安全地调用 addChild，renderChild 会检测到 wrapper 并跳过渲染
+          widgetComp.widgetInstance.addChild(childInstance.instance)
+          
+          // 获取子组件元素
+          let childElement = childInstance.instance.getElement()
+          
+          // 如果 addChild 的 renderChild 渲染了元素到 contentContainer，我们需要把它取出来
+          if (childElement && childElement.parentNode) {
+            const contentContainer = widgetComp.widgetInstance.contentContainer
+            if (contentContainer && contentContainer.contains(childElement)) {
+              // 从 contentContainer 中移除
+              contentContainer.removeChild(childElement)
+            } else if (childElement.parentNode) {
+              // 如果不在 contentContainer 中，也在其他地方，也要移除
+              childElement.parentNode.removeChild(childElement)
+            }
+          } else if (!childElement) {
+            // 如果没有元素（renderChild 跳过了），才渲染（避免重复渲染）
+            childElement = childInstance.instance.render()
+          }
+          
+          if (!childElement) {
+            console.warn('子组件元素未找到')
+            return
+          }
+          
+          // 将元素添加到 wrapper
+          wrapper.appendChild(childElement)
           
           // 添加选中和拖拽功能
           wrapper.addEventListener('click', (e) => {
@@ -507,20 +515,6 @@ const handleDrop = async (event: DragEvent) => {
           
           widgetBody.appendChild(wrapper)
           
-          // 手动添加到 Widget 实例的子组件列表（但不触发自动渲染）
-          // 直接操作 _children，避免 addChild 的自动渲染
-          // 检查是否已经添加过，避免重复
-          if (widgetComp.widgetInstance._children) {
-            if (!widgetComp.widgetInstance._children.includes(childInstance.instance)) {
-              widgetComp.widgetInstance._children.push(childInstance.instance)
-            }
-          }
-          
-          // 设置子组件的父引用
-          if (childInstance.instance._parent === undefined) {
-            childInstance.instance._parent = widgetComp.widgetInstance
-          }
-          
           // 存储映射关系（复用 dialogChildren）
           dialogChildren.value.set(childInstance.instance, {
             instance: childInstance.instance,
@@ -531,6 +525,8 @@ const handleDrop = async (event: DragEvent) => {
           
           // 更新代码
           updateCode()
+          // 重要：处理完成后，清除 draggedComponent 防止重复处理
+          draggedComponent = null
           return
         }
       }
@@ -620,13 +616,15 @@ const handleDrop = async (event: DragEvent) => {
       position: { x, y }
     })
     
-    // 移除占位符（如果存在）
-    const placeholder = (dialogBody as HTMLElement).querySelector('.dialog-placeholder')
-    if (placeholder) {
-      placeholder.remove()
-    }
-  } else {
-    // 放置到画布上
+        // 移除占位符（如果存在）
+        const placeholder = (dialogBody as HTMLElement).querySelector('.dialog-placeholder')
+        if (placeholder) {
+          placeholder.remove()
+        }
+        // 清除 draggedComponent 防止重复处理
+        draggedComponent = null
+      } else {
+        // 放置到画布上
     const canvasWrapper = document.querySelector('.canvas-content-wrapper')
     if (!canvasWrapper) return
     

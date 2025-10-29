@@ -109,8 +109,14 @@ export abstract class BaseCommand<
 
   /**
    * 渲染组件为 DOM 元素
+   * 如果已经渲染过，返回现有元素（避免重复渲染）
    */
   render(): HTMLElement {
+    // 如果已经渲染过且元素存在，返回现有元素
+    if (this._mounted && this._element && this._element.parentNode !== null) {
+      return this._element
+    }
+    
     this.willMount()
     const element = this.doRender()
     this._element = element

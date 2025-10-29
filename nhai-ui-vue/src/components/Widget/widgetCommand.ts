@@ -288,16 +288,34 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
   // ==================== 子组件管理 ====================
 
   override addChild<C extends BaseCommand<any, any>>(child: C): this {
+    // 关键：在调用 super.addChild 之前，先检查 childElements 映射
+    // 如果已经在映射中，说明是手动添加的，不需要自动渲染
+    if (this.childElements.has(child)) {
+      // 已经在映射中，说明是手动添加的，只添加到 _children，不渲染
+      if (!this._children.includes(child)) {
+        this._children.push(child)
+        // 设置父引用
+        ;(child as any)._parent = this
+      }
+      return this
+    }
+    
     super.addChild(child)
+    
     // 在可视化编辑器中，子组件是手动添加的，这里不自动渲染
     // 只有非可视化编辑器模式才自动渲染
     if (this._mounted && this.contentContainer) {
-      // 检查是否有手动添加的子组件（通过检查是否有 wrapper）
+      // 再次检查是否有手动添加的子组件（通过检查是否有 wrapper）
       const hasManualChildren = Array.from(this.contentContainer.children).some(
         c => c.classList && 
         (c.classList.contains('widget-child-component') || 
          c.classList.contains('dialog-child-component'))
       )
+      // 再次检查 childElements 映射
+      if (this.childElements.has(child)) {
+        // 在调用期间已被添加到映射中，跳过渲染
+        return this
+      }
       // 如果没有手动添加的子组件，才自动渲染
       if (!hasManualChildren) {
         this.renderChild(child)
@@ -323,12 +341,33 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
       // 第一步：最优先检查 childElements 映射（这是最可靠的，因为我们在拖放时已经设置了）
       if (this.childElements.has(child)) {
         const existingElement = this.childElements.get(child)
-        if (existingElement && existingElement.parentNode) {
-          // 已经在映射中且在 DOM 中，完全跳过
+        // 如果已经在映射中，检查是否是 wrapper
+        if (existingElement) {
+          // 如果是 wrapper 类型（可视化编辑器中的包装器），完全跳过
+          if (existingElement.classList && 
+              (existingElement.classList.contains('widget-child-component') || 
+               existingElement.classList.contains('dialog-child-component'))) {
+            // 这是可视化编辑器中的包装器，已经手动渲染过了，完全跳过
+            return
+          }
+          // 如果元素在 DOM 中
+          if (existingElement.parentNode) {
+            // 如果不在 contentContainer 中，说明在 wrapper 中，跳过
+            if (!this.contentContainer.contains(existingElement)) {
+              return
+            }
+            // 如果元素在 contentContainer 中，先移除旧的（类似 Dialog 的处理）
+            if (this.contentContainer.contains(existingElement)) {
+              existingElement.parentNode.removeChild(existingElement)
+            }
+          } else {
+            // 如果元素不在 DOM 中，但映射中有，也跳过（可能是空的 wrapper）
+            return
+          }
+        } else {
+          // 映射中有，但元素是 undefined/null，也跳过
           return
         }
-        // 如果在映射中但不在 DOM 中，也跳过（避免重复渲染）
-        return
       }
       
       // 第二步：检查子组件实例的元素是否已经在 DOM 中（包括在 wrapper 中）
