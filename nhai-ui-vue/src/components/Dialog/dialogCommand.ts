@@ -47,6 +47,10 @@ export class NhaiDialogCommand extends BaseCommand {
   private confirmText: string = '确定' // 确认按钮文本
   private cancelText: string = '取消' // 取消按钮文本
   private dialogClass?: string // 自定义对话框样式类名
+  
+  // ==================== 子组件管理 ====================
+  protected childElements: Map<BaseCommand, HTMLElement> = new Map() // 子组件元素映射
+  protected contentContainer?: HTMLElement // 内容容器
 
   /**
    * 构造函数
@@ -378,6 +382,89 @@ export class NhaiDialogCommand extends BaseCommand {
     }
   }
 
+  // ==================== 子组件管理方法 ====================
+  
+  /**
+   * 重写 addChild 方法以支持在对话框内容中添加控件
+   * @param child - BaseCommand 子组件实例
+   */
+  override addChild(child: BaseCommand): void {
+    console.log('addChild called, mounted:', this._mounted, 'contentContainer:', this.contentContainer)
+    // 调用基类方法建立父子关系
+    super.addChild(child)
+    
+    // 如果对话框已挂载且内容容器已准备好，立即渲染子组件
+    if (this._mounted && this.contentContainer && this.contentContainer.parentNode) {
+      console.log('Content container ready, rendering immediately')
+      this.renderChild(child)
+    } else if (this._mounted && this.modelValue) {
+      // 如果对话框已经打开但内容容器还未附加，尝试附加
+      console.log('Dialog is open, trying to attach content container')
+      this.attachContentContainer()
+    } else {
+      console.log('Content container not ready, will render when dialog opens')
+    }
+  }
+  
+  /**
+   * 重写 removeChild 方法
+   * @param child - BaseCommand 子组件实例
+   */
+  override removeChild(child: BaseCommand): void {
+    super.removeChild(child)
+    
+    // 从内容容器中移除子组件元素
+    const childElement = this.childElements.get(child)
+    if (childElement && childElement.parentNode) {
+      childElement.parentNode.removeChild(childElement)
+    }
+    this.childElements.delete(child)
+  }
+  
+  /**
+   * 渲染子组件到内容容器
+   * @param child - BaseCommand 子组件实例
+   */
+  private renderChild(child: BaseCommand): void {
+    console.log('renderChild called, contentContainer:', this.contentContainer)
+    if (!this.contentContainer) {
+      console.warn('No content container available')
+      return
+    }
+    
+    try {
+      // 如果子组件已经渲染过且有映射，先移除旧的
+      const oldElement = this.childElements.get(child)
+      if (oldElement && oldElement.parentNode) {
+        oldElement.parentNode.removeChild(oldElement)
+      }
+      
+      // 渲染子组件
+      const childElement = child.render()
+      console.log('Child element rendered:', childElement)
+      
+      // 挂载到内容容器
+      this.contentContainer.appendChild(childElement)
+      console.log('Child appended to content container')
+      
+      // 保存映射关系
+      this.childElements.set(child, childElement)
+    } catch (error) {
+      console.error('Error rendering child component:', error)
+    }
+  }
+  
+  /**
+   * 渲染所有子组件
+   */
+  private renderAllChildren(): void {
+    if (!this.contentContainer) return
+    
+    this.getChildren().forEach(child => {
+      this.renderChild(child)
+    })
+  }
+  
   // ==================== 对话框控制方法 ====================
   
   /**
@@ -413,6 +500,20 @@ export class NhaiDialogCommand extends BaseCommand {
     const container = document.createElement('div')
     const self = this
 
+    // 创建内容容器
+    const contentWrapper = document.createElement('div')
+    contentWrapper.className = 'nhai-dialog-content-wrapper'
+    
+    // 将 content 添加到内容容器
+    if (self.content) {
+      const contentDiv = document.createElement('div')
+      contentDiv.innerHTML = self.content
+      contentWrapper.appendChild(contentDiv)
+    }
+    
+    // 保存内容容器的引用
+    this.contentContainer = contentWrapper
+    
     // 创建 Vue 组件包装器，绑定所有属性
     const DialogWrapper = defineComponent({
       setup() {
@@ -443,7 +544,7 @@ export class NhaiDialogCommand extends BaseCommand {
           zIndex: self.zIndex,
           headerAriaLevel: self.headerAriaLevel,
           header: self.header,
-          content: self.content,
+          content: self.content, // 先使用 content 属性
           showFooter: self.showFooter,
           confirmText: self.confirmText,
           cancelText: self.cancelText,
@@ -455,9 +556,13 @@ export class NhaiDialogCommand extends BaseCommand {
           },
           onOpen: () => {
             self.emit('open')
+            // 对话框打开时尝试附加内容容器
+            self.attachContentContainer()
           },
           onOpened: () => {
             self.emit('opened')
+            // 对话框完全打开后尝试附加内容容器和渲染子组件
+            self.attachContentContainer()
           },
           onClose: () => {
             self.emit('close')
@@ -489,8 +594,104 @@ export class NhaiDialogCommand extends BaseCommand {
     if (this.appendToBody) {
       document.body.appendChild(container)
     }
+    
+    // 如果对话框已经打开，立即尝试附加内容容器
+    if (this.modelValue) {
+      setTimeout(() => this.attachContentContainer())
+    }
 
     return container
+  }
+  
+  /**
+   * 尝试附加内容容器到对话框内容区域
+   * 在对话框打开时调用此方法
+   */
+  private attachContentContainer(attempt = 0): void {
+    if (!this._element) return
+    
+    const maxAttempts = 20 // 最多尝试 20 次（约 2 秒）
+    
+    // 查找对话框内容区域
+    // 当 appendToBody 为 true 时，Element Plus 会将对话框元素 teleport 到 body，所以不能在 container 中查找
+    let dialogContent: Element | null = null
+    
+    if (this.appendToBody) {
+      // 当使用 appendToBody 时，对话框元素被 teleport 到 body，需要从 body 中查找
+      // 查找最近创建的对话框
+      // 方法1: 通过 overlay 查找
+      const overlays = document.querySelectorAll('.el-overlay')
+      if (overlays.length > 0) {
+        const lastOverlay = overlays[overlays.length - 1]
+        dialogContent = lastOverlay.querySelector('.el-dialog__body')
+        console.log('Found dialog in document.body via overlay:', lastOverlay)
+      }
+      
+      // 方法2: 如果方法1失败，直接通过 dialog 查找
+      if (!dialogContent) {
+        const dialogs = document.querySelectorAll('.el-dialog')
+        if (dialogs.length > 0) {
+          const lastDialog = dialogs[dialogs.length - 1]
+          dialogContent = lastDialog.querySelector('.el-dialog__body')
+          console.log('Found dialog in document.body directly:', lastDialog)
+        }
+      }
+    } else {
+      // 不使用 appendToBody 时，对话框在 container 中
+      dialogContent = this._element.querySelector('.el-dialog__body')
+      console.log('Looking for dialog in container')
+    }
+    
+    console.log('Dialog content area found:', dialogContent, 'attempt:', attempt)
+    console.log('Element HTML:', this._element?.outerHTML?.substring(0, 200))
+    
+    if (!dialogContent) {
+      if (attempt < maxAttempts) {
+        // 100ms 后重试
+        setTimeout(() => {
+          this.attachContentContainer(attempt + 1)
+        }, 100)
+      } else {
+        console.warn('Failed to find dialog content area after', maxAttempts, 'attempts')
+        console.warn('Container element:', this._element)
+        console.warn('AppendToBody:', this.appendToBody)
+        console.warn('ModelValue:', this.modelValue)
+        
+        // 尝试查找任何对话框元素
+        const allDialogs = document.querySelectorAll('.el-dialog')
+        console.warn('Total dialogs found in document:', allDialogs.length)
+        allDialogs.forEach((d, i) => {
+          console.warn(`Dialog ${i}:`, d)
+        })
+      }
+      return
+    }
+    
+    if (!this.contentContainer) {
+      console.warn('Content container not initialized')
+      return
+    }
+    
+    // 检查内容容器是否已经附加
+    if (this.contentContainer.parentNode === dialogContent) {
+      console.log('Content container already attached')
+      // 如果已经附加，只需渲染所有子组件
+      this.renderAllChildren()
+      return
+    }
+    
+    // 清空原有的 content 内容
+    while (dialogContent.firstChild) {
+      dialogContent.removeChild(dialogContent.firstChild)
+    }
+    
+    // 附加内容容器到对话框内容区域
+    dialogContent.appendChild(this.contentContainer)
+    console.log('Content container appended')
+    
+    // 渲染所有子组件
+    console.log('Rendering all children, count:', this.getChildren().length)
+    this.renderAllChildren()
   }
 
   /**
@@ -498,11 +699,18 @@ export class NhaiDialogCommand extends BaseCommand {
    * 清理所有资源，包括从 DOM 中移除元素
    */
   override unmount(): void {
+    // 清空子组件映射
+    this.childElements.clear()
+    
     super.unmount()
+    
     // 如果对话框挂载在 body 上，需要手动移除
     if (this._element && this._element.parentNode) {
       this._element.parentNode.removeChild(this._element)
     }
+    
+    // 清理内容容器引用
+    this.contentContainer = undefined
   }
 }
 

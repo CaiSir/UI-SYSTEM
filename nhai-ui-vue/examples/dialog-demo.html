@@ -194,8 +194,38 @@ dialog.setModalBackdrop(false)
     </div>
   </div>
 
+  <div class="demo-section">
+    <h2>9. Dialog 中添加子控件</h2>
+    <button class="primary" onclick="openDialogWithControls()">打开带控件的对话框</button>
+    <div class="code-block">
+// 创建对话框
+const dialog = new NhaiDialogCommand('表单', '')
+dialog.setWidth('500px')
+dialog.setModelValue(true)
+dialog.setAppendToBody(true)
+
+// 渲染对话框
+dialog.render()
+
+// 添加子控件 - 输入框
+const input = new NhaiInputCommand()
+input.setPlaceholder('请输入用户名')
+input.setStyle({ marginBottom: '10px', width: '100%' })
+dialog.addChild(input)
+
+// 添加子控件 - 按钮
+const button = new NhaiButtonCommand('提交')
+button.setStyle({ marginLeft: '10px' })
+dialog.addChild(button)
+
+dialog.on('closed', () => dialog.unmount())
+    </div>
+  </div>
+
   <script type="module">
     import { NhaiDialogCommand } from '/src/components/index.ts'
+    import { NhaiButtonCommand } from '/src/components/index.ts'
+    import { NhaiInputCommand } from '/src/components/index.ts'
     
     // 存储已创建的对话框，避免重复创建
     const dialogs = []
@@ -326,6 +356,33 @@ dialog.setModalBackdrop(false)
       dialog.setAppendToBody(true)
       dialog.on('closed', () => dialog.unmount())
       dialog.render()
+      dialogs.push(dialog)
+    }
+
+    // 添加示例：Dialog 中添加子控件
+    window.openDialogWithControls = function() {
+      const dialog = new NhaiDialogCommand('表单对话框', '')
+      dialog.setWidth('500px')
+      dialog.setModelValue(true)
+      dialog.setAppendToBody(true)
+      dialog.render()
+
+      // 添加子控件 - 输入框（会自动等待内容容器可用）
+      const input = new NhaiInputCommand()
+      input.setPlaceholder('请输入用户名')
+      input.setStyle({ marginBottom: '10px', width: '100%' })
+      dialog.addChild(input)
+
+      // 添加子控件 - 按钮
+      const button = new NhaiButtonCommand('提交')
+      button.setStyle({ marginTop: '10px' })
+      button.setOnClick(() => 
+      {
+        alert('提交按钮被点击！' + input.getValue())
+      })
+      dialog.addChild(button)
+
+      dialog.on('closed', () => dialog.unmount())
       dialogs.push(dialog)
     }
     

@@ -26,6 +26,10 @@ export class NhaiInputCommand extends BaseCommand {
 
   setValue(value: string): void {
     this.value = value
+    // 如果组件已经挂载，更新组件值
+    if (this._mounted && this._element) {
+      this.updateComponentValue()
+    }
   }
 
   getValue(): string {
@@ -94,7 +98,18 @@ export class NhaiInputCommand extends BaseCommand {
           minlength: self.minlength,
           onBlur: self.onBlur,
           onFocus: self.onFocus,
-          onChange: self.onChange
+          onChange: (value: string) => {
+            // 更新命令类内部的值
+            self.value = value
+            // 调用用户设置的 onChange 回调
+            if (self.onChange) {
+              self.onChange(value)
+            }
+          },
+          'onUpdate:modelValue': (value: string) => {
+            // 同步更新命令类内部的值
+            self.value = value
+          }
         })
       }
     })
@@ -109,27 +124,42 @@ export class NhaiInputCommand extends BaseCommand {
     return container
   }
 
+  // 更新组件值的辅助方法
+  private updateComponentValue(): void {
+    if (this._element && this._appInstance) {
+      // 重新渲染组件以更新值
+      this.unmount()
+      const newElement = this.render()
+      if (this._element.parentNode) {
+        this._element.parentNode.replaceChild(newElement, this._element)
+      }
+      this._element = newElement
+    }
+  }
+
   override unmount(): void {
+    if (this._appInstance) {
+      this._appInstance.unmount()
+    }
     super.unmount()
   }
 
-  renderFallback(): HTMLElement {
-    const input = document.createElement('input')
-    input.type = this.type === 'password' ? 'password' : 'text'
-    input.placeholder = this.placeholder
-    input.disabled = this.disabled
-    input.value = this.value
+  // renderFallback(): HTMLElement {
+  //   const input = document.createElement('input')
+  //   input.type = this.type === 'password' ? 'password' : 'text'
+  //   input.placeholder = this.placeholder
+  //   input.disabled = this.disabled
+  //   input.value = this.value
 
-    if (this.onChange) {
-      input.addEventListener('input', (e) => {
-        this.value = (e.target as HTMLInputElement).value
-        this.onChange!(this.value)
-      })
-    }
+  //   if (this.onChange) {
+  //     input.addEventListener('input', (e) => {
+  //       this.value = (e.target as HTMLInputElement).value
+  //       this.onChange!(this.value)
+  //     })
+  //   }
 
-    return input
-  }
+  //   return input
+  // }
 }
 
 export default NhaiInputCommand
-

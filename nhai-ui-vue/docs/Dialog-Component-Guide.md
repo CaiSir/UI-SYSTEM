@@ -263,6 +263,96 @@ dialog4.setModelValue(true)
 dialog4.render()
 ```
 
+### 示例 9: Dialog 中添加子控件
+
+Dialog 继承自 `BaseCommand`，因此支持添加其他 BaseCommand 子控件：
+
+```typescript
+import { NhaiDialogCommand, NhaiInputCommand, NhaiButtonCommand } from 'nhai-ui-vue'
+
+// 创建对话框
+const dialog = new NhaiDialogCommand('表单对话框', '')
+dialog.setWidth('500px')
+dialog.setModelValue(true)
+dialog.setAppendToBody(true)
+
+// 渲染对话框
+dialog.render()
+
+// 添加子控件 - 输入框
+const input = new NhaiInputCommand()
+input.setPlaceholder('请输入用户名')
+input.setStyle({ marginBottom: '10px', width: '100%' })
+dialog.addChild(input)
+
+// 添加子控件 - 按钮
+const button = new NhaiButtonCommand('提交')
+button.setStyle({ marginTop: '10px' })
+button.on('click', () => {
+  console.log('提交按钮被点击')
+})
+dialog.addChild(button)
+
+// 监听事件
+dialog.on('closed', () => {
+  dialog.unmount()
+})
+```
+
+**要点：**
+- Dialog 支持使用 `addChild()` 方法添加任何继承自 `BaseCommand` 的组件
+- 子控件会在对话框内容区域中自动渲染
+- 可以通过 `setStyle()` 方法为子控件设置样式
+- 子控件的事件系统与 Dialog 的事件系统完全集成
+
+### 示例 10: 复杂的表单对话框
+
+```typescript
+import { NhaiDialogCommand, NhaiInputCommand, NhaiButtonCommand, NhaiSelectCommand } from 'nhai-ui-vue'
+
+const dialog = new NhaiDialogCommand('用户注册', '')
+dialog.setWidth('600px')
+dialog.setModelValue(true)
+dialog.setAppendToBody(true)
+dialog.render()
+
+// 添加用户名输入框
+const usernameInput = new NhaiInputCommand()
+usernameInput.setPlaceholder('请输入用户名')
+usernameInput.setStyle({ marginBottom: '10px', width: '100%' })
+dialog.addChild(usernameInput)
+
+// 添加邮箱输入框
+const emailInput = new NhaiInputCommand()
+emailInput.setPlaceholder('请输入邮箱')
+emailInput.setStyle({ marginBottom: '10px', width: '100%' })
+dialog.addChild(emailInput)
+
+// 添加选择框
+const select = new NhaiSelectCommand()
+select.setPlaceholder('请选择角色')
+select.setOptions([
+  { label: '管理员', value: 'admin' },
+  { label: '普通用户', value: 'user' }
+])
+select.setStyle({ marginBottom: '10px', width: '100%' })
+dialog.addChild(select)
+
+// 添加提交按钮
+const submitButton = new NhaiButtonCommand('提交')
+submitButton.setType('primary')
+submitButton.setStyle({ marginTop: '20px' })
+submitButton.on('click', () => {
+  console.log('提交表单')
+  dialog.unmount()
+})
+dialog.addChild(submitButton)
+
+dialog.on('closed', () => {
+  dialog.unmount()
+})
+```
+
 ## 注意事项
 
 1. **内存管理**: 使用完对话框后应调用 `unmount()` 方法清理资源
@@ -275,6 +365,11 @@ dialog4.render()
    - 点击确认/取消按钮（如果开启了 `showFooter`）
    - 按 ESC 键（如果 `closeOnPressEscape` 为 true）
    - 调用 `close()` 方法
+7. **添加子控件**: 
+   - Dialog 支持添加任何继承自 `BaseCommand` 的子控件
+   - 子控件会在对话框渲染后自动添加到内容区域
+   - 建议在 `render()` 后再添加子控件，以确保元素已经挂载
+   - 使用 `addChild()` 添加子控件，使用 `removeChild()` 移除子控件
 
 ## 运行示例
 

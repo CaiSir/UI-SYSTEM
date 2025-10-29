@@ -52,7 +52,7 @@
       <!-- 中间画布区域 -->
       <section class="canvas-area">
         <div class="canvas-header">
-          <h3>设计画布（800×600）</h3>
+          <h3>设计画布</h3>
           <div class="canvas-tools">
             <span class="tool-hint">🖱️ 拖拽组件到画布，选中后可移动位置</span>
           </div>
@@ -63,8 +63,9 @@
           @dragover.prevent
           @click="handleCanvasClick"
           ref="canvasContentRef"
+          @dragover.dialog-content-area="handleDialogDragOver"
         >
-          <div class="canvas-content-wrapper">
+          <div class="canvas-content-wrapper" @drop="handleDrop" @dragover.prevent="handleDialogDragOver">
             <div 
               v-for="(comp, index) in canvasComponents"
               :key="comp.id"
@@ -189,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, markRaw } from 'vue'
 import { nextTick } from 'vue'
 import {
   NhaiButtonCommand,
@@ -201,6 +202,7 @@ import {
   NhaiGridCommand,
   NhaiContainerCommand,
   NhaiSplitPanelCommand,
+  NhaiDialogCommand,
 } from '../components'
 
 interface CanvasComponent {
@@ -210,6 +212,9 @@ interface CanvasComponent {
   element: HTMLElement
   props: any
   style: any
+  isInDialog?: boolean
+  parentDialogId?: string
+  dialogWrapper?: HTMLElement
 }
 
 // 组件库定义
@@ -219,6 +224,7 @@ const components = [
   { name: '选择器', type: 'select', icon: '🔽', category: '表单' },
   { name: '开关', type: 'switch', icon: '🔀', category: '表单' },
   { name: '复选框', type: 'checkbox', icon: '☑️', category: '表单' },
+  { name: '对话框', type: 'dialog', icon: '💬', category: '反馈' },
   { name: '卡片', type: 'card', icon: '🃏', category: '布局' },
   { name: '网格', type: 'grid', icon: '⊞', category: '布局' },
   { name: '容器', type: 'container', icon: '📦', category: '布局' },
@@ -247,41 +253,108 @@ const handleDragStart = (comp: any, event: DragEvent) => {
   }
 }
 
+// 处理对话框区域的拖拽悬停
+const handleDialogDragOver = (event: DragEvent) => {
+  const dialogBody = (event.target as Element).closest('.dialog-content-area')
+  if (dialogBody) {
+    dialogBody.classList.add('drag-over')
+  } else {
+    document.querySelectorAll('.dialog-content-area').forEach(el => {
+      el.classList.remove('drag-over')
+    })
+  }
+  
+  // 拖拽结束时清除样式
+  setTimeout(() => {
+    if (event.type === 'dragend' || event.type === 'drop') {
+      document.querySelectorAll('.dialog-content-area').forEach(el => {
+        el.classList.remove('drag-over')
+      })
+    }
+  }, 100)
+}
+
 // 处理放置
 const handleDrop = async (event: DragEvent) => {
   event.preventDefault()
   if (!draggedComponent) return
 
-  // 计算相对于画布区域的位置
-  const canvasWrapper = document.querySelector('.canvas-content-wrapper')
-  if (!canvasWrapper) return
+  // 检查是否放置到对话框内容区域
+  // 优先检查 currentTarget（绑定了事件监听器的元素）
+  let dialogBody = (event.currentTarget as Element).classList.contains('dialog-content-area') 
+    ? (event.currentTarget as Element)
+    : null
   
-  const rect = (canvasWrapper as HTMLElement).getBoundingClientRect()
-  let x = event.clientX - rect.left - 40
-  let y = event.clientY - rect.top - 20
-  
-  // 限制在画布范围内
-  const maxX = 800 - 40
-  const maxY = 600 - 40
+  // 如果没有，再检查 target 的最近父元素
+  if (!dialogBody) {
+    dialogBody = (event.target as Element).closest('.dialog-content-area')
+  }
+  if (dialogBody) {
+    // 放置到对话框内部
+    const rect = (dialogBody as HTMLElement).getBoundingClientRect()
+    let x = event.clientX - rect.left - 20
+    let y = event.clientY - rect.top - 20
+    
+    // 创建组件（对话框内）
+    const comp = await createComponent(draggedComponent, x, y)
+    
+    // 找到父对话框
+    const dialogElement = dialogBody.closest('.dialog-window')
+    const dialogId = dialogElement?.getAttribute('data-id')
+    
+    if (dialogId) {
+      comp.style.position = 'absolute'
+      comp.isInDialog = true
+      comp.parentDialogId = dialogId
+      
+      // 直接添加到对话框内容区（不要直接 append 元素，避免循环引用）
+      // 创建包装器
+      const wrapper = document.createElement('div')
+      wrapper.style.position = 'absolute'
+      wrapper.style.left = comp.style.left
+      wrapper.style.top = comp.style.top
+      wrapper.appendChild(comp.element)
+      if (dialogBody instanceof HTMLElement) {
+        dialogBody.appendChild(wrapper)
+      }
+      
+      // 存储 wrapper 引用
+      (comp as any).dialogWrapper = wrapper
+    }
+    
+    canvasComponents.value.push(comp)
+  } else {
+    // 放置到画布上
+    const canvasWrapper = document.querySelector('.canvas-content-wrapper')
+    if (!canvasWrapper) return
+    
+    const rect = (canvasWrapper as HTMLElement).getBoundingClientRect()
+    let x = event.clientX - rect.left - 40
+    let y = event.clientY - rect.top - 20
+    
+  // 限制在画布范围内（全屏画布）
+  const maxX = 9999
+  const maxY = 9999
   x = Math.max(0, Math.min(x, maxX))
   y = Math.max(0, Math.min(y, maxY))
 
-  // 创建组件
-  const comp = await createComponent(draggedComponent, x, y)
-  
-  // 添加到画布
-  canvasComponents.value.push(comp)
-  
-  // 选中新组件
-  await nextTick()
-  selectComponent(comp)
+    // 创建组件
+    const comp = await createComponent(draggedComponent, x, y)
+    
+    // 添加到画布
+    canvasComponents.value.push(comp)
+    
+    // 选中新组件
+    await nextTick()
+    selectComponent(comp)
+  }
   
   draggedComponent = null
   updateCode()
 }
 
 // 按类别获取组件
-const componentCategories = ref(['表单', '布局'])
+const componentCategories = ref(['表单', '反馈', '布局'])
 const getComponentsByCategory = (category: string) => {
   return components.filter(c => c.category === category)
 }
@@ -340,6 +413,178 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       instance = new NhaiSplitPanelCommand()
       element = instance.render()
       break
+    case 'dialog':
+      // Dialog 在画布上显示为可编辑的窗口
+      instance = new NhaiDialogCommand('对话框标题', '')
+      
+      // 创建对话框窗口元素
+      element = document.createElement('div')
+      element.className = 'dialog-window'
+      element.style.cssText = `
+        width: 500px;
+        min-height: 300px;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      `
+      
+      // 对话框头部
+      const header = document.createElement('div')
+      header.className = 'dialog-window-header'
+      header.style.cssText = `
+        padding: 16px 20px;
+        border-bottom: 1px solid #e4e7ed;
+        background: #fafafa;
+        font-weight: 600;
+        font-size: 16px;
+        color: #303133;
+        cursor: grab;
+        user-select: none;
+        position: relative;
+      `
+      header.textContent = '对话框标题'
+      
+      // 关闭按钮
+      const closeBtn = document.createElement('span')
+      closeBtn.className = 'dialog-window-close'
+      closeBtn.innerHTML = '×'
+      closeBtn.style.cssText = `
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #ff4d4f;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        line-height: 1;
+      `
+      header.appendChild(closeBtn)
+      element.appendChild(header)
+      
+      // 对话框内容区域（可拖放组件）
+      const bodyDiv = document.createElement('div')
+      bodyDiv.className = 'dialog-content-area'
+      bodyDiv.style.cssText = `
+        flex: 1;
+        padding: 20px;
+        min-height: 200px;
+        position: relative;
+        background: #ffffff;
+      `
+      bodyDiv.setAttribute('data-droppable', 'true')
+      
+      // 添加拖放事件监听 - 为对话框创建专用的处理函数
+      const dropHandler = async (e: DragEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (!draggedComponent) return
+        
+        // 计算放置位置
+        const rect = bodyDiv.getBoundingClientRect()
+        const x = e.clientX - rect.left - 20
+        const y = e.clientY - rect.top - 20
+        
+        // 创建组件
+        const comp = await createComponent(draggedComponent, x, y)
+        
+        // 找到父对话框
+        const dialogElement = bodyDiv.closest('.dialog-window')
+        const dialogId = dialogElement?.getAttribute('data-id')
+        
+        if (dialogId) {
+          comp.style.position = 'absolute'
+          comp.isInDialog = true
+          comp.parentDialogId = dialogId
+          
+          // 创建包装器
+          const wrapper = document.createElement('div')
+          wrapper.style.position = 'absolute'
+          wrapper.style.left = comp.style.left
+          wrapper.style.top = comp.style.top
+          wrapper.appendChild(comp.element)
+          bodyDiv.appendChild(wrapper)
+          
+          // 存储 wrapper 引用
+          (comp as any).dialogWrapper = wrapper
+        }
+        
+        canvasComponents.value.push(comp)
+      }
+      
+      const dragoverHandler = (e: DragEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        handleDialogDragOver(e)
+      }
+      
+      bodyDiv.addEventListener('drop', dropHandler)
+      bodyDiv.addEventListener('dragover', dragoverHandler)
+      
+      // 存储事件监听器引用以便清理
+      ;(bodyDiv as any).__dropHandler = dropHandler
+      ;(bodyDiv as any).__dragoverHandler = dragoverHandler
+      
+      // 占位符
+      const placeholder = document.createElement('div')
+      placeholder.className = 'dialog-placeholder'
+      placeholder.textContent = '从左侧拖拽组件到这里'
+      placeholder.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #c0c4cc;
+        font-size: 14px;
+        pointer-events: none;
+      `
+      bodyDiv.appendChild(placeholder)
+      element.appendChild(bodyDiv)
+      
+      // 对话框底部
+      const footer = document.createElement('div')
+      footer.className = 'dialog-window-footer'
+      footer.style.cssText = `
+        padding: 12px 20px;
+        border-top: 1px solid #ebeef5;
+        background: #fafafa;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      `
+      const cancelBtn = document.createElement('button')
+      cancelBtn.textContent = '取消'
+      cancelBtn.style.cssText = `
+        padding: 8px 16px;
+        border: 1px solid #dcdfe6;
+        background: white;
+        border-radius: 4px;
+        cursor: pointer;
+      `
+      const confirmBtn = document.createElement('button')
+      confirmBtn.textContent = '确定'
+      confirmBtn.style.cssText = `
+        padding: 8px 16px;
+        border: none;
+        background: #409eff;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+      `
+      footer.appendChild(cancelBtn)
+      footer.appendChild(confirmBtn)
+      element.appendChild(footer)
+      
+      break
     default:
       element = document.createElement('div')
   }
@@ -378,13 +623,21 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
     // Card
     if (compDef.type === 'card' && instance.header !== undefined) props.header = instance.header
     if (compDef.type === 'card' && instance.content !== undefined) props.content = instance.content
+    
+    // Dialog
+    if (compDef.type === 'dialog') {
+      props.title = instance.getTitle?.() || '对话框标题'
+      props.content = instance.getContent?.() || ''
+      props.width = instance.getWidth?.() || '500px'
+      props.showFooter = true
+    }
   }
   
   const comp: CanvasComponent = {
     id,
     type: compDef.type,
-    instance,
-    element,
+    instance: markRaw(instance),
+    element: markRaw(element),
     props,
     style: {
       position: 'absolute',
@@ -439,15 +692,9 @@ const handleMouseMove = (event: MouseEvent) => {
   let x = event.clientX - rect.left - dragOffset.x
   let y = event.clientY - rect.top - dragOffset.y
   
-  // 画布区域边界（800x600）
-  const canvasWidth = 800
-  const canvasHeight = 600
-  
-  // 限制在画布范围内
-  const maxX = canvasWidth - 40
-  const maxY = canvasHeight - 40
-  x = Math.max(0, Math.min(x, maxX))
-  y = Math.max(0, Math.min(y, maxY))
+  // 全屏画布，不限制边界
+  x = Math.max(0, x)
+  y = Math.max(0, y)
   
   // 取消之前的 RAF
   if (rafId) {
@@ -533,6 +780,18 @@ const propertyConfig: Record<string, any[]> = {
   card: [
     { key: 'header', label: '标题', type: 'text' },
     { key: 'content', label: '内容', type: 'text' }
+  ],
+  dialog: [
+    { key: 'title', label: '对话框标题', type: 'text', placeholder: '对话框标题' },
+    { key: 'width', label: '宽度', type: 'select', options: [
+      { value: '400px', label: '400px' },
+      { value: '500px', label: '500px' },
+      { value: '600px', label: '600px' },
+      { value: '800px', label: '800px' },
+      { value: '50%', label: '50%' },
+      { value: '70%', label: '70%' }
+    ]},
+    { key: 'showFooter', label: '显示底部按钮', type: 'boolean' }
   ]
 }
 
@@ -577,8 +836,11 @@ const updateDynamicProp = (key: string, value: any) => {
   // 更新 props
   comp.props[key] = value
   
-  // 重新渲染
-  if (comp.instance && comp.instance.render) {
+  // Dialog 特殊处理：直接更新 DOM 元素
+  if (comp.type === 'dialog') {
+    updateDialogElement(comp, key, value)
+  } else if (comp.instance && comp.instance.render) {
+    // 其他组件：重新渲染
     const newElement = comp.instance.render()
     comp.element = newElement
   }
@@ -586,6 +848,52 @@ const updateDynamicProp = (key: string, value: any) => {
   // 更新整个画布以刷新视图
   canvasComponents.value = [...canvasComponents.value]
   updateCode()
+}
+
+// Dialog 元素更新
+const updateDialogElement = (comp: CanvasComponent, key: string, value: any) => {
+  const header = comp.element.querySelector('.dialog-window-header')
+  const body = comp.element.querySelector('.dialog-content-area') as HTMLElement
+  const footer = comp.element.querySelector('.dialog-window-footer')
+  
+  if (key === 'title' && header) {
+    const textNode = Array.from(header.childNodes).find(node => node.nodeType === Node.TEXT_NODE || node.nodeType === Node.ELEMENT_NODE)
+    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+      textNode.textContent = value
+    } else {
+      // 如果没有文本节点，替换第一个子节点
+      const nodes = Array.from(header.childNodes).filter(node => node.nodeType !== Node.ELEMENT_NODE || !(node as Element).classList.contains('dialog-window-close'))
+      nodes.forEach(node => node.remove())
+      header.insertBefore(document.createTextNode(value), header.firstChild)
+    }
+  } else if (key === 'width' && comp.element) {
+    (comp.element as HTMLElement).style.width = value
+  } else if (key === 'showFooter') {
+    if (value && !footer && body) {
+      // 创建底部
+      const footerEl = document.createElement('div')
+      footerEl.className = 'dialog-window-footer'
+      footerEl.style.cssText = `
+        padding: 12px 20px;
+        border-top: 1px solid #ebeef5;
+        background: #fafafa;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      `
+      const cancelBtn = document.createElement('button')
+      cancelBtn.textContent = '取消'
+      cancelBtn.style.cssText = 'padding: 8px 16px; border: 1px solid #dcdfe6; background: white; border-radius: 4px; cursor: pointer;'
+      const confirmBtn = document.createElement('button')
+      confirmBtn.textContent = '确定'
+      confirmBtn.style.cssText = 'padding: 8px 16px; border: none; background: #409eff; color: white; border-radius: 4px; cursor: pointer;'
+      footerEl.appendChild(cancelBtn)
+      footerEl.appendChild(confirmBtn)
+      comp.element.appendChild(footerEl)
+    } else if (!value && footer) {
+      footer.remove()
+    }
+  }
 }
 
 // 移除组件
@@ -614,16 +922,12 @@ const updateCode = () => {
   if (usedTypes.has('select')) imports.push('NhaiSelectCommand')
   if (usedTypes.has('switch')) imports.push('NhaiSwitchCommand')
   if (usedTypes.has('checkbox')) imports.push('NhaiCheckboxCommand')
+  if (usedTypes.has('dialog')) imports.push('NhaiDialogCommand')
   if (usedTypes.has('card')) imports.push('NhaiCardCommand')
   
   let code = '// 复制以下代码到 showcase 的运行框中\n\n'
   code += `const { ${imports.join(', ')} } = window\n\n`
-  code += 'const container = document.createElement(\'div\')\n'
-  code += 'container.style.padding = \'20px\'\n'
-  code += 'container.style.position = \'relative\'\n'
-  code += 'container.style.width = \'800px\'\n'
-  code += 'container.style.height = \'600px\'\n'
-  code += 'container.style.border = \'1px solid #ddd\'\n\n'
+  code += 'const container = document.createElement(\'div\')\n\n'
   
   canvasComponents.value.forEach((comp, index) => {
     switch (comp.type) {
@@ -654,13 +958,33 @@ const updateCode = () => {
         code += `const ${comp.type}${index} = new NhaiCardCommand('标题', '内容')\n`
         code += `const element${index} = ${comp.type}${index}.render()\n`
         break
+      case 'dialog': {
+        const dialogTitle = comp.props?.title || '提示'
+        const dialogContent = comp.props?.content || ''
+        code += `// Dialog 触发器按钮\n`
+        code += `const ${comp.type}${index}Trigger = document.createElement('button')\n`
+        code += `${comp.type}${index}Trigger.textContent = '点击打开对话框'\n`
+        code += `${comp.type}${index}Trigger.onclick = () => {\n`
+        code += `  const dialog = new NhaiDialogCommand('${dialogTitle}', '${dialogContent}')\n`
+        code += `  dialog.setAppendToBody(true)\n`
+        code += `  dialog.setModelValue(true)\n`
+        code += `  dialog.render()\n`
+        code += `  dialog.on('closed', () => dialog.unmount())\n`
+        code += `}\n`
+        code += `const element${index} = ${comp.type}${index}Trigger\n`
+        break
+      }
       default:
         return
     }
     
-    code += `element${index}.style.position = 'absolute'\n`
-    code += `element${index}.style.left = '${comp.style.left}'\n`
-    code += `element${index}.style.top = '${comp.style.top}'\n`
+    // 只为需要绝对定位的组件设置位置样式
+    if (comp.type !== 'dialog') {
+      code += `element${index}.style.position = 'absolute'\n`
+      code += `element${index}.style.left = '${comp.style.left}'\n`
+      code += `element${index}.style.top = '${comp.style.top}'\n`
+    }
+    
     code += `container.appendChild(element${index})\n\n`
   })
   
@@ -739,6 +1063,7 @@ onMounted(() => {
   ;(window as any).NhaiSwitchCommand = NhaiSwitchCommand
   ;(window as any).NhaiCheckboxCommand = NhaiCheckboxCommand
   ;(window as any).NhaiCardCommand = NhaiCardCommand
+  ;(window as any).NhaiDialogCommand = NhaiDialogCommand
   ;(window as any).NhaiGridCommand = NhaiGridCommand
   ;(window as any).NhaiContainerCommand = NhaiContainerCommand
   ;(window as any).NhaiSplitPanelCommand = NhaiSplitPanelCommand
@@ -1110,15 +1435,13 @@ onMounted(() => {
 
 .canvas-content-wrapper {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 800px;
-  height: 600px;
-  border: 2px dashed #1890ff;
-  border-radius: 8px;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 1920px;
+  min-height: 1080px;
   background: white;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .canvas-component {
@@ -1236,9 +1559,33 @@ onMounted(() => {
   padding: 16px;
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 12px;
-  line-height: 1.6;
-  margin: 0;
-  background: #252526;
-  color: #d4d4d4;
+}
+
+
+/* 对话框窗口样式 - 所有样式都在 JavaScript 中设置，无需 CSS */
+.dialog-content-area {
+  position: relative;
+}
+
+/* 拖放到对话框时的视觉效果 */
+.dialog-content-area.drag-over {
+  background: repeating-linear-gradient(45deg, #ecf5ff, #ecf5ff 20px, #ffffff 20px, #ffffff 40px) !important;
+  border: 2px dashed #409eff !important;
+  border-radius: 4px !important;
+}
+
+.dialog-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #c0c4cc;
+  font-size: 12px;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.dialog-content-area:has(.canvas-component) .dialog-placeholder {
+  display: none;
 }
 </style>
