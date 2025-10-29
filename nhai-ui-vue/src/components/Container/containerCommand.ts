@@ -1,4 +1,4 @@
-import { createApp, h, defineComponent } from 'vue'
+import { createApp, h, defineComponent, nextTick } from 'vue'
 import Container from './Container.vue'
 import { BaseCommand, IBaseCommandProps, IBaseCommandEvents } from '../../lib/BaseCommand'
 
@@ -74,6 +74,65 @@ export class NhaiContainerCommand extends BaseCommand<ContainerOptions, Containe
     return this
   }
 
+  // ==================== 子组件管理 ====================
+  protected childElements: Map<BaseCommand<any, any>, HTMLElement> = new Map()
+  protected contentContainer?: HTMLElement
+
+  override addChild<C extends BaseCommand<any, any>>(child: C): this {
+    super.addChild(child)
+    if (this._mounted && this.contentContainer) {
+      this.renderChild(child)
+    }
+    return this
+  }
+
+  override removeChild<C extends BaseCommand<any, any>>(child: C): this {
+    super.removeChild(child)
+    const childElement = this.childElements.get(child)
+    if (childElement && childElement.parentNode) {
+      childElement.parentNode.removeChild(childElement)
+    }
+    this.childElements.delete(child)
+    return this
+  }
+
+  /**
+   * 渲染子组件到内容容器
+   */
+  private renderChild(child: BaseCommand<any, any>): void {
+    if (!this.contentContainer) return
+    
+    try {
+      // 如果子组件已经渲染过且有映射，先移除旧的
+      const oldElement = this.childElements.get(child)
+      if (oldElement && oldElement.parentNode) {
+        oldElement.parentNode.removeChild(oldElement)
+      }
+      
+      // 渲染子组件
+      const childElement = child.render()
+      
+      // 挂载到内容容器
+      this.contentContainer.appendChild(childElement)
+      
+      // 保存映射关系
+      this.childElements.set(child, childElement)
+    } catch (error) {
+      console.error('Error rendering child component:', error)
+    }
+  }
+
+  /**
+   * 渲染所有子组件
+   */
+  private renderAllChildren(): void {
+    if (!this.contentContainer) return
+    
+    this._children.forEach(child => {
+      this.renderChild(child)
+    })
+  }
+
   protected doRender(): HTMLElement {
     const container = document.createElement('div')
     const self = this
@@ -91,6 +150,25 @@ export class NhaiContainerCommand extends BaseCommand<ContainerOptions, Containe
 
     const app = createApp(ContainerWrapper)
     app.mount(container)
+    
+    // 查找实际的 Container 内容容器（.vue-container 元素）
+    nextTick(() => {
+      this.contentContainer = container.querySelector('.vue-container') || container
+      // 如果找到了 .vue-container，确保它能够接收拖放
+      if (this.contentContainer) {
+        // 渲染所有子组件
+        this.renderAllChildren()
+      }
+    })
+    
+    // 同步方式也尝试查找（如果 Vue 组件已经渲染）
+    setTimeout(() => {
+      if (!this.contentContainer) {
+        this.contentContainer = container.querySelector('.vue-container') || container
+        this.renderAllChildren()
+      }
+    }, 100)
+    
     this._appInstance = app
 
     return container

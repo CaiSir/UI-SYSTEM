@@ -14,6 +14,7 @@ export { VueSplitPanel, NhaiSplitPanelCommand } from './SplitPanel'
 export { VueLayoutBuilder, NhaiLayoutBuilderCommand } from './LayoutBuilder'
 export { VueAbsolutePanel, AbsolutePanelCommand } from './AbsolutePanel'
 export { VueDialog, NhaiDialogCommand } from './Dialog'
+export { Widget, NhaiWidgetCommand } from './Widget'
 
 // 重新导出类型
 export type { SelectOption } from './Select'
@@ -22,4 +23,5 @@ export type { TabItem } from './Tabs'
 export type { MenuItem } from './MenuBar'
 export type { LayoutItem } from './LayoutBuilder'
 export type { AbsoluteItem } from './AbsolutePanel'
+export type { MenuItem as WidgetMenuItem } from './Widget'
 

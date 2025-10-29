@@ -239,6 +239,29 @@ export class NhaiButtonCommand extends BaseCommand<ButtonOptions, ButtonEvents> 
   }
 
   /**
+   * 重写 update 方法，优化样式更新
+   * 对于样式属性（如 width、height），直接更新 DOM 而不是重新渲染整个组件
+   */
+  protected update(): void {
+    const element = this.getElement()
+    if (element) {
+      const style = this.getProperty('style')
+      if (style) {
+        const buttonElement = element.querySelector('button') || element.querySelector('.el-button')
+        if (buttonElement) {
+          if (style.width) {
+            (buttonElement as HTMLElement).style.width = style.width as string
+          }
+          if (style.height) {
+            (buttonElement as HTMLElement).style.height = style.height as string
+          }
+        }
+      }
+    }
+    super.update()
+  }
+
+  /**
    * 设置点击回调
    */
   setOnClick(callback: () => void): this {
@@ -283,6 +306,39 @@ export class NhaiButtonCommand extends BaseCommand<ButtonOptions, ButtonEvents> 
     const app = createApp(ButtonWrapper, props)
     app.mount(container)
     this._appInstance = app
+
+    // 应用自定义样式（宽度和高度）
+    const style = this.getProperty('style') || this._props.style
+    if (style) {
+      const buttonElement = container.querySelector('button') || container.querySelector('.el-button')
+      if (buttonElement) {
+        const buttonStyle = (buttonElement as HTMLElement).style
+        if (style.width) {
+          buttonStyle.width = style.width as string
+        }
+        if (style.height) {
+          buttonStyle.height = style.height as string
+        }
+        // 应用其他样式
+        const styleObj = style as Partial<CSSStyleDeclaration>
+        Object.keys(styleObj).forEach(key => {
+          if (key !== 'width' && key !== 'height') {
+            const value = (styleObj as any)[key]
+            if (typeof value === 'string') {
+              (buttonStyle as any)[key] = value
+            }
+          }
+        })
+      } else {
+        // 如果没有找到按钮元素，应用到容器上
+        if (style.width) {
+          container.style.width = style.width as string
+        }
+        if (style.height) {
+          container.style.height = style.height as string
+        }
+      }
+    }
 
     return container
   }
