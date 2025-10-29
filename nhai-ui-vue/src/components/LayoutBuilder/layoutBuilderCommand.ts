@@ -1,4 +1,4 @@
-import { BaseCommand } from '../../lib/BaseCommand'
+import { BaseCommand, IBaseCommandProps, IBaseCommandEvents } from '../../lib/BaseCommand'
 
 /**
  * 布局项接口
@@ -9,12 +9,29 @@ export interface LayoutItem {
   data?: any
 }
 
+// 类型定义
+export interface LayoutBuilderOptions extends IBaseCommandProps {
+  layoutType?: 'vbox' | 'hbox' | 'grid' | 'container'
+  direction?: 'row' | 'column'
+  spacing?: number
+  padding?: string
+  gap?: string
+  width?: string
+  height?: string
+  backgroundColor?: string
+  onItemClick?: (item: LayoutItem) => void
+}
+
+export interface LayoutBuilderEvents extends IBaseCommandEvents {
+  itemClick: (item: LayoutItem) => void
+}
+
 /**
  * 布局构建器命令式 API
  * 提供灵活的布局管理，支持 vbox、hbox、grid、container 等布局方式
  * 允许通过命令式 API 动态构建和管理复杂布局
  */
-export class NhaiLayoutBuilderCommand extends BaseCommand {
+export class NhaiLayoutBuilderCommand extends BaseCommand<LayoutBuilderOptions, LayoutBuilderEvents> {
   private layoutType: 'vbox' | 'hbox' | 'grid' | 'container' = 'vbox'
   private direction: 'row' | 'column' = 'column'
   private _spacing: number = 0
@@ -29,70 +46,145 @@ export class NhaiLayoutBuilderCommand extends BaseCommand {
 
   /**
    * 创建布局构建器
-   * @param layoutType - 布局类型：vbox（垂直）、hbox（水平）、grid（网格）、container（容器）
+   * @param layoutTypeOrOptions - 布局类型或选项对象
    */
-  constructor(layoutType: 'vbox' | 'hbox' | 'grid' | 'container' = 'vbox') {
-    super()
-    this.layoutType = layoutType
-    if (layoutType === 'hbox') {
-      this.direction = 'row'
-    }
+  constructor(layoutTypeOrOptions: 'vbox' | 'hbox' | 'grid' | 'container' | LayoutBuilderOptions = 'vbox') {
+    const options: LayoutBuilderOptions = typeof layoutTypeOrOptions === 'string'
+      ? { layoutType: layoutTypeOrOptions }
+      : layoutTypeOrOptions
+    super(options)
+    
+    this.layoutType = options.layoutType ?? 'vbox'
+    this.direction = options.direction ?? (this.layoutType === 'hbox' ? 'row' : 'column')
+    this._spacing = options.spacing ?? 0
+    this.padding = options.padding ?? '0'
+    this.gap = options.gap ?? '8px'
+    this.width = options.width
+    this.height = options.height
+    this.backgroundColor = options.backgroundColor
+    this._onItemClick = options.onItemClick
+    
+    Object.assign(this._props, {
+      layoutType: this.layoutType,
+      direction: this.direction,
+      spacing: this._spacing,
+      padding: this.padding,
+      gap: this.gap,
+      width: this.width,
+      height: this.height,
+      backgroundColor: this.backgroundColor,
+      ...options
+    })
   }
 
-  setLayoutType(type: 'vbox' | 'hbox' | 'grid' | 'container'): void {
+  setLayoutType(type: 'vbox' | 'hbox' | 'grid' | 'container'): this {
     this.layoutType = type
     if (type === 'hbox') {
       this.direction = 'row'
     } else if (type === 'vbox') {
       this.direction = 'column'
     }
+    this.setProperty('layoutType', type)
+    this.setProperty('direction', this.direction)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setDirection(direction: 'row' | 'column'): void {
+  setDirection(direction: 'row' | 'column'): this {
     this.direction = direction
+    this.setProperty('direction', direction)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setSpacing(spacing: number): void {
+  setSpacing(spacing: number): this {
     this._spacing = spacing
     this.gap = `${spacing * 8}px`
+    this.setProperty('spacing', spacing)
+    this.setProperty('gap', this.gap)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   getSpacing(): number {
-    return this._spacing
+    return this.getProperty('spacing') ?? this._spacing
   }
 
-  setPadding(padding: string): void {
+  setPadding(padding: string): this {
     this.padding = padding
+    this.setProperty('padding', padding)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setGap(gap: string): void {
+  setGap(gap: string): this {
     this.gap = gap
+    this.setProperty('gap', gap)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setWidth(width: string): void {
+  setWidth(width: string): this {
     this.width = width
+    this.setProperty('width', width)
+    if (this._element) {
+      this._element.style.width = width
+    }
+    return this
   }
 
-  setHeight(height: string): void {
+  setHeight(height: string): this {
     this.height = height
+    this.setProperty('height', height)
+    if (this._element) {
+      this._element.style.height = height
+    }
+    return this
   }
 
-  setBackgroundColor(color: string): void {
+  setBackgroundColor(color: string): this {
     this.backgroundColor = color
+    this.setProperty('backgroundColor', color)
+    if (this._element) {
+      this._element.style.backgroundColor = color
+    }
+    return this
   }
 
   /**
    * 设置自定义样式（覆盖默认样式）
    */
-  setStyle(style: Record<string, string>): void {
+  setStyle(style: Record<string, string>): this {
     this.customStyle = { ...this.customStyle, ...style }
+    if (this._element) {
+      Object.keys(style).forEach(key => {
+        if (key !== 'className') {
+          this._element!.style.setProperty(key, style[key])
+        }
+      })
+    }
+    return this
   }
 
   /**
    * 添加自定义样式类名
    */
-  setClassName(className: string): void {
-    this.customStyle.className = className
+  setClassName(className: string): this {
+    super.setClassName(className)
+    if (this.customStyle) {
+      this.customStyle.className = className
+    }
+    return this
   }
 
   /**
@@ -121,7 +213,7 @@ export class NhaiLayoutBuilderCommand extends BaseCommand {
   /**
    * 重写 addChild 以兼容 BaseCommand
    */
-  override addChild(child: BaseCommand): void {
+  override addChild(child: BaseCommand<any, any>): this {
     // 添加为子组件
     super.addChild(child)
     
@@ -133,6 +225,7 @@ export class NhaiLayoutBuilderCommand extends BaseCommand {
         data: child.getProperties()
       })
     }
+    return this
   }
 
   /**
@@ -183,8 +276,10 @@ export class NhaiLayoutBuilderCommand extends BaseCommand {
     }
   }
 
-  setOnItemClick(callback: (item: LayoutItem) => void): void {
+  setOnItemClick(callback: (item: LayoutItem) => void): this {
     this._onItemClick = callback
+    this.setProperty('onItemClick', callback)
+    return this
   }
 
   override unmount(): void {
@@ -192,7 +287,7 @@ export class NhaiLayoutBuilderCommand extends BaseCommand {
     // LayoutBuilder 不需要特殊的卸载逻辑
   }
 
-  render(): HTMLElement {
+  protected doRender(): HTMLElement {
     const container = document.createElement('div')
     this._element = container
     this._mounted = true
@@ -246,7 +341,12 @@ export class NhaiLayoutBuilderCommand extends BaseCommand {
       
       // 绑定点击事件
       if (this._onItemClick) {
-        child.addEventListener('click', () => this._onItemClick!(item))
+        child.addEventListener('click', () => {
+          if (this._onItemClick) {
+            this._onItemClick(item)
+          }
+          this.emit('itemClick', item)
+        })
       }
       
       container.appendChild(child)

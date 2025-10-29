@@ -1,13 +1,29 @@
 import { createApp, h, defineComponent } from 'vue'
 import Select from './Select.vue'
 import type { SelectOption } from './types'
-import { BaseCommand } from '../../lib/BaseCommand'
+import { BaseCommand, IBaseCommandProps, IBaseCommandEvents } from '../../lib/BaseCommand'
+
+// 类型定义
+export interface SelectOptions extends IBaseCommandProps {
+  value?: string | number | Array<string | number>
+  placeholder?: string
+  disabled?: boolean
+  clearable?: boolean
+  multiple?: boolean
+  size?: 'large' | 'default' | 'small'
+  options?: SelectOption[]
+  onChange?: (value: any) => void
+}
+
+export interface SelectEvents extends IBaseCommandEvents {
+  change: (value: any) => void
+}
 
 /**
  * 下拉选择框组件命令式 API
  * 支持单选、多选、可清除、可搜索等功能
  */
-export class NhaiSelectCommand extends BaseCommand {
+export class NhaiSelectCommand extends BaseCommand<SelectOptions, SelectEvents> {
   private value: string | number | Array<string | number> = ''
   private placeholder: string = '请选择'
   private disabled: boolean = false
@@ -17,52 +33,117 @@ export class NhaiSelectCommand extends BaseCommand {
   private options: SelectOption[] = []
   private onChange?: (value: any) => void
 
-  constructor(placeholder: string = '请选择') {
-    super()
-    this.placeholder = placeholder
+  constructor(placeholderOrOptions: string | SelectOptions = '请选择') {
+    const options: SelectOptions = typeof placeholderOrOptions === 'string' 
+      ? { placeholder: placeholderOrOptions }
+      : placeholderOrOptions
+    super(options)
+    
+    this.value = options.value ?? ''
+    this.placeholder = options.placeholder ?? '请选择'
+    this.disabled = options.disabled ?? false
+    this.clearable = options.clearable ?? false
+    this.multiple = options.multiple ?? false
+    this.size = options.size ?? 'default'
+    this.options = options.options ?? []
+    this.onChange = options.onChange
+    
+    Object.assign(this._props, {
+      value: this.value,
+      placeholder: this.placeholder,
+      disabled: this.disabled,
+      clearable: this.clearable,
+      multiple: this.multiple,
+      size: this.size,
+      options: this.options,
+      onChange: this.onChange,
+      ...options
+    })
   }
 
-  setValue(value: string | number | Array<string | number>): void {
+  setValue(value: string | number | Array<string | number>): this {
     this.value = value
+    this.setProperty('value', value)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   getValue(): any {
-    return this.value
+    return this.getProperty('value') ?? this.value
   }
 
-  setPlaceholder(placeholder: string): void {
+  setPlaceholder(placeholder: string): this {
     this.placeholder = placeholder
+    this.setProperty('placeholder', placeholder)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setDisabled(disabled: boolean): void {
+  setDisabled(disabled: boolean): this {
     this.disabled = disabled
+    this.setProperty('disabled', disabled)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setClearable(clearable: boolean): void {
+  setClearable(clearable: boolean): this {
     this.clearable = clearable
+    this.setProperty('clearable', clearable)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setMultiple(multiple: boolean): void {
+  setMultiple(multiple: boolean): this {
     this.multiple = multiple
+    this.setProperty('multiple', multiple)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setSize(size: 'large' | 'default' | 'small'): void {
+  setSize(size: 'large' | 'default' | 'small'): this {
     this.size = size
+    this.setProperty('size', size)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setOptions(options: SelectOption[]): void {
+  setOptions(options: SelectOption[]): this {
     this.options = options
+    this.setProperty('options', options)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  addOption(option: SelectOption): void {
+  addOption(option: SelectOption): this {
     this.options.push(option)
+    this.setProperty('options', [...this.options])
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
-  setOnChange(callback: (value: any) => void): void {
+  setOnChange(callback: (value: any) => void): this {
     this.onChange = callback
+    this.setProperty('onChange', callback)
+    return this
   }
 
-  render(): HTMLElement {
+  protected doRender(): HTMLElement {
     const container = document.createElement('div')
     const self = this
 
@@ -76,7 +157,13 @@ export class NhaiSelectCommand extends BaseCommand {
           multiple: self.multiple,
           size: self.size,
           options: self.options,
-          onChange: self.onChange
+          onChange: (value: any) => {
+            self.value = value
+            if (self.onChange) {
+              self.onChange(value)
+            }
+            self.emit('change', value)
+          }
         })
       }
     })
@@ -84,9 +171,6 @@ export class NhaiSelectCommand extends BaseCommand {
     const app = createApp(SelectWrapper)
     app.mount(container)
     this._appInstance = app
-    
-    this._element = container
-    this._mounted = true
 
     return container
   }

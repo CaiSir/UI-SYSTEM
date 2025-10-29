@@ -1,165 +1,263 @@
-import { createApp, h, defineComponent } from 'vue'
+import { createApp, h, defineComponent, ref, type App, type ComponentPublicInstance } from 'vue'
 import Input from './Input.vue'
-import { BaseCommand } from '../../lib/BaseCommand'
+import { BaseCommand, IBaseCommandEvents, IBaseCommandProps } from '../../lib/BaseCommand'
+
+// 类型定义
+export interface InputOptions extends IBaseCommandProps {
+  value?: string
+  type?: 'text' | 'textarea' | 'password'
+  placeholder?: string
+  disabled?: boolean
+  clearable?: boolean
+  showPassword?: boolean
+  prefixIcon?: string
+  suffixIcon?: string
+  maxlength?: number
+  minlength?: number
+  size?: 'large' | 'default' | 'small'
+}
+
+export interface InputEvents extends IBaseCommandEvents {
+  change: (value: string) => void
+  blur: (event: FocusEvent) => void
+  focus: (event: FocusEvent) => void
+  input: (value: string) => void
+}
+
 
 /**
- * Vue 输入框的命令式封装
+ *  Vue 输入框命令式封装
  */
-export class NhaiInputCommand extends BaseCommand {
-  private value: string = ''
-  private type: 'text' | 'textarea' | 'password' = 'text'
-  private placeholder: string = '请输入'
-  private disabled: boolean = false
-  private clearable: boolean = false
-  private showPassword: boolean = false
-  private size: 'large' | 'default' | 'small' = 'default'
-  private maxlength?: number
-  private minlength?: number
-  private onBlur?: (event: FocusEvent) => void
-  private onChange?: (value: string) => void
-  private onFocus?: (event: FocusEvent) => void
+export class NhaiInputCommand extends BaseCommand<InputOptions, InputEvents> {
+  private _options: Required<InputOptions>
+  public _appInstance: App | null = null
+  private _componentInstance: ComponentPublicInstance<typeof Input> | null = null
 
-  constructor(placeholder: string = '请输入') {
-    super()
-    this.placeholder = placeholder
+  constructor(options: InputOptions = {}) {
+    super(options)
+    
+    // 统一配置处理：支持字符串快捷方式
+    const finalOptions = typeof options === 'string' ? { placeholder: options } : options
+    
+    // 合并默认值和传入的 options
+    const mergedOptions: Required<InputOptions> = {
+      id: '',
+      className: '',
+      style: {},
+      value: '',
+      type: 'text',
+      placeholder: '请输入',
+      disabled: false,
+      clearable: false,
+      showPassword: false,
+      prefixIcon: '',
+      suffixIcon: '',
+      maxlength: 0,
+      minlength: 0,
+      size: 'default',
+      ...finalOptions
+    }
+    
+    this._options = mergedOptions
+    // 同步到 BaseCommand 的 _props
+    Object.assign(this._props, mergedOptions)
   }
 
-  setValue(value: string): void {
-    this.value = value
-    // 如果组件已经挂载，更新组件值
-    if (this._mounted && this._element) {
-      this.updateComponentValue()
-    }
+  // ==================== 配置方法 ====================
+  
+  configure(options: Partial<InputOptions>): this {
+    Object.assign(this._options, options)
+    this._updateComponentProps()
+    return this
+  }
+
+  setValue(value: string): this {
+    this._options.value = value
+    this.setProperty('value' as keyof InputOptions, value)
+    return this
   }
 
   getValue(): string {
-    return this.value
+    return this.getProperty('value') || ''
   }
 
-  setType(type: 'text' | 'textarea' | 'password'): void {
-    this.type = type
+  setType(type: 'text' | 'textarea' | 'password'): this {
+    return this.configure({ type })
   }
 
-  setPlaceholder(placeholder: string): void {
-    this.placeholder = placeholder
+  setPlaceholder(placeholder: string): this {
+    return this.configure({ placeholder })
   }
 
-  setDisabled(disabled: boolean): void {
-    this.disabled = disabled
+  setDisabled(disabled: boolean): this {
+    return this.configure({ disabled })
   }
 
-  setClearable(clearable: boolean): void {
-    this.clearable = clearable
+  setClearable(clearable: boolean): this {
+    return this.configure({ clearable })
   }
 
-  setShowPassword(showPassword: boolean): void {
-    this.showPassword = showPassword
+  setShowPassword(showPassword: boolean): this {
+    return this.configure({ showPassword })
   }
 
-  setSize(size: 'large' | 'default' | 'small'): void {
-    this.size = size
+  setSize(size: 'large' | 'default' | 'small'): this {
+    return this.configure({ size })
   }
 
-  setMaxlength(maxlength: number): void {
-    this.maxlength = maxlength
+  setMaxlength(maxlength: number): this {
+    return this.configure({ maxlength })
   }
 
-  setMinlength(minlength: number): void {
-    this.minlength = minlength
+  setMinlength(minlength: number): this {
+    return this.configure({ minlength })
   }
 
-  setOnBlur(callback: (event: FocusEvent) => void): void {
-    this.onBlur = callback
+  
+
+  // ==================== 组件控制方法 ====================
+
+  focus(): this {
+    this._componentInstance?.focus()
+    return this
   }
 
-  setOnFocus(callback: (event: FocusEvent) => void): void {
-    this.onFocus = callback
+  blur(): this {
+    this._componentInstance?.blur()
+    return this
   }
 
-  setOnChange(callback: (value: string) => void): void {
-    this.onChange = callback
+  clear(): this {
+    this._componentInstance?.clear()
+    return this
   }
 
-  render(): HTMLElement {
+  // ==================== 渲染方法 ====================
+
+  protected doRender(): HTMLElement {
     const container = document.createElement('div')
     const self = this
 
     const InputWrapper = defineComponent({
-      setup() {
-        return () => h(Input, {
-          modelValue: self.value,
-          type: self.type,
-          placeholder: self.placeholder,
-          disabled: self.disabled,
-          clearable: self.clearable,
-          showPassword: self.showPassword,
-          size: self.size,
-          maxlength: self.maxlength,
-          minlength: self.minlength,
-          onBlur: self.onBlur,
-          onFocus: self.onFocus,
-          onChange: (value: string) => {
-            // 更新命令类内部的值
-            self.value = value
-            // 调用用户设置的 onChange 回调
-            if (self.onChange) {
-              self.onChange(value)
-            }
+      setup(_, { expose }) {
+        const inputRef = ref<ComponentPublicInstance<typeof Input>>()
+
+        const handleUpdateModelValue = (value: string) => {
+          self._options.value = value
+        }
+
+        const handleChange = (value: string) => {
+          self.emit('change', value)
+        }
+
+        const handleBlur = (event: FocusEvent) => {
+          self.emit('blur', event)
+        }
+
+        const handleFocus = (event: FocusEvent) => {
+          self.emit('focus', event)
+        }
+
+        const handleInput = (value: string) => {
+          self.emit('input', value)
+        }
+
+        // 暴露方法给命令类
+        expose({
+          setValue: (value: string) => {
+            inputRef.value?.setValue(value)
           },
-          'onUpdate:modelValue': (value: string) => {
-            // 同步更新命令类内部的值
-            self.value = value
+          getValue: () => {
+            return inputRef.value?.getValue() || self._options.value
+          },
+          focus: () => {
+            inputRef.value?.focus()
+          },
+          blur: () => {
+            inputRef.value?.blur()
+          },
+          clear: () => {
+            inputRef.value?.clear()
           }
+        })
+
+        return () => h(Input, {
+          ref: inputRef,
+          modelValue: self._options.value,
+          type: self._options.type,
+          placeholder: self._options.placeholder,
+          disabled: self._options.disabled,
+          clearable: self._options.clearable,
+          showPassword: self._options.showPassword,
+          prefixIcon: self._options.prefixIcon,
+          suffixIcon: self._options.suffixIcon,
+          maxlength: self._options.maxlength,
+          minlength: self._options.minlength,
+          size: self._options.size,
+          onBlur: handleBlur,
+          onFocus: handleFocus,
+          onChange: handleChange,
+          onInput: handleInput,
+          'onUpdate:modelValue': handleUpdateModelValue
         })
       }
     })
 
     const app = createApp(InputWrapper)
-    app.mount(container)
-    this._appInstance = app
     
-    this._element = container
-    this._mounted = true
+    // 挂载并获取组件实例
+    const instance = app.mount(container) as ComponentPublicInstance<typeof Input>
+    this._componentInstance = instance
+    this._appInstance = app
 
     return container
   }
 
-  // 更新组件值的辅助方法
-  private updateComponentValue(): void {
-    if (this._element && this._appInstance) {
-      // 重新渲染组件以更新值
-      this.unmount()
-      const newElement = this.render()
-      if (this._element.parentNode) {
-        this._element.parentNode.replaceChild(newElement, this._element)
-      }
-      this._element = newElement
+  // 更新组件属性（不重新渲染）
+  private _updateComponentProps(): void {
+    if (this._componentInstance && this._mounted) {
+      // 对于值的变化，使用 setValue 方法
+      this._componentInstance.setValue(this._options.value)
+      // 其他属性变化需要重新渲染，但这里简化处理
+      // 在实际项目中，可以考虑更细粒度的更新
     }
   }
 
   override unmount(): void {
     if (this._appInstance) {
       this._appInstance.unmount()
+      this._appInstance = null
+      this._componentInstance = null
     }
     super.unmount()
   }
 
-  // renderFallback(): HTMLElement {
-  //   const input = document.createElement('input')
-  //   input.type = this.type === 'password' ? 'password' : 'text'
-  //   input.placeholder = this.placeholder
-  //   input.disabled = this.disabled
-  //   input.value = this.value
+  renderFallback(): HTMLElement {
+    const input = document.createElement('input')
+    input.type = this._options.type === 'password' ? 'password' : 'text'
+    input.placeholder = this._options.placeholder
+    input.disabled = this._options.disabled
+    input.value = this._options.value
+    input.className = 'fallback-input'
 
-  //   if (this.onChange) {
-  //     input.addEventListener('input', (e) => {
-  //       this.value = (e.target as HTMLInputElement).value
-  //       this.onChange!(this.value)
-  //     })
-  //   }
+    // 同步事件系统
+    input.addEventListener('input', (e) => {
+      const value = (e.target as HTMLInputElement).value
+      this._options.value = value
+      this.emit('change', value)
+      this.emit('input', value)
+    })
 
-  //   return input
-  // }
+    input.addEventListener('blur', (e) => {
+      this.emit('blur', e)
+    })
+
+    input.addEventListener('focus', (e) => {
+      this.emit('focus', e)
+    })
+
+    return input
+  }
 }
 
 export default NhaiInputCommand

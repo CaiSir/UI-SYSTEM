@@ -25,7 +25,7 @@
 
 ## ✨ 核心特性
 
-### 1. 对象化设计（类似 Qt）
+### 1. 对象化设计（ ）
 ```typescript
 import { Button, VBox, Input } from 'nhai-ui-vue'
 
@@ -155,19 +155,19 @@ document.body.appendChild(toolbar.render())
 ### 1. 统一的组件接口
 所有组件继承 `BaseCommand`，提供统一的 API。
 
-### 2. 属性系统（类似 Qt）
+### 2. 属性系统（ ）
 ```typescript
 btn.setProperty('data-id', 'btn-1')
 const id = btn.getProperty('data-id')
 ```
 
-### 3. 事件系统（类似 Qt 的 signal/slot）
+### 3. 事件系统（  的 signal/slot）
 ```typescript
 btn.on('click', () => console.log('点击了'))
 btn.emit('click')
 ```
 
-### 4. 父子关系（类似 Qt）
+### 4. 父子关系（ ）
 ```typescript
 layout.addChild(btn)
 layout.removeChild(btn)
@@ -202,4 +202,4 @@ MIT
 ## 🎯 设计目标
 
 打造一个**企业级、可扩展、易使用**的 UI 组件库，
-类似 Qt 的组件化设计理念，基于 Vue 生态实现。
+  的组件化设计理念，基于 Vue 生态实现。

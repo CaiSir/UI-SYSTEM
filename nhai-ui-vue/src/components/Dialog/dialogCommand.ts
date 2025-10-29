@@ -7,9 +7,53 @@ import { createApp, h, defineComponent } from 'vue'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import Dialog from './Dialog.vue'
-import { BaseCommand } from '../../lib/BaseCommand'
+import { BaseCommand, IBaseCommandProps, IBaseCommandEvents } from '../../lib/BaseCommand'
 
-export class NhaiDialogCommand extends BaseCommand {
+// 类型定义
+export interface DialogOptions extends IBaseCommandProps {
+  modelValue?: boolean
+  title?: string
+  width?: string | number
+  fullscreen?: boolean
+  top?: string
+  modal?: boolean
+  modalClass?: string
+  modalStyle?: Record<string, any>
+  modalBackdrop?: boolean
+  modalFade?: boolean
+  appendToBody?: boolean
+  lockScroll?: boolean
+  openDelay?: number
+  closeDelay?: number
+  closeOnClickModal?: boolean
+  closeOnPressEscape?: boolean
+  showClose?: boolean
+  draggable?: boolean
+  center?: boolean
+  alignCenter?: boolean
+  destroyOnClose?: boolean
+  closeIcon?: string
+  zIndex?: number
+  headerAriaLevel?: string
+  header?: string
+  content?: string
+  showFooter?: boolean
+  confirmText?: string
+  cancelText?: string
+  dialogClass?: string
+}
+
+export interface DialogEvents extends IBaseCommandEvents {
+  'update:modelValue': (value: boolean) => void
+  open: () => void
+  opened: () => void
+  close: () => void
+  closed: () => void
+  confirm: () => void
+  cancel: () => void
+}
+
+export class NhaiDialogCommand extends BaseCommand<DialogOptions, DialogEvents> {
   // ==================== 对话框状态属性 ====================
   private modelValue: boolean = false // 对话框显示/隐藏状态
   private title?: string // 对话框标题
@@ -49,18 +93,51 @@ export class NhaiDialogCommand extends BaseCommand {
   private dialogClass?: string // 自定义对话框样式类名
   
   // ==================== 子组件管理 ====================
-  protected childElements: Map<BaseCommand, HTMLElement> = new Map() // 子组件元素映射
+  protected childElements: Map<BaseCommand<any, any>, HTMLElement> = new Map() // 子组件元素映射
   protected contentContainer?: HTMLElement // 内容容器
 
   /**
    * 构造函数
-   * @param title - 对话框标题
-   * @param content - 对话框内容（支持 HTML）
+   * @param titleOrOptions - 对话框标题或完整选项对象
+   * @param content - 对话框内容（支持 HTML）（仅在第一个参数为字符串时使用）
    */
-  constructor(title?: string, content?: string) {
-    super()
-    this.title = title
-    this.content = content
+  constructor(titleOrOptions?: string | DialogOptions, content?: string) {
+    const options: DialogOptions = typeof titleOrOptions === 'string' 
+      ? { title: titleOrOptions, content }
+      : (titleOrOptions || {})
+    super(options)
+    
+    // 初始化默认值
+    this.modelValue = options.modelValue ?? false
+    this.title = options.title
+    this.content = options.content
+    this.width = options.width
+    this.fullscreen = options.fullscreen ?? false
+    this.top = options.top
+    this.modal = options.modal ?? true
+    this.modalClass = options.modalClass
+    this.modalStyle = options.modalStyle
+    this.modalBackdrop = options.modalBackdrop ?? true
+    this.modalFade = options.modalFade ?? true
+    this.appendToBody = options.appendToBody ?? false
+    this.lockScroll = options.lockScroll ?? true
+    this.openDelay = options.openDelay ?? 0
+    this.closeDelay = options.closeDelay ?? 0
+    this.closeOnClickModal = options.closeOnClickModal ?? false
+    this.closeOnPressEscape = options.closeOnPressEscape ?? true
+    this.showClose = options.showClose ?? true
+    this.draggable = options.draggable ?? false
+    this.center = options.center ?? false
+    this.alignCenter = options.alignCenter ?? false
+    this.destroyOnClose = options.destroyOnClose ?? false
+    this.closeIcon = options.closeIcon
+    this.zIndex = options.zIndex ?? 2000
+    this.headerAriaLevel = options.headerAriaLevel ?? '2'
+    this.header = options.header
+    this.showFooter = options.showFooter ?? false
+    this.confirmText = options.confirmText ?? '确定'
+    this.cancelText = options.cancelText ?? '取消'
+    this.dialogClass = options.dialogClass
   }
 
   // ==================== 属性获取方法 ====================
@@ -98,110 +175,130 @@ export class NhaiDialogCommand extends BaseCommand {
    * 设置对话框显示状态
    * @param value - true 显示，false 隐藏
    */
-  setModelValue(value: boolean): void {
+  setModelValue(value: boolean): this {
     this.modelValue = value
+    this.setProperty('modelValue', value)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置对话框标题
    * @param title - 标题文本
    */
-  setTitle(title: string): void {
+  setTitle(title: string): this {
     this.title = title
+    this.setProperty('title', title)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置对话框宽度
    * @param width - 宽度值，支持字符串（如 '50%', '500px'）或数字
    */
-  setWidth(width: string | number): void {
+  setWidth(width: string | number): this {
     this.width = width
+    this.setProperty('width', width)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置是否全屏显示
    * @param fullscreen - true 全屏，false 非全屏
    */
-  setFullscreen(fullscreen: boolean): void {
+  setFullscreen(fullscreen: boolean): this {
     this.fullscreen = fullscreen
+    this.setProperty('fullscreen', fullscreen)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置对话框距离顶部的位置
    * @param top - 距离值，如 '15vh'
    */
-  setTop(top: string): void {
+  setTop(top: string): this {
     this.top = top
+    this.setProperty('top', top)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置是否显示遮罩层
    * @param modal - true 显示遮罩，false 不显示
    */
-  setModal(modal: boolean): void {
+  setModal(modal: boolean): this {
     this.modal = modal
+    this.setProperty('modal', modal)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置遮罩层的自定义样式类名
    * @param modalClass - 样式类名
    */
-  setModalClass(modalClass: string): void {
+  setModalClass(modalClass: string): this {
     this.modalClass = modalClass
+    this.setProperty('modalClass', modalClass)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置遮罩层的自定义样式
    * @param modalStyle - 样式对象，如 { backgroundColor: 'rgba(0,0,0,0.8)' }
    */
-  setModalStyle(modalStyle: Record<string, any>): void {
+  setModalStyle(modalStyle: Record<string, any>): this {
     this.modalStyle = modalStyle
+    this.setProperty('modalStyle', modalStyle)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置是否显示遮罩层背景
    * @param modalBackdrop - true 显示背景，false 透明背景
    */
-  setModalBackdrop(modalBackdrop: boolean): void {
+  setModalBackdrop(modalBackdrop: boolean): this {
     this.modalBackdrop = modalBackdrop
+    this.setProperty('modalBackdrop', modalBackdrop)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置遮罩层淡入淡出动画
    * @param modalFade - true 启用动画，false 禁用动画
    */
-  setModalFade(modalFade: boolean): void {
+  setModalFade(modalFade: boolean): this {
     this.modalFade = modalFade
+    this.setProperty('modalFade', modalFade)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
@@ -209,22 +306,26 @@ export class NhaiDialogCommand extends BaseCommand {
    * 建议设置为 true，避免样式和层级问题
    * @param appendToBody - true 挂载到 body，false 不挂载
    */
-  setAppendToBody(appendToBody: boolean): void {
+  setAppendToBody(appendToBody: boolean): this {
     this.appendToBody = appendToBody
+    this.setProperty('appendToBody', appendToBody)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置是否锁定背景滚动
    * @param lockScroll - true 锁定，false 不锁定
    */
-  setLockScroll(lockScroll: boolean): void {
+  setLockScroll(lockScroll: boolean): this {
     this.lockScroll = lockScroll
+    this.setProperty('lockScroll', lockScroll)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
@@ -232,154 +333,182 @@ export class NhaiDialogCommand extends BaseCommand {
    * 模态对话框建议设置为 false，防止意外关闭
    * @param closeOnClickModal - true 点击关闭，false 不关闭（默认 false）
    */
-  setCloseOnClickModal(closeOnClickModal: boolean): void {
+  setCloseOnClickModal(closeOnClickModal: boolean): this {
     this.closeOnClickModal = closeOnClickModal
+    this.setProperty('closeOnClickModal', closeOnClickModal)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置按 ESC 键是否关闭对话框
    * @param closeOnPressEscape - true 按 ESC 关闭，false 不关闭
    */
-  setCloseOnPressEscape(closeOnPressEscape: boolean): void {
+  setCloseOnPressEscape(closeOnPressEscape: boolean): this {
     this.closeOnPressEscape = closeOnPressEscape
+    this.setProperty('closeOnPressEscape', closeOnPressEscape)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置是否显示关闭按钮
    * @param showClose - true 显示，false 不显示
    */
-  setShowClose(showClose: boolean): void {
+  setShowClose(showClose: boolean): this {
     this.showClose = showClose
+    this.setProperty('showClose', showClose)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置对话框是否可拖动
    * @param draggable - true 可拖动，false 不可拖动
    */
-  setDraggable(draggable: boolean): void {
+  setDraggable(draggable: boolean): this {
     this.draggable = draggable
+    this.setProperty('draggable', draggable)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置对话框是否居中显示
    * @param center - true 居中，false 不居中
    */
-  setCenter(center: boolean): void {
+  setCenter(center: boolean): this {
     this.center = center
+    this.setProperty('center', center)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置标题和内容是否居中
    * @param alignCenter - true 居中，false 不居中
    */
-  setAlignCenter(alignCenter: boolean): void {
+  setAlignCenter(alignCenter: boolean): this {
     this.alignCenter = alignCenter
+    this.setProperty('alignCenter', alignCenter)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置关闭时是否销毁组件
    * @param destroyOnClose - true 销毁，false 不销毁
    */
-  setDestroyOnClose(destroyOnClose: boolean): void {
+  setDestroyOnClose(destroyOnClose: boolean): this {
     this.destroyOnClose = destroyOnClose
+    this.setProperty('destroyOnClose', destroyOnClose)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置对话框层级（z-index）
    * @param zIndex - 层级值，默认 2000
    */
-  setZIndex(zIndex: number): void {
+  setZIndex(zIndex: number): this {
     this.zIndex = zIndex
+    this.setProperty('zIndex', zIndex)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置头部内容（覆盖标题）
    * @param header - 头部文本或 HTML
    */
-  setHeader(header: string): void {
+  setHeader(header: string): this {
     this.header = header
+    this.setProperty('header', header)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置对话框内容（支持 HTML）
    * @param content - 内容文本或 HTML
    */
-  setContent(content: string): void {
+  setContent(content: string): this {
     this.content = content
+    this.setProperty('content', content)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置是否显示底部按钮（确认/取消）
    * @param showFooter - true 显示，false 不显示
    */
-  setShowFooter(showFooter: boolean): void {
+  setShowFooter(showFooter: boolean): this {
     this.showFooter = showFooter
+    this.setProperty('showFooter', showFooter)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置确认按钮文本
    * @param confirmText - 按钮文本，默认 '确定'
    */
-  setConfirmText(confirmText: string): void {
+  setConfirmText(confirmText: string): this {
     this.confirmText = confirmText
+    this.setProperty('confirmText', confirmText)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置取消按钮文本
    * @param cancelText - 按钮文本，默认 '取消'
    */
-  setCancelText(cancelText: string): void {
+  setCancelText(cancelText: string): this {
     this.cancelText = cancelText
+    this.setProperty('cancelText', cancelText)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   /**
    * 设置对话框的自定义样式类名
    * @param className - 样式类名
    */
-  setClass(className: string): void {
+  setClass(className: string): this {
     this.dialogClass = className
+    this.setProperty('dialogClass', className)
     if (this._mounted) {
-      this.update()
+      this.scheduleUpdate()
     }
+    return this
   }
 
   // ==================== 子组件管理方法 ====================
@@ -388,7 +517,7 @@ export class NhaiDialogCommand extends BaseCommand {
    * 重写 addChild 方法以支持在对话框内容中添加控件
    * @param child - BaseCommand 子组件实例
    */
-  override addChild(child: BaseCommand): void {
+  override addChild(child: BaseCommand<any, any>): this {
     console.log('addChild called, mounted:', this._mounted, 'contentContainer:', this.contentContainer)
     // 调用基类方法建立父子关系
     super.addChild(child)
@@ -404,13 +533,14 @@ export class NhaiDialogCommand extends BaseCommand {
     } else {
       console.log('Content container not ready, will render when dialog opens')
     }
+    return this
   }
   
   /**
    * 重写 removeChild 方法
    * @param child - BaseCommand 子组件实例
    */
-  override removeChild(child: BaseCommand): void {
+  override removeChild(child: BaseCommand<any, any>): this {
     super.removeChild(child)
     
     // 从内容容器中移除子组件元素
@@ -419,6 +549,7 @@ export class NhaiDialogCommand extends BaseCommand {
       childElement.parentNode.removeChild(childElement)
     }
     this.childElements.delete(child)
+    return this
   }
   
   /**
@@ -496,7 +627,7 @@ export class NhaiDialogCommand extends BaseCommand {
    * 创建 Vue 组件实例并挂载到容器中
    * @returns HTMLDivElement - 渲染后的容器元素
    */
-  render(): HTMLElement {
+  protected doRender(): HTMLElement {
     const container = document.createElement('div')
     const self = this
 

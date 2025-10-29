@@ -1,6 +1,24 @@
 import { createApp, h, defineComponent, type Component } from 'vue'
 import Button from './Button.vue'
-import { BaseCommand } from '../../lib/BaseCommand'
+import { BaseCommand, IBaseCommandProps, IBaseCommandEvents } from '../../lib/BaseCommand'
+
+// 类型定义
+export interface ButtonOptions extends IBaseCommandProps {
+  text?: string
+  type?: 'default' | 'primary' | 'success' | 'info' | 'warning' | 'danger'
+  size?: 'large' | 'default' | 'small'
+  plain?: boolean
+  round?: boolean
+  circle?: boolean
+  loading?: boolean
+  disabled?: boolean
+  icon?: string
+  onClick?: () => void
+}
+
+export interface ButtonEvents extends IBaseCommandEvents {
+  click: () => void
+}
 
 /**
  * 缓存按钮包装器组件定义
@@ -59,98 +77,174 @@ function getButtonWrapper(): Component {
  * 
  * 优化：使用缓存的组件定义，减少重复创建开销
  */
-export class NhaiButtonCommand extends BaseCommand {
-  public text: string = ''
-  public type: 'default' | 'primary' | 'success' | 'info' | 'warning' | 'danger' = 'primary'
-  public size: 'large' | 'default' | 'small' = 'default'
-  public plain: boolean = false
-  public round: boolean = false
-  public circle: boolean = false
-  public loading: boolean = false
-  public disabled: boolean = false
-  public icon?: string
-  public onClick?: () => void
+export class NhaiButtonCommand extends BaseCommand<ButtonOptions, ButtonEvents> {
+  private text: string = ''
+  private type: 'default' | 'primary' | 'success' | 'info' | 'warning' | 'danger' = 'primary'
+  private size: 'large' | 'default' | 'small' = 'default'
+  private plain: boolean = false
+  private round: boolean = false
+  private circle: boolean = false
+  private loading: boolean = false
+  private disabled: boolean = false
+  private icon?: string
+  private onClick?: () => void
 
-  constructor(text: string = '') {
-    super()
-    this.text = text
+  constructor(textOrOptions: string | ButtonOptions = '') {
+    const options: ButtonOptions = typeof textOrOptions === 'string' 
+      ? { text: textOrOptions }
+      : textOrOptions
+    super(options)
+    
+    // 初始化属性
+    this.text = options.text ?? ''
+    this.type = options.type ?? 'primary'
+    this.size = options.size ?? 'default'
+    this.plain = options.plain ?? false
+    this.round = options.round ?? false
+    this.circle = options.circle ?? false
+    this.loading = options.loading ?? false
+    this.disabled = options.disabled ?? false
+    this.icon = options.icon
+    this.onClick = options.onClick
+    
+    // 同步到 _props
+    Object.assign(this._props, {
+      text: this.text,
+      type: this.type,
+      size: this.size,
+      plain: this.plain,
+      round: this.round,
+      circle: this.circle,
+      loading: this.loading,
+      disabled: this.disabled,
+      icon: this.icon,
+      onClick: this.onClick,
+      ...options
+    })
   }
 
   /**
    * 设置按钮文本
    */
-  setText(text: string): void {
+  setText(text: string): this {
     this.text = text
+    this.setProperty('text', text)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 获取按钮文本
    */
   getText(): string {
-    return this.text
+    return this.getProperty('text') || this.text
   }
 
   /**
    * 设置按钮类型
    */
-  setType(type: 'default' | 'primary' | 'success' | 'info' | 'warning' | 'danger'): void {
+  setType(type: 'default' | 'primary' | 'success' | 'info' | 'warning' | 'danger'): this {
     this.type = type
+    this.setProperty('type', type)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 设置按钮尺寸
    */
-  setSize(size: 'large' | 'default' | 'small'): void {
+  setSize(size: 'large' | 'default' | 'small'): this {
     this.size = size
+    this.setProperty('size', size)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 设置朴素按钮
    */
-  setPlain(plain: boolean): void {
+  setPlain(plain: boolean): this {
     this.plain = plain
+    this.setProperty('plain', plain)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 设置圆角按钮
    */
-  setRound(round: boolean): void {
+  setRound(round: boolean): this {
     this.round = round
+    this.setProperty('round', round)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 设置圆形按钮
    */
-  setCircle(circle: boolean): void {
+  setCircle(circle: boolean): this {
     this.circle = circle
+    this.setProperty('circle', circle)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 设置加载状态
    */
-  setLoading(loading: boolean): void {
+  setLoading(loading: boolean): this {
     this.loading = loading
+    this.setProperty('loading', loading)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 设置禁用状态
    */
-  setDisabled(disabled: boolean): void {
+  setDisabled(disabled: boolean): this {
     this.disabled = disabled
+    this.setProperty('disabled', disabled)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 设置图标
    */
-  setIcon(icon: string): void {
+  setIcon(icon: string): this {
     this.icon = icon
+    this.setProperty('icon', icon)
+    if (this._mounted) {
+      this.scheduleUpdate()
+    }
+    return this
   }
 
   /**
    * 设置点击回调
    */
-  setOnClick(callback: () => void): void {
+  setOnClick(callback: () => void): this {
     this.onClick = callback
+    this.setProperty('onClick', callback)
+    return this
   }
 
   /**
@@ -159,8 +253,9 @@ export class NhaiButtonCommand extends BaseCommand {
    * 
    * 优化：使用缓存的组件定义，减少 defineComponent 的开销
    */
-  render(): HTMLElement {
+  protected doRender(): HTMLElement {
     const container = document.createElement('div')
+    const self = this
     
     // 使用缓存的组件定义
     const ButtonWrapper = getButtonWrapper()
@@ -176,16 +271,18 @@ export class NhaiButtonCommand extends BaseCommand {
       loading: this.loading,
       disabled: this.disabled,
       icon: this.icon,
-      onClick: this.onClick
+      onClick: () => {
+        if (this.onClick) {
+          this.onClick()
+        }
+        self.emit('click')
+      }
     }
 
     // 创建并挂载 Vue 应用
     const app = createApp(ButtonWrapper, props)
     app.mount(container)
     this._appInstance = app
-    
-    this._element = container
-    this._mounted = true
 
     return container
   }

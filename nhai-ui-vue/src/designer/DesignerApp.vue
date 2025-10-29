@@ -215,6 +215,7 @@ interface CanvasComponent {
   isInDialog?: boolean
   parentDialogId?: string
   dialogWrapper?: HTMLElement
+  dialogInstance?: any  // 对话框命令实例（仅 dialog 类型），使用 any 避免 markRaw 导致的类型问题
 }
 
 // 组件库定义
@@ -291,38 +292,55 @@ const handleDrop = async (event: DragEvent) => {
   }
   if (dialogBody) {
     // 放置到对话框内部
-    const rect = (dialogBody as HTMLElement).getBoundingClientRect()
-    let x = event.clientX - rect.left - 20
-    let y = event.clientY - rect.top - 20
-    
-    // 创建组件（对话框内）
-    const comp = await createComponent(draggedComponent, x, y)
-    
     // 找到父对话框
     const dialogElement = dialogBody.closest('.dialog-window')
     const dialogId = dialogElement?.getAttribute('data-id')
     
-    if (dialogId) {
-      comp.style.position = 'absolute'
-      comp.isInDialog = true
-      comp.parentDialogId = dialogId
-      
-      // 直接添加到对话框内容区（不要直接 append 元素，避免循环引用）
-      // 创建包装器
-      const wrapper = document.createElement('div')
-      wrapper.style.position = 'absolute'
-      wrapper.style.left = comp.style.left
-      wrapper.style.top = comp.style.top
-      wrapper.appendChild(comp.element)
-      if (dialogBody instanceof HTMLElement) {
-        dialogBody.appendChild(wrapper)
-      }
-      
-      // 存储 wrapper 引用
-      (comp as any).dialogWrapper = wrapper
+    if (!dialogId) return
+    
+    // 找到对话框对应的 CanvasComponent
+    const dialogComp = canvasComponents.value.find(c => c.id === dialogId && c.type === 'dialog')
+    if (!dialogComp || !dialogComp.dialogInstance) {
+      console.warn('未找到对话框实例:', dialogId)
+      return
     }
     
-    canvasComponents.value.push(comp)
+    // 创建子组件实例
+    const childInstance = await createChildComponentInstance(draggedComponent)
+    if (!childInstance) return
+    
+    // 使用对话框实例的 addChild 方法添加子组件（建立父子关系）
+    dialogComp.dialogInstance.addChild(childInstance.instance)
+    
+    // 获取子组件渲染后的元素
+    const childElement = childInstance.instance.getElement()
+    if (!childElement) {
+      console.warn('子组件元素未找到')
+      return
+    }
+    
+    // 计算放置位置
+    const rect = (dialogBody as HTMLElement).getBoundingClientRect()
+    const x = event.clientX - rect.left - 20
+    const y = event.clientY - rect.top - 20
+    
+    // 在可视化编辑器中，直接将子组件元素追加到对话框内容区域以便显示
+    // 创建一个包装器以保持位置样式
+    const wrapper = document.createElement('div')
+    wrapper.style.position = 'absolute'
+    wrapper.style.left = x + 'px'
+    wrapper.style.top = y + 'px'
+    wrapper.appendChild(childElement)
+    ;(dialogBody as HTMLElement).appendChild(wrapper)
+    
+    // 存储 wrapper 引用以便后续管理
+    ;(childInstance.instance as any).__visualWrapper = wrapper
+    
+    // 移除占位符（如果存在）
+    const placeholder = (dialogBody as HTMLElement).querySelector('.dialog-placeholder')
+    if (placeholder) {
+      placeholder.remove()
+    }
   } else {
     // 放置到画布上
     const canvasWrapper = document.querySelector('.canvas-content-wrapper')
@@ -357,6 +375,59 @@ const handleDrop = async (event: DragEvent) => {
 const componentCategories = ref(['表单', '反馈', '布局'])
 const getComponentsByCategory = (category: string) => {
   return components.filter(c => c.category === category)
+}
+
+// 创建子组件实例（用于添加到对话框等容器中）
+const createChildComponentInstance = async (compDef: any): Promise<{ instance: any } | null> => {
+  let instance: any
+  
+  switch (compDef.type) {
+    case 'button':
+      instance = new NhaiButtonCommand(`按钮`)
+      instance.setType('primary')
+      break
+    case 'input':
+      instance = new NhaiInputCommand()
+      instance.setPlaceholder('请输入')
+      break
+    case 'select':
+      instance = new NhaiSelectCommand()
+      instance.setOptions([
+        { label: '选项1', value: '1' },
+        { label: '选项2', value: '2' }
+      ])
+      break
+    case 'switch':
+      instance = new NhaiSwitchCommand(false)
+      instance.setActiveText('开')
+      instance.setInactiveText('关')
+      break
+    case 'checkbox':
+      instance = new NhaiCheckboxCommand('复选框')
+      break
+    case 'card':
+      instance = new NhaiCardCommand('卡片标题', '卡片内容')
+      break
+    case 'grid':
+      instance = new NhaiGridCommand()
+      instance.setContainer(true)
+      instance.setSpacing(16)
+      break
+    case 'container':
+      instance = new NhaiContainerCommand()
+      instance.setMaxWidth('lg')
+      break
+    case 'splitpanel':
+      instance = new NhaiSplitPanelCommand()
+      break
+    default:
+      return null
+  }
+  
+  // 渲染组件
+  instance.render()
+  
+  return { instance }
 }
 
 // 创建组件实例
@@ -420,6 +491,7 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       // 创建对话框窗口元素
       element = document.createElement('div')
       element.className = 'dialog-window'
+      element.setAttribute('data-id', id)  // 设置对话框 ID，用于拖放时查找
       element.style.cssText = `
         width: 500px;
         min-height: 300px;
@@ -489,36 +561,58 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
         e.stopPropagation()
         if (!draggedComponent) return
         
+        // 找到父对话框
+        const dialogElement = bodyDiv.closest('.dialog-window')
+        const dialogId = dialogElement?.getAttribute('data-id')
+        
+        if (!dialogId) return
+        
+        // 找到对话框对应的 CanvasComponent
+        const dialogComp = canvasComponents.value.find(c => c.id === dialogId && c.type === 'dialog')
+        if (!dialogComp || !dialogComp.dialogInstance) {
+          console.warn('未找到对话框实例:', dialogId)
+          return
+        }
+        
+        // 创建子组件实例（不创建 CanvasComponent，因为它是对话框的子组件）
+        const childInstance = await createChildComponentInstance(draggedComponent)
+        if (!childInstance) return
+        
+        // 使用对话框实例的 addChild 方法添加子组件（建立父子关系）
+        dialogComp.dialogInstance.addChild(childInstance.instance)
+        
+        // 获取子组件渲染后的元素
+        const childElement = childInstance.instance.getElement()
+        if (!childElement) {
+          console.warn('子组件元素未找到')
+          return
+        }
+        
         // 计算放置位置
         const rect = bodyDiv.getBoundingClientRect()
         const x = e.clientX - rect.left - 20
         const y = e.clientY - rect.top - 20
         
-        // 创建组件
-        const comp = await createComponent(draggedComponent, x, y)
+        // 在可视化编辑器中，直接将子组件元素追加到对话框内容区域以便显示
+        // 创建一个包装器以保持位置样式
+        const wrapper = document.createElement('div')
+        wrapper.style.position = 'absolute'
+        wrapper.style.left = x + 'px'
+        wrapper.style.top = y + 'px'
+        wrapper.appendChild(childElement)
+        bodyDiv.appendChild(wrapper)
         
-        // 找到父对话框
-        const dialogElement = bodyDiv.closest('.dialog-window')
-        const dialogId = dialogElement?.getAttribute('data-id')
+        // 存储 wrapper 引用以便后续管理
+        ;(childInstance.instance as any).__visualWrapper = wrapper
         
-        if (dialogId) {
-          comp.style.position = 'absolute'
-          comp.isInDialog = true
-          comp.parentDialogId = dialogId
-          
-          // 创建包装器
-          const wrapper = document.createElement('div')
-          wrapper.style.position = 'absolute'
-          wrapper.style.left = comp.style.left
-          wrapper.style.top = comp.style.top
-          wrapper.appendChild(comp.element)
-          bodyDiv.appendChild(wrapper)
-          
-          // 存储 wrapper 引用
-          (comp as any).dialogWrapper = wrapper
+        // 移除占位符（如果存在）
+        const placeholder = bodyDiv.querySelector('.dialog-placeholder')
+        if (placeholder) {
+          placeholder.remove()
         }
         
-        canvasComponents.value.push(comp)
+        // 更新代码
+        updateCode()
       }
       
       const dragoverHandler = (e: DragEvent) => {
@@ -584,6 +678,9 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       footer.appendChild(confirmBtn)
       element.appendChild(footer)
       
+      // 为对话框类型存储实例引用
+      // 注意：dialogInstance 会在返回的 CanvasComponent 中设置
+      
       break
     default:
       element = document.createElement('div')
@@ -644,6 +741,11 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       left: x + 'px',
       top: y + 'px',
     }
+  }
+  
+  // 如果是对话框类型，存储对话框实例
+  if (compDef.type === 'dialog' && instance instanceof NhaiDialogCommand) {
+    comp.dialogInstance = instance as NhaiDialogCommand
   }
   
   return comp
