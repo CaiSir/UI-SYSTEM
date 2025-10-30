@@ -14,11 +14,13 @@
     @blur="handleBlur"
     @focus="handleFocus"
     @change="handleChange"
+    @input="handleInput"
+    ref="inputRef"
   />
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { ElInput } from 'element-plus'
 
 interface Props {
@@ -48,9 +50,11 @@ const emit = defineEmits<{
   (e: 'blur', event: FocusEvent): void
   (e: 'focus', event: FocusEvent): void
   (e: 'change', value: string): void
+  (e: 'input', value: string): void
 }>()
 
 const inputValue = ref(props.modelValue || '')
+const inputRef = ref<InstanceType<typeof ElInput>>()
 
 // 同步外部值变化
 watch(() => props.modelValue, (newValue) => {
@@ -73,8 +77,31 @@ const handleFocus = (event: FocusEvent) => {
 const handleChange = (value: string) => {
   emit('change', value)
 }
+
+const handleInput = (value: string) => {
+  emit('input', value)
+}
+
+// 暴露方法给父组件
+defineExpose({
+  setValue: (value: string) => {
+    inputValue.value = value
+  },
+  getValue: (): string => {
+    return inputValue.value
+  },
+  focus: () => {
+    nextTick(() => {
+      inputRef.value?.focus()
+    })
+  },
+  blur: () => {
+    nextTick(() => {
+      inputRef.value?.blur()
+    })
+  },
+  clear: () => {
+    inputValue.value = ''
+  }
+})
 </script>
-
-<style scoped>
-</style>
-

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="designer-app">
     <!-- 顶部工具栏 -->
     <header class="designer-header">
@@ -68,8 +68,9 @@
           <div class="canvas-content-wrapper" @drop="handleDrop" @dragover.prevent="handleDialogDragOver">
             <div 
               v-for="(comp, index) in canvasComponents"
-              :key="comp.id"
+              :key="`${comp.id}-${comp._renderKey || 0}`"
               class="canvas-component"
+              :data-component-id="comp.id"
               :class="{ selected: selectedComponent?.id === comp.id }"
               :style="comp.style"
               @click.stop="selectComponent(comp)"
@@ -94,7 +95,7 @@
         <aside class="right-panel" :class="{ collapsed: rightPanelCollapsed }">
           <div class="panel-section">
           <h3 class="section-title">⚙️ 属性设置</h3>
-          <div v-if="selectedComponent || selectedDialogChild" class="property-content">
+          <div v-if="selectedComponent || selectedDialogChild || selectedLayoutChild" class="property-content">
             <!-- 组件类型 -->
             <div class="property-group">
               <label>组件类型</label>
@@ -127,7 +128,7 @@
                 :value="getSelectedPropValue(prop.key)" 
                 @change="updateSelectedDynamicProp(prop.key, ($event.target as HTMLSelectElement).value)"
               >
-                <option v-for="opt in prop.options" :key="opt.value" :value="opt.value">
+                <option v-for="opt in prop.options" :key="String(opt.value)" :value="opt.value">
                   {{ opt.label }}
                 </option>
               </select>
@@ -162,10 +163,13 @@
               />
             </div>
             
-            <!-- 删除按钮（仅对话框内控件显示） -->
-            <div v-if="selectedDialogChild" class="property-divider">操作</div>
+            <!-- 删除按钮（对话框内控件和布局内控件显示） -->
+            <div v-if="selectedDialogChild || selectedLayoutChild" class="property-divider">操作</div>
             <div v-if="selectedDialogChild" class="property-group">
               <button class="btn-delete" @click="removeDialogChild">🗑️ 删除控件</button>
+            </div>
+            <div v-if="selectedLayoutChild" class="property-group">
+              <button class="btn-delete" @click="removeLayoutChild">🗑️ 删除控件</button>
             </div>
           </div>
           <div v-else class="property-empty">
@@ -196,7 +200,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, markRaw } from 'vue'
+import { ref, markRaw } from 'vue'
 import { nextTick } from 'vue'
 import {
   NhaiButtonCommand,
@@ -211,6 +215,9 @@ import {
   NhaiDialogCommand,
   NhaiWidgetCommand,
 } from '../components'
+import { usePropertyEditor } from './composables/usePropertyEditor'
+import { usePropertyPanel } from './composables/usePropertyPanel'
+import { useCodeGenerator } from './composables/useCodeGenerator'
 
 interface CanvasComponent {
   id: string
@@ -226,6 +233,7 @@ interface CanvasComponent {
   gridInstance?: any    // 网格命令实例（仅 grid 类型）
   containerInstance?: any  // 容器命令实例（仅 container 类型）
   widgetInstance?: any  // Widget 窗口命令实例（仅 widget 类型）
+  _renderKey?: number   // 用于强制 Vue 重新渲染的键
 }
 
 // 组件库定义
@@ -268,8 +276,8 @@ const layoutChildren = ref<Map<any, LayoutChildInfo>>(new Map())
 // 当前选中的对话框内控件（非画布组件）
 const selectedDialogChild = ref<any | null>(null)
 
-// 当前选中的布局内控件（暂未使用，但保留以备将来扩展）
-// const selectedLayoutChild = ref<any | null>(null)
+// 当前选中的布局内控件（Grid/Container 的子控件）
+const selectedLayoutChild = ref<any | null>(null)
 const showCodePanel = ref(false)
 const codeRef = ref<HTMLElement>()
 const canvasContentRef = ref<HTMLElement>()
@@ -277,6 +285,261 @@ const canvasContentRef = ref<HTMLElement>()
 // 面板收起状态
 const leftPanelCollapsed = ref(false)
 const rightPanelCollapsed = ref(false)
+
+// 初始化 Composables
+const propertyPanel = usePropertyPanel()
+const getPropertyListFromPanel = propertyPanel.getPropertyList
+
+const codeGenerator = useCodeGenerator({
+  canvasComponents,
+  dialogChildren,
+  layoutChildren
+})
+const generatedCode = ref('')
+const updateCode = () => {
+  generatedCode.value = codeGenerator.generateCode()
+}
+
+const propertyEditor = usePropertyEditor({
+  canvasComponents,
+  dialogChildren,
+  layoutChildren,
+  selectedComponent,
+  selectedDialogChild,
+  selectedLayoutChild,
+  getPropertyList: getPropertyListFromPanel,
+  updateCode
+})
+
+// 从 composables 导出的方法
+const {
+  getSelectedPropValue,
+  updateSelectedDynamicProp,
+  getSelectedPositionX,
+  getSelectedPositionY,
+  updateSelectedPosition
+} = propertyEditor
+
+// 获取组件名称
+const getComponentName = (type: string) => {
+  const comp = components.find(c => c.type === type)
+  return comp?.name || type
+}
+
+// 获取选中组件的名称（支持对话框内控件）
+const getSelectedComponentName = () => {
+  if (selectedComponent.value) {
+    return getComponentName(selectedComponent.value.type)
+  }
+  if (selectedDialogChild.value) {
+    const instance = selectedDialogChild.value
+    if (instance instanceof NhaiButtonCommand) return getComponentName('button')
+    if (instance instanceof NhaiInputCommand) return getComponentName('input')
+    if (instance instanceof NhaiSelectCommand) return getComponentName('select')
+    if (instance instanceof NhaiSwitchCommand) return getComponentName('switch')
+    if (instance instanceof NhaiCheckboxCommand) return getComponentName('checkbox')
+    if (instance instanceof NhaiCardCommand) return getComponentName('card')
+    if (instance instanceof NhaiGridCommand) return getComponentName('grid')
+    return '未知组件'
+  }
+  if (selectedLayoutChild.value) {
+    const instance = selectedLayoutChild.value
+    if (instance instanceof NhaiButtonCommand) return getComponentName('button')
+    if (instance instanceof NhaiInputCommand) return getComponentName('input')
+    if (instance instanceof NhaiSelectCommand) return getComponentName('select')
+    if (instance instanceof NhaiSwitchCommand) return getComponentName('switch')
+    if (instance instanceof NhaiCheckboxCommand) return getComponentName('checkbox')
+    if (instance instanceof NhaiCardCommand) return getComponentName('card')
+    return '未知组件'
+  }
+  return ''
+}
+
+// 获取选中组件的类型（支持对话框内控件）
+const getSelectedComponentType = (): string | null => {
+  if (selectedComponent.value) {
+    return selectedComponent.value.type
+  }
+  if (selectedDialogChild.value) {
+    const instance = selectedDialogChild.value
+    if (instance instanceof NhaiButtonCommand) return 'button'
+    if (instance instanceof NhaiInputCommand) return 'input'
+    if (instance instanceof NhaiSelectCommand) return 'select'
+    if (instance instanceof NhaiSwitchCommand) return 'switch'
+    if (instance instanceof NhaiCheckboxCommand) return 'checkbox'
+    if (instance instanceof NhaiCardCommand) return 'card'
+    if (instance instanceof NhaiGridCommand) return 'grid'
+  }
+  if (selectedLayoutChild.value) {
+    const instance = selectedLayoutChild.value
+    if (instance instanceof NhaiButtonCommand) return 'button'
+    if (instance instanceof NhaiInputCommand) return 'input'
+    if (instance instanceof NhaiSelectCommand) return 'select'
+    if (instance instanceof NhaiSwitchCommand) return 'switch'
+    if (instance instanceof NhaiCheckboxCommand) return 'checkbox'
+    if (instance instanceof NhaiCardCommand) return 'card'
+  }
+  return null
+}
+
+// 获取选中组件的属性列表（支持对话框内控件）
+const getSelectedPropertyList = () => {
+  const type = getSelectedComponentType()
+  return type ? getPropertyListFromPanel(type) : []
+}
+
+// 工具函数
+const toggleCodePanel = () => {
+  showCodePanel.value = !showCodePanel.value
+}
+
+const clearCanvas = () => {
+  if (confirm('确定要清空画布吗？此操作不可恢复。')) {
+    canvasComponents.value = []
+    dialogChildren.value.clear()
+    layoutChildren.value.clear()
+    selectedComponent.value = null
+    selectedDialogChild.value = null
+    selectedLayoutChild.value = null
+    updateCode()
+  }
+}
+
+const saveDesign = () => {
+  const design = {
+    components: canvasComponents.value.map(c => ({
+      id: c.id,
+      type: c.type,
+      props: c.props,
+      style: c.style
+    })),
+    timestamp: new Date().toISOString()
+  }
+  localStorage.setItem('designer-snapshot', JSON.stringify(design))
+  alert('设计已保存到本地存储')
+}
+
+const copyCode = async () => {
+  try {
+    await navigator.clipboard.writeText(generatedCode.value)
+    alert('代码已复制到剪贴板')
+  } catch (err) {
+    console.error('复制失败:', err)
+    alert('复制失败，请手动选择代码复制')
+  }
+}
+
+// 移除对话框内的控件（包装函数）
+const removeDialogChild = () => {
+  if (!selectedDialogChild.value) return
+  
+  if (!confirm('确定要删除这个控件吗？')) {
+    return
+  }
+  
+  const instance = selectedDialogChild.value
+  const childInfo = dialogChildren.value.get(instance)
+  
+  if (!childInfo) return
+  
+  // 找到对话框组件
+  const dialogComp = canvasComponents.value.find(c => c.id === childInfo.dialogId && c.type === 'dialog')
+  
+  //ift 从对话框实例中移除子组件
+  if (dialogComp?.dialogInstance) {
+    dialogComp.dialogInstance.removeChild(instance)
+  }
+  
+  // 卸载子组件实例（清理资源）
+  if (instance && typeof instance.unmount === 'function') {
+    instance.unmount()
+  }
+  
+  // 从 DOM 中移除包装器
+  if (childInfo.wrapper && childInfo.wrapper.parentNode) {
+    childInfo.wrapper.parentNode.removeChild(childInfo.wrapper)
+  }
+  
+  // 从映射中移除
+  dialogChildren.value.delete(instance)
+  
+  // 如果对话框内没有控件了，显示占位符
+  if (dialogComp?.dialogInstance) {
+    const remainingChildren = dialogComp.dialogInstance.getChildren()
+    if (remainingChildren.length === 0) {
+      const dialogElement = document.querySelector(`.dialog-window[data-id="${childInfo.dialogId}"]`)
+      if (dialogElement) {
+        const bodyDiv = dialogElement.querySelector('.dialog-content-area')
+        if (bodyDiv && !bodyDiv.querySelector('.dialog-placeholder')) {
+          const placeholder = document.createElement('div')
+          placeholder.className = 'dialog-placeholder'
+          placeholder.textContent = '从左侧拖拽组件到这里'
+          placeholder.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #c0c4cc;
+            font-size: 14px;
+            pointer-events: none;
+          `
+          bodyDiv.appendChild(placeholder)
+        }
+      }
+    }
+  }
+  
+  // 清除选中状态
+  selectedDialogChild.value = null
+  
+  // 更新代码
+  updateCode()
+}
+
+// 删除布局内的控件（Grid/Container 子控件）
+const removeLayoutChild = () => {
+  if (!selectedLayoutChild.value) return
+  
+  if (!confirm('确定要删除这个控件吗？')) {
+    return
+  }
+  
+  const instance = selectedLayoutChild.value
+  const childInfo = layoutChildren.value.get(instance)
+  
+  if (!childInfo) return
+  
+  // 找到布局组件
+  const layoutComp = canvasComponents.value.find(c => c.id === childInfo.layoutId && (c.type === 'grid' || c.type === 'container'))
+  
+  // 从布局实例中移除子组件
+  if (layoutComp) {
+    if (layoutComp.type === 'grid' && layoutComp.gridInstance) {
+      layoutComp.gridInstance.removeChild(instance)
+    } else if (layoutComp.type === 'container' && layoutComp.containerInstance) {
+      layoutComp.containerInstance.removeChild(instance)
+    }
+  }
+  
+  // 卸载子组件实例（清理资源）
+  if (instance && typeof instance.unmount === 'function') {
+    instance.unmount()
+  }
+  
+  // 从 DOM 中移除包装器
+  if (childInfo.element && childInfo.element.parentNode) {
+    childInfo.element.parentNode.removeChild(childInfo.element)
+  }
+  
+  // 从映射中移除
+  layoutChildren.value.delete(instance)
+  
+  // 清除选中状态
+  selectedLayoutChild.value = null
+  
+  // 更新代码
+  updateCode()
+}
 
 // 拖拽的组件
 let draggedComponent: any = null
@@ -342,37 +605,117 @@ const handleDrop = async (event: DragEvent) => {
           const childInstance = await createChildComponentInstance(draggedComponent)
           if (!childInstance) return
           
-          // 使用布局实例的 addChild 方法添加子组件
-          const layoutInstance = layoutComp.gridInstance || layoutComp.containerInstance
-          layoutInstance.addChild(childInstance.instance)
-          
-          // 获取子组件渲染后的元素
-          const childElement = childInstance.instance.getElement()
-          if (!childElement) {
-            console.warn('子组件元素未找到')
-            return
-          }
-          
           // 确保 layoutContainer 是实际的容器元素（.vue-grid 或 .vue-container）
-          // 如果当前 layoutContainer 不是，重新查找
           const actualContainer = layoutContainer.classList.contains('vue-grid') || 
                                   layoutContainer.classList.contains('vue-container')
             ? layoutContainer
             : (layoutContainer.querySelector('.vue-grid, .vue-container') as HTMLElement) || layoutContainer
           
-          // 直接添加到布局容器中（不需要绝对定位）
-          actualContainer.appendChild(childElement)
+          // 创建包装器用于定位和交互（类似 Widget/Dialog）
+          const wrapper = document.createElement('div')
+          wrapper.className = layoutComp.type === 'grid' 
+            ? 'grid-child-component layout-child-component' 
+            : 'container-child-component layout-child-component'
+          
+          // Grid 使用 CSS Grid 布局，子控件作为 grid item 参与布局
+          if (layoutComp.type === 'grid') {
+            // Grid item：作为 CSS Grid 的子项，不需要 flex 属性
+            wrapper.style.cssText = `
+              cursor: move;
+              user-select: none;
+              border: 2px solid transparent;
+              border-radius: 4px;
+              transition: border-color 0.2s;
+              min-width: 0;
+              min-height: 0;
+            `
+          } else {
+            // Container 使用相对定位
+            wrapper.style.cssText = `
+              position: relative;
+              display: inline-block;
+              cursor: move;
+              user-select: none;
+              border: 2px solid transparent;
+              border-radius: 4px;
+              transition: border-color 0.2s;
+            `
+          }
+          
+          wrapper.setAttribute(`data-${layoutComp.type}-child`, 'true')
+          
+          // 关键：在调用 addChild 之前，先设置映射指向 wrapper（空的）
+          // 这样 addChild -> renderChild 会检测到 wrapper 并跳过
+          const layoutInstance = layoutComp.gridInstance || layoutComp.containerInstance
+          if (layoutInstance.childElements) {
+            layoutInstance.childElements.set(childInstance.instance, wrapper)
+          }
+          
+          // 现在可以安全地调用 addChild，renderChild 会检测到 wrapper 并跳过渲染
+          layoutInstance.addChild(childInstance.instance)
+          
+          // 获取子组件元素
+          let childElement = childInstance.instance.getElement()
+          
+          // 如果 addChild 的 renderChild 渲染了元素到 contentContainer，我们需要把它取出来
+          if (childElement && childElement.parentNode) {
+            const contentContainer = layoutInstance.contentContainer
+            if (contentContainer && contentContainer.contains(childElement)) {
+              // 从 contentContainer 中移除
+              contentContainer.removeChild(childElement)
+            } else if (childElement.parentNode) {
+              // 如果不在 contentContainer 中，也在其他地方，也要移除
+              childElement.parentNode.removeChild(childElement)
+            }
+          } else if (!childElement) {
+            // 如果没有元素（renderChild 跳过了），才渲染（避免重复渲染）
+            childElement = childInstance.instance.render()
+          }
+          
+          if (!childElement) {
+            console.warn('子组件元素未找到')
+            return
+          }
+          
+          // 将元素添加到 wrapper
+          wrapper.appendChild(childElement)
+          
+          // Grid 子控件的特殊处理：确保子控件能正确参与 CSS Grid 布局
+          if (layoutComp.type === 'grid' && childElement instanceof HTMLElement) {
+            // 移除可能干扰 Grid 布局的定位样式
+            if (childElement.style.position === 'absolute') {
+              childElement.style.position = ''
+              childElement.style.left = ''
+              childElement.style.top = ''
+            }
+            // CSS Grid 会自动排列子控件，子控件默认填充所在的 grid cell
+          }
+          
+          // 添加选中和拖拽功能
+          wrapper.addEventListener('click', (e) => {
+            e.stopPropagation()
+            selectLayoutChild(childInstance.instance, layoutId)
+          })
+          
+          wrapper.addEventListener('mousedown', (e) => {
+            e.stopPropagation()
+            startDragLayoutChild(childInstance.instance, wrapper, e, layoutComp.type as 'grid' | 'container')
+          })
+          
+          // 添加到布局容器中
+          actualContainer.appendChild(wrapper)
           
           // 存储映射关系
           layoutChildren.value.set(childInstance.instance, {
             instance: childInstance.instance,
-            element: childElement,
+            element: wrapper, // 存储 wrapper 而不是直接的 element
             layoutId: layoutId,
             layoutType: layoutComp.type as 'grid' | 'container'
           })
           
           // 更新代码
           updateCode()
+          draggedComponent = null
           return
         }
       }
@@ -397,30 +740,111 @@ const handleDrop = async (event: DragEvent) => {
           const childInstance = await createChildComponentInstance(draggedComponent)
           if (!childInstance) return
           
-          // 使用布局实例的 addChild 方法添加子组件
+          // 创建包装器用于定位和交互（类似 Widget/Dialog）
+          const wrapper = document.createElement('div')
+          wrapper.className = layoutComp.type === 'grid' 
+            ? 'grid-child-component layout-child-component' 
+            : 'container-child-component layout-child-component'
+          
+          // Grid 使用 CSS Grid 布局，子控件作为 grid item 参与布局
+          if (layoutComp.type === 'grid') {
+            // Grid item：作为 CSS Grid 的子项，不需要 flex 属性
+            wrapper.style.cssText = `
+              cursor: move;
+              user-select: none;
+              border: 2px solid transparent;
+              border-radius: 4px;
+              transition: border-color 0.2s;
+              min-width: 0;
+              min-height: 0;
+            `
+          } else {
+            // Container 使用相对定位
+            wrapper.style.cssText = `
+              position: relative;
+              display: inline-block;
+              cursor: move;
+              user-select: none;
+              border: 2px solid transparent;
+              border-radius: 4px;
+              transition: border-color 0.2s;
+            `
+          }
+          
+          wrapper.setAttribute(`data-${layoutComp.type}-child`, 'true')
+          
+          // 关键：在调用 addChild 之前，先设置映射指向 wrapper（空的）
+          // 这样 addChild -> renderChild 会检测到 wrapper 并跳过
           const layoutInstance = layoutComp.gridInstance || layoutComp.containerInstance
+          if (layoutInstance.childElements) {
+            layoutInstance.childElements.set(childInstance.instance, wrapper)
+          }
+          
+          // 现在可以安全地调用 addChild，renderChild 会检测到 wrapper 并跳过渲染
           layoutInstance.addChild(childInstance.instance)
           
-          // 获取子组件渲染后的元素
-          const childElement = childInstance.instance.getElement()
+          // 获取子组件元素
+          let childElement = childInstance.instance.getElement()
+          
+          // 如果 addChild 的 renderChild 渲染了元素到 contentContainer，我们需要把它取出来
+          if (childElement && childElement.parentNode) {
+            const contentContainer = layoutInstance.contentContainer
+            if (contentContainer && contentContainer.contains(childElement)) {
+              // 从 contentContainer 中移除
+              contentContainer.removeChild(childElement)
+            } else if (childElement.parentNode) {
+              // 如果不在 contentContainer 中，也在其他地方，也要移除
+              childElement.parentNode.removeChild(childElement)
+            }
+          } else if (!childElement) {
+            // 如果没有元素（renderChild 跳过了），才渲染（避免重复渲染）
+            childElement = childInstance.instance.render()
+          }
+          
           if (!childElement) {
             console.warn('子组件元素未找到')
             return
           }
           
-          // 直接添加到布局容器中（不需要绝对定位）
-          layoutContainer.appendChild(childElement)
+          // 将元素添加到 wrapper
+          wrapper.appendChild(childElement)
+          
+          // Grid 子控件的特殊处理：确保子控件能正确参与 CSS Grid 布局
+          if (layoutComp.type === 'grid' && childElement instanceof HTMLElement) {
+            // 移除可能干扰 Grid 布局的定位样式
+            if (childElement.style.position === 'absolute') {
+              childElement.style.position = ''
+              childElement.style.left = ''
+              childElement.style.top = ''
+            }
+            // CSS Grid 会自动排列子控件，子控件默认填充所在的 grid cell
+          }
+          
+          // 添加选中和拖拽功能
+          wrapper.addEventListener('click', (e) => {
+            e.stopPropagation()
+            selectLayoutChild(childInstance.instance, layoutId)
+          })
+          
+          wrapper.addEventListener('mousedown', (e) => {
+            e.stopPropagation()
+            startDragLayoutChild(childInstance.instance, wrapper, e, layoutComp.type as 'grid' | 'container')
+          })
+          
+          // 添加到布局容器中
+          layoutContainer.appendChild(wrapper)
           
           // 存储映射关系
           layoutChildren.value.set(childInstance.instance, {
             instance: childInstance.instance,
-            element: childElement,
+            element: wrapper, // 存储 wrapper 而不是直接的 element
             layoutId: layoutId,
             layoutType: layoutComp.type as 'grid' | 'container'
           })
           
           // 更新代码
           updateCode()
+          draggedComponent = null
           return
         }
       }
@@ -445,6 +869,9 @@ const handleDrop = async (event: DragEvent) => {
           const childInstance = await createChildComponentInstance(draggedComponent)
           if (!childInstance) return
           
+          // 检查是否是 Grid，如果是则填充整个 Widget 内容区域
+          const isGrid = draggedComponent.type === 'grid'
+          
           // 计算放置位置（相对于 Widget 内容区域）
           const rect = widgetBody.getBoundingClientRect()
           const x = event.clientX - rect.left - 20
@@ -454,17 +881,38 @@ const handleDrop = async (event: DragEvent) => {
           // 这样后续调用 addChild 时，renderChild 会检测到 wrapper 并跳过渲染
           const wrapper = document.createElement('div')
           wrapper.className = 'widget-child-component dialog-child-component'
-          wrapper.style.cssText = `
-            position: absolute;
-            left: ${x}px;
-            top: ${y}px;
-            cursor: move;
-            user-select: none;
-            border: 2px solid transparent;
-            border-radius: 4px;
-            transition: border-color 0.2s;
-            z-index: 10;
-          `
+          
+          if (isGrid) {
+            // Grid 自适应填充 Widget 内容区域
+            wrapper.style.cssText = `
+              position: absolute;
+              left: 0;
+              top: 0;
+              right: 0;
+              bottom: 0;
+              width: 100%;
+              height: 100%;
+              cursor: move;
+              user-select: none;
+              border: 2px solid transparent;
+              border-radius: 4px;
+              transition: border-color 0.2s;
+              z-index: 10;
+            `
+          } else {
+            wrapper.style.cssText = `
+              position: absolute;
+              left: ${x}px;
+              top: ${y}px;
+              cursor: move;
+              user-select: none;
+              border: 2px solid transparent;
+              border-radius: 4px;
+              transition: border-color 0.2s;
+              z-index: 10;
+            `
+          }
+          
           wrapper.setAttribute('data-widget-child', 'true')
           
           // 关键：在调用 addChild 之前，先设置映射指向 wrapper（空的）
@@ -502,6 +950,34 @@ const handleDrop = async (event: DragEvent) => {
           // 将元素添加到 wrapper
           wrapper.appendChild(childElement)
           
+          // 如果是 Grid，设置 Grid 元素填充 wrapper
+          if (isGrid && childElement instanceof HTMLElement) {
+            // 移除 Grid 实例可能设置的 auto 样式，确保能填充 wrapper
+            if (childElement.style.width === 'auto') {
+              childElement.style.width = ''
+            }
+            if (childElement.style.height === 'auto') {
+              childElement.style.height = ''
+            }
+            // 设置 Grid 外层容器填充 wrapper
+            childElement.style.width = '100%'
+            childElement.style.height = '100%'
+            // 查找 Grid 的根元素（.vue-grid）并填充
+            const gridRoot = childElement.querySelector('.vue-grid') as HTMLElement
+            if (gridRoot) {
+              gridRoot.style.width = '100%'
+              gridRoot.style.height = '100%'
+            }
+            // 使用 nextTick 确保 Vue 组件已经渲染后再设置
+            nextTick(() => {
+              const gridRootAsync = childElement.querySelector('.vue-grid') as HTMLElement
+              if (gridRootAsync) {
+                gridRootAsync.style.width = '100%'
+                gridRootAsync.style.height = '100%'
+              }
+            })
+          }
+          
           // 添加选中和拖拽功能
           wrapper.addEventListener('click', (e) => {
             e.stopPropagation()
@@ -520,7 +996,7 @@ const handleDrop = async (event: DragEvent) => {
             instance: childInstance.instance,
             wrapper: wrapper,
             dialogId: widgetId,
-            position: { x, y }
+            position: isGrid ? { x: 0, y: 0 } : { x, y }
           })
           
           // 更新代码
@@ -572,6 +1048,9 @@ const handleDrop = async (event: DragEvent) => {
       return
     }
     
+    // 检查是否是 Grid，如果是则填充整个 Dialog 内容区域
+    const isGrid = draggedComponent.type === 'grid'
+    
     // 计算放置位置
     const rect = (dialogBody as HTMLElement).getBoundingClientRect()
     const x = event.clientX - rect.left - 20
@@ -581,18 +1060,51 @@ const handleDrop = async (event: DragEvent) => {
     // 创建一个包装器以保持位置样式，并添加可选中、可拖拽的功能
     const wrapper = document.createElement('div')
     wrapper.className = 'dialog-child-component'
-    wrapper.style.cssText = `
-      position: absolute;
-      left: ${x}px;
-      top: ${y}px;
-      cursor: move;
-      user-select: none;
-      border: 2px solid transparent;
-      border-radius: 4px;
-      transition: border-color 0.2s;
-    `
+    
+    if (isGrid) {
+      // Grid 自适应填充 Dialog 内容区域
+      wrapper.style.cssText = `
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        cursor: move;
+        user-select: none;
+        border: 2px solid transparent;
+        border-radius: 4px;
+        transition: border-color 0.2s;
+      `
+    } else {
+      wrapper.style.cssText = `
+        position: absolute;
+        left: ${x}px;
+        top: ${y}px;
+        cursor: move;
+        user-select: none;
+        border: 2px solid transparent;
+        border-radius: 4px;
+        transition: border-color 0.2s;
+      `
+    }
+    
     wrapper.setAttribute('data-dialog-child', 'true')
     wrapper.appendChild(childElement)
+    
+    // 如果是 Grid，设置 Grid 元素填充 wrapper
+    if (isGrid && childElement instanceof HTMLElement) {
+      // 查找 Grid 的根元素（.vue-grid）
+      const gridRoot = childElement.querySelector('.vue-grid') || childElement
+      if (gridRoot instanceof HTMLElement) {
+        gridRoot.style.width = '100%'
+        gridRoot.style.height = '100%'
+      }
+      // 确保 wrapper 内的元素填充
+      childElement.style.width = '100%'
+      childElement.style.height = '100%'
+    }
     
     // 添加选中状态的样式类（通过点击事件处理）
     wrapper.addEventListener('click', (e) => {
@@ -613,7 +1125,7 @@ const handleDrop = async (event: DragEvent) => {
       instance: childInstance.instance,
       wrapper: wrapper,
       dialogId: dialogId,
-      position: { x, y }
+      position: isGrid ? { x: 0, y: 0 } : { x, y }
     })
     
         // 移除占位符（如果存在）
@@ -691,9 +1203,8 @@ const createChildComponentInstance = async (compDef: any): Promise<{ instance: a
       instance = new NhaiCardCommand('卡片标题', '卡片内容')
       break
     case 'grid':
-      instance = new NhaiGridCommand()
-      instance.setContainer(true)
-      instance.setSpacing(16)
+      // 作为子控件时，不设置固定样式，让它能自适应父容器
+      instance = new NhaiGridCommand({ container: true, columns: 12, spacing: 2 })
       break
     case 'container':
       instance = new NhaiContainerCommand()
@@ -760,11 +1271,23 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       element = instance.render()
       break
     case 'grid':
-      instance = new NhaiGridCommand()
-      instance.setContainer(true)
-      instance.setSpacing(16)
+      instance = new NhaiGridCommand({ container: true, columns: 12, spacing: 2 })
+      // Grid 不需要设置固定默认大小，让它根据内容和布局自适应
+      // 但在可视化编辑器中，设置最小尺寸以方便查看和编辑
+      instance.setStyle({ 
+        minWidth: '200px', 
+        minHeight: '100px',
+        width: 'auto',
+        height: 'auto'
+      } as Partial<CSSStyleDeclaration>)
       element = instance.render()
       element.setAttribute('data-id', id)
+      // 设置最小尺寸以确保在画布中可见
+      if (element && element.style) {
+        element.style.minWidth = '200px'
+        element.style.minHeight = '100px'
+        // 不设置固定宽高，让 Grid 自适应
+      }
       break
     case 'container':
       instance = new NhaiContainerCommand()
@@ -883,6 +1406,9 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
         e.stopPropagation()
         if (!draggedComponent) return
         
+        // 检查是否是 Grid，如果是则填充整个 Dialog 内容区域
+        const isGrid = draggedComponent.type === 'grid'
+        
         // 找到父对话框
         const dialogElement = bodyDiv.closest('.dialog-window')
         const dialogId = dialogElement?.getAttribute('data-id')
@@ -915,22 +1441,55 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
         const x = e.clientX - rect.left - 20
         const y = e.clientY - rect.top - 20
         
-    // 在可视化编辑器中，直接将子组件元素追加到对话框内容区域以便显示
-    // 创建一个包装器以保持位置样式，并添加可选中、可拖拽的功能
-    const wrapper = document.createElement('div')
-    wrapper.className = 'dialog-child-component'
-    wrapper.style.cssText = `
-      position: absolute;
-      left: ${x}px;
-      top: ${y}px;
-      cursor: move;
-      user-select: none;
-      border: 2px solid transparent;
-      border-radius: 4px;
-      transition: border-color 0.2s;
-    `
+        // 在可视化编辑器中，直接将子组件元素追加到对话框内容区域以便显示
+        // 创建一个包装器以保持位置样式，并添加可选中、可拖拽的功能
+        const wrapper = document.createElement('div')
+        wrapper.className = 'dialog-child-component'
+        
+        if (isGrid) {
+          // Grid 自适应填充 Dialog 内容区域
+          wrapper.style.cssText = `
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            cursor: move;
+            user-select: none;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            transition: border-color 0.2s;
+          `
+        } else {
+          wrapper.style.cssText = `
+            position: absolute;
+            left: ${x}px;
+            top: ${y}px;
+            cursor: move;
+            user-select: none;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            transition: border-color 0.2s;
+          `
+        }
+        
         wrapper.setAttribute('data-dialog-child', 'true')
         wrapper.appendChild(childElement)
+        
+        // 如果是 Grid，设置 Grid 元素填充 wrapper
+        if (isGrid && childElement instanceof HTMLElement) {
+          // 查找 Grid 的根元素（.vue-grid）
+          const gridRoot = childElement.querySelector('.vue-grid') || childElement
+          if (gridRoot instanceof HTMLElement) {
+            gridRoot.style.width = '100%'
+            gridRoot.style.height = '100%'
+          }
+          // 确保 wrapper 内的元素填充
+          childElement.style.width = '100%'
+          childElement.style.height = '100%'
+        }
         
         // 添加选中状态的样式类（通过点击事件处理）
         wrapper.addEventListener('click', (e) => {
@@ -951,7 +1510,7 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
           instance: childInstance.instance,
           wrapper: wrapper,
           dialogId: dialogId,
-          position: { x, y }
+          position: isGrid ? { x: 0, y: 0 } : { x, y }
         })
         
         // 移除占位符（如果存在）
@@ -1134,6 +1693,12 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       props.justify = gridInstance.justify || 'flex-start'
       props.alignItems = gridInstance.alignItems || 'stretch'
       props.wrap = gridInstance.wrap || 'wrap'
+      // 设置默认宽度和高度
+      if (!props.style) {
+        props.style = {}
+      }
+      props.style.width = '800px'
+      props.style.height = '600px'
     }
     
     // Container
@@ -1237,20 +1802,46 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
 const selectComponent = (comp: CanvasComponent) => {
   selectedComponent.value = comp
   selectedDialogChild.value = null  // 清除对话框内控件选中
+  selectedLayoutChild.value = null  // 清除布局子控件选中
   clearDialogChildSelection()  // 清除所有对话框内控件的选中样式
+  clearLayoutChildSelection()  // 清除所有布局子控件的选中样式
 }
 
 // 选中对话框内的控件
 const selectDialogChild = (instance: any, _dialogId: string) => {
   selectedDialogChild.value = instance
   selectedComponent.value = null  // 清除画布组件选中
-  clearDialogChildSelection()  // 清除所有选中样式
+  selectedLayoutChild.value = null  // 清除布局子控件选中
+  clearDialogChildSelection()  // 清除所有对话框内控件选中样式
+  clearLayoutChildSelection()  // 清除所有布局子控件选中样式
   
   // 添加选中样式
   const childInfo = dialogChildren.value.get(instance)
   if (childInfo) {
     childInfo.wrapper.classList.add('selected')
   }
+}
+
+// 选中布局内的控件（Grid/Container 子控件）
+const selectLayoutChild = (instance: any, _layoutId: string) => {
+  selectedLayoutChild.value = instance
+  selectedComponent.value = null  // 清除画布组件选中
+  selectedDialogChild.value = null  // 清除对话框内控件选中
+  clearLayoutChildSelection()  // 清除所有布局子控件选中样式
+  clearDialogChildSelection()  // 清除所有对话框内控件选中样式
+  
+  // 添加选中样式
+  const childInfo = layoutChildren.value.get(instance)
+  if (childInfo) {
+    childInfo.element.classList.add('selected')
+  }
+}
+
+// 清除所有布局内控件的选中样式
+const clearLayoutChildSelection = () => {
+  layoutChildren.value.forEach((info) => {
+    info.element.classList.remove('selected')
+  })
 }
 
 // 清除所有对话框内控件的选中样式
@@ -1264,7 +1855,9 @@ const clearDialogChildSelection = () => {
 const handleCanvasClick = () => {
   selectedComponent.value = null
   selectedDialogChild.value = null
+  selectedLayoutChild.value = null
   clearDialogChildSelection()
+  clearLayoutChildSelection()
 }
 
 // 拖拽移动相关
@@ -1337,10 +1930,13 @@ const handleMouseUp = () => {
   
   draggedElement.value = null
   draggedDialogChild.value = null
+  draggedLayoutChild.value = null
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mousemove', handleDialogChildMouseMove)
+  document.removeEventListener('mousemove', handleLayoutChildMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
   document.removeEventListener('mouseup', handleDialogChildMouseUp)
+  document.removeEventListener('mouseup', handleLayoutChildMouseUp)
 }
 
 // 对话框内控件的拖拽移动相关
@@ -1451,635 +2047,106 @@ const handleDialogChildMouseUp = () => {
   document.removeEventListener('mouseup', handleDialogChildMouseUp)
 }
 
-// 更新样式
-const updateStyle = (key: string, value: string) => {
-  if (!selectedComponent.value) return
-  selectedComponent.value.style[key] = value
-}
+// 布局内控件的拖拽移动相关（Grid/Container 子控件）
+const draggedLayoutChild = ref<{ instance: any; element: HTMLElement; layoutId: string; layoutType: 'grid' | 'container' } | null>(null)
+let layoutChildDragOffset = { x: 0, y: 0 }
 
-// 属性配置
-const propertyConfig: Record<string, any[]> = {
-  button: [
-    { key: 'text', label: '文本内容', type: 'text', placeholder: '按钮文本' },
-    { key: 'type', label: '按钮类型', type: 'select', options: [
-      { value: 'default', label: 'Default' },
-      { value: 'primary', label: 'Primary' },
-      { value: 'success', label: 'Success' },
-      { value: 'info', label: 'Info' },
-      { value: 'warning', label: 'Warning' },
-      { value: 'danger', label: 'Danger' }
-    ]},
-    { key: 'size', label: '预设尺寸', type: 'select', options: [
-      { value: 'large', label: 'Large' },
-      { value: 'default', label: 'Default' },
-      { value: 'small', label: 'Small' }
-    ]},
-    { key: 'width', label: '宽度', type: 'text', placeholder: '如：100px 或 50%' },
-    { key: 'height', label: '高度', type: 'text', placeholder: '如：40px' },
-    { key: 'icon', label: '图标', type: 'text', placeholder: '图标名称（如：el-icon-edit）' },
-    { key: 'plain', label: '朴素按钮', type: 'boolean' },
-    { key: 'round', label: '圆角', type: 'boolean' },
-    { key: 'circle', label: '圆形按钮', type: 'boolean' },
-    { key: 'loading', label: '加载中', type: 'boolean' },
-    { key: 'disabled', label: '禁用', type: 'boolean' }
-  ],
-  input: [
-    { key: 'value', label: '输入值', type: 'text', placeholder: '输入内容' },
-    { key: 'type', label: '输入类型', type: 'select', options: [
-      { value: 'text', label: '文本' },
-      { value: 'textarea', label: '多行文本' },
-      { value: 'password', label: '密码' }
-    ]},
-    { key: 'placeholder', label: '占位符', type: 'text', placeholder: '请输入' },
-    { key: 'size', label: '尺寸', type: 'select', options: [
-      { value: 'large', label: 'Large' },
-      { value: 'default', label: 'Default' },
-      { value: 'small', label: 'Small' }
-    ]},
-    { key: 'disabled', label: '禁用', type: 'boolean' },
-    { key: 'clearable', label: '可清除', type: 'boolean' },
-    { key: 'showPassword', label: '显示密码', type: 'boolean' },
-    { key: 'prefixIcon', label: '前缀图标', type: 'text', placeholder: '图标名称' },
-    { key: 'suffixIcon', label: '后缀图标', type: 'text', placeholder: '图标名称' },
-    { key: 'maxlength', label: '最大长度', type: 'number', placeholder: '0 表示无限制' },
-    { key: 'minlength', label: '最小长度', type: 'number', placeholder: '0' },
-    { key: 'width', label: '宽度', type: 'text', placeholder: '如：200px 或 50%' },
-    { key: 'height', label: '高度', type: 'text', placeholder: '如：40px' }
-  ],
-  select: [
-    { key: 'placeholder', label: '占位符', type: 'text', placeholder: '请选择' },
-    { key: 'size', label: '尺寸', type: 'select', options: [
-      { value: 'large', label: 'Large' },
-      { value: 'default', label: 'Default' },
-      { value: 'small', label: 'Small' }
-    ]},
-    { key: 'disabled', label: '禁用', type: 'boolean' },
-    { key: 'clearable', label: '可清除', type: 'boolean' },
-    { key: 'multiple', label: '多选', type: 'boolean' },
-    { key: 'width', label: '宽度', type: 'text', placeholder: '如：200px 或 50%' },
-    { key: 'height', label: '高度', type: 'text', placeholder: '如：40px' }
-  ],
-  switch: [
-    { key: 'value', label: '开关状态', type: 'boolean' },
-    { key: 'size', label: '尺寸', type: 'select', options: [
-      { value: 'large', label: 'Large' },
-      { value: 'default', label: 'Default' },
-      { value: 'small', label: 'Small' }
-    ]},
-    { key: 'disabled', label: '禁用', type: 'boolean' },
-    { key: 'activeText', label: '开启文字', type: 'text', placeholder: '开' },
-    { key: 'inactiveText', label: '关闭文字', type: 'text', placeholder: '关' },
-    { key: 'activeColor', label: '开启颜色', type: 'text', placeholder: '#409EFF' },
-    { key: 'inactiveColor', label: '关闭颜色', type: 'text', placeholder: '#C0CCDA' }
-  ],
-  checkbox: [
-    { key: 'text', label: '文本', type: 'text', placeholder: '复选框文本' },
-    { key: 'value', label: '选中状态', type: 'boolean' },
-    { key: 'size', label: '尺寸', type: 'select', options: [
-      { value: 'large', label: 'Large' },
-      { value: 'default', label: 'Default' },
-      { value: 'small', label: 'Small' }
-    ]},
-    { key: 'disabled', label: '禁用', type: 'boolean' },
-    { key: 'indeterminate', label: '半选状态', type: 'boolean' }
-  ],
-  card: [
-    { key: 'header', label: '标题', type: 'text', placeholder: '卡片标题' },
-    { key: 'content', label: '内容', type: 'text', placeholder: '卡片内容' },
-    { key: 'shadow', label: '阴影效果', type: 'select', options: [
-      { value: 'always', label: 'Always' },
-      { value: 'hover', label: 'Hover' },
-      { value: 'never', label: 'Never' }
-    ]},
-    { key: 'width', label: '宽度', type: 'text', placeholder: '如：300px 或 50%' },
-    { key: 'height', label: '高度', type: 'text', placeholder: '如：200px' }
-  ],
-  dialog: [
-    { key: 'title', label: '对话框标题', type: 'text', placeholder: '对话框标题' },
-    { key: 'content', label: '对话框内容', type: 'text', placeholder: '对话框内容（支持HTML）' },
-    { key: 'width', label: '宽度', type: 'text', placeholder: '如：500px 或 50%' },
-    { key: 'fullscreen', label: '全屏显示', type: 'boolean' },
-    { key: 'modal', label: '显示遮罩层', type: 'boolean' },
-    { key: 'showFooter', label: '显示底部按钮', type: 'boolean' },
-    { key: 'confirmText', label: '确认按钮文本', type: 'text', placeholder: '确定' },
-    { key: 'cancelText', label: '取消按钮文本', type: 'text', placeholder: '取消' },
-    { key: 'draggable', label: '可拖动', type: 'boolean' },
-    { key: 'center', label: '居中显示', type: 'boolean' },
-    { key: 'closeOnClickModal', label: '点击遮罩关闭', type: 'boolean' },
-    { key: 'closeOnPressEscape', label: '按ESC关闭', type: 'boolean' },
-    { key: 'showClose', label: '显示关闭按钮', type: 'boolean' }
-  ],
-  widget: [
-    { key: 'title', label: '窗口标题', type: 'text', placeholder: '窗口标题' },
-    { key: 'width', label: '宽度', type: 'text', placeholder: '如：800px 或 50%' },
-    { key: 'height', label: '高度', type: 'text', placeholder: '如：600px' },
-    { key: 'fullscreen', label: '全屏显示', type: 'boolean' },
-    { key: 'menuBarVisible', label: '显示菜单栏', type: 'boolean' },
-    { key: 'canMinimize', label: '允许最小化', type: 'boolean' },
-    { key: 'canMaximize', label: '允许最大化', type: 'boolean' },
-    { key: 'canClose', label: '允许关闭', type: 'boolean' }
-  ],
-  grid: [
-    { key: 'container', label: '容器模式', type: 'boolean' },
-    { key: 'spacing', label: '间距', type: 'number', placeholder: '2' },
-    { key: 'direction', label: '方向', type: 'select', options: [
-      { value: 'row', label: 'Row（水平）' },
-      { value: 'column', label: 'Column（垂直）' },
-      { value: 'row-reverse', label: 'Row Reverse' },
-      { value: 'column-reverse', label: 'Column Reverse' }
-    ]},
-    { key: 'justify', label: '主轴对齐', type: 'select', options: [
-      { value: 'flex-start', label: 'Flex Start' },
-      { value: 'center', label: 'Center' },
-      { value: 'flex-end', label: 'Flex End' },
-      { value: 'space-between', label: 'Space Between' },
-      { value: 'space-around', label: 'Space Around' },
-      { value: 'space-evenly', label: 'Space Evenly' }
-    ]},
-    { key: 'alignItems', label: '交叉轴对齐', type: 'select', options: [
-      { value: 'flex-start', label: 'Flex Start' },
-      { value: 'center', label: 'Center' },
-      { value: 'flex-end', label: 'Flex End' },
-      { value: 'stretch', label: 'Stretch' },
-      { value: 'baseline', label: 'Baseline' }
-    ]},
-    { key: 'wrap', label: '换行', type: 'select', options: [
-      { value: 'nowrap', label: 'No Wrap' },
-      { value: 'wrap', label: 'Wrap' },
-      { value: 'wrap-reverse', label: 'Wrap Reverse' }
-    ]},
-    { key: 'width', label: '宽度', type: 'text', placeholder: '如：100% 或 500px' },
-    { key: 'height', label: '高度', type: 'text', placeholder: '如：300px' }
-  ],
-  container: [
-    { key: 'maxWidth', label: '最大宽度', type: 'select', options: [
-      { value: 'xs', label: 'XS (444px)' },
-      { value: 'sm', label: 'SM (600px)' },
-      { value: 'md', label: 'MD (900px)' },
-      { value: 'lg', label: 'LG (1200px)' },
-      { value: 'xl', label: 'XL (1536px)' },
-      { value: 'false', label: '无限制' }
-    ]},
-    { key: 'fixed', label: '固定宽度', type: 'boolean' },
-    { key: 'disableGutters', label: '禁用内边距', type: 'boolean' },
-    { key: 'width', label: '宽度', type: 'text', placeholder: '如：100%' },
-    { key: 'height', label: '高度', type: 'text', placeholder: '如：300px' }
-  ],
-  splitpanel: [
-    { key: 'orientation', label: '方向', type: 'select', options: [
-      { value: 'horizontal', label: '水平' },
-      { value: 'vertical', label: '垂直' }
-    ]},
-    { key: 'splitPosition', label: '分割位置', type: 'number', placeholder: '50（百分比）' },
-    { key: 'minSize', label: '最小尺寸', type: 'number', placeholder: '20（百分比）' },
-    { key: 'maxSize', label: '最大尺寸', type: 'number', placeholder: '80（百分比）' },
-    { key: 'resizable', label: '可调整大小', type: 'boolean' },
-    { key: 'disabled', label: '禁用', type: 'boolean' },
-    { key: 'leftContent', label: '左侧内容', type: 'text', placeholder: '左侧面板内容' },
-    { key: 'rightContent', label: '右侧内容', type: 'text', placeholder: '右侧面板内容' }
-  ]
-}
-
-// 获取组件名称
-const getComponentName = (type: string) => {
-  const comp = components.find(c => c.type === type)
-  return comp?.name || type
-}
-
-// 获取选中组件的名称（支持对话框内控件）
-const getSelectedComponentName = () => {
-  if (selectedComponent.value) {
-    return getComponentName(selectedComponent.value.type)
-  }
-  if (selectedDialogChild.value) {
-    // 从实例类型推断组件类型
-    const instance = selectedDialogChild.value
-    if (instance instanceof NhaiButtonCommand) return getComponentName('button')
-    if (instance instanceof NhaiInputCommand) return getComponentName('input')
-    if (instance instanceof NhaiSelectCommand) return getComponentName('select')
-    if (instance instanceof NhaiSwitchCommand) return getComponentName('switch')
-    if (instance instanceof NhaiCheckboxCommand) return getComponentName('checkbox')
-    if (instance instanceof NhaiCardCommand) return getComponentName('card')
-    return '未知组件'
-  }
-  return ''
-}
-
-// 获取选中组件的类型（支持对话框内控件）
-const getSelectedComponentType = (): string | null => {
-  if (selectedComponent.value) {
-    return selectedComponent.value.type
-  }
-  if (selectedDialogChild.value) {
-    const instance = selectedDialogChild.value
-    if (instance instanceof NhaiButtonCommand) return 'button'
-    if (instance instanceof NhaiInputCommand) return 'input'
-    if (instance instanceof NhaiSelectCommand) return 'select'
-    if (instance instanceof NhaiSwitchCommand) return 'switch'
-    if (instance instanceof NhaiCheckboxCommand) return 'checkbox'
-    if (instance instanceof NhaiCardCommand) return 'card'
-  }
-  return null
-}
-
-// 获取属性列表
-const getPropertyList = (type: string) => {
-  return propertyConfig[type] || []
-}
-
-// 获取选中组件的属性列表（支持对话框内控件）
-const getSelectedPropertyList = () => {
-  const type = getSelectedComponentType()
-  return type ? getPropertyList(type) : []
-}
-
-// 获取属性值
-const getPropValue = (comp: CanvasComponent, key: string) => {
-  // 从 instance 获取实际值
-  if (comp.instance && typeof comp.instance[key] !== 'undefined') {
-    return comp.instance[key]
-  }
-  // 从 props 获取
-  return comp.props[key]
-}
-
-// 获取选中组件的属性值（支持对话框内控件）
-const getSelectedPropValue = (key: string) => {
-  if (selectedComponent.value) {
-    // 对于宽度和高度，从 style 中获取
-    if (key === 'width' || key === 'height') {
-      const style = selectedComponent.value.instance?.getProperty?.('style') || 
-                   (selectedComponent.value.instance as any)?._props?.style ||
-                   selectedComponent.value.style || {}
-      return style[key] || (selectedComponent.value.element as HTMLElement)?.style?.[key] || ''
-    }
-    return getPropValue(selectedComponent.value, key)
-  }
-  if (selectedDialogChild.value) {
-    const instance = selectedDialogChild.value
-    // 对于宽度和高度，从元素的 style 中获取
-    if (key === 'width' || key === 'height') {
-      const element = instance.getElement?.()
-      if (element) {
-        const style = window.getComputedStyle(element) || (element as HTMLElement).style
-        if (style[key]) {
-          return style[key]
-        }
-      }
-      // 尝试从实例的 style 属性获取
-      const instanceStyle = (instance as any).getProperty?.('style') || 
-                           (instance as any)?._props?.style || {}
-      return instanceStyle[key] || ''
-    }
-    // 尝试通过 getProperty 获取（BaseCommand 的方法）
-    if (instance && typeof (instance as any).getProperty === 'function') {
-      const value = (instance as any).getProperty(key)
-      if (value !== undefined) {
-        return value
-      }
-    }
-    // 尝试调用 getter 方法
-    const getterMethod = 'get' + key.charAt(0).toUpperCase() + key.slice(1)
-    if (typeof (instance as any)[getterMethod] === 'function') {
-      return (instance as any)[getterMethod]()
-    }
-    // 尝试直接访问私有属性（通过 getProperty 或直接访问）
-    if (instance && typeof (instance as any).getProperty === 'function') {
-      // 尝试获取 _props 中的值
-      const props = (instance as any).getProperties?.() || (instance as any)._props || {}
-      if (props[key] !== undefined) {
-        return props[key]
-      }
-    }
-    // 最后尝试直接访问属性（可能是私有的）
-    if (typeof (instance as any)[key] !== 'undefined') {
-      return (instance as any)[key]
-    }
-  }
-  return undefined
-}
-
-// 更新动态属性
-const updateDynamicProp = (key: string, value: any) => {
-  if (!selectedComponent.value) return
-  
-  const comp = selectedComponent.value
-  
-  // 特殊处理：宽度和高度通过 setStyle 设置
-  if (key === 'width' || key === 'height') {
-    // 对于 Container 和 Grid，需要同时更新实例的样式和元素的样式
-    if (comp.type === 'container' || comp.type === 'grid') {
-      // 更新实例的样式
-      if (comp.instance && typeof (comp.instance as any).setStyle === 'function') {
-        const currentStyle = (comp.instance as any).getProperty?.('style') || 
-                            (comp.instance as any)?._props?.style || 
-                            {}
-        const newStyle = { ...currentStyle, [key]: value }
-        ;(comp.instance as any).setStyle(newStyle as Partial<CSSStyleDeclaration>)
-      }
-      // 直接更新元素的样式（确保界面立即响应）
-      const element = comp.element as HTMLElement
-      if (element && element.style) {
-        // 查找实际的容器元素（可能是 .vue-container 或 .vue-grid）
-        const containerElement = element.querySelector('.vue-container') || 
-                                 element.querySelector('.vue-grid') || 
-                                 element
-        if (containerElement && (containerElement as HTMLElement).style) {
-          (containerElement as HTMLElement).style[key as any] = value
-        }
-        // 同时更新外层元素的样式
-        element.style[key as any] = value
-      }
-    } else {
-      // 其他组件的处理逻辑
-      if (comp.instance && typeof (comp.instance as any).setStyle === 'function') {
-        const currentStyle = (comp.instance as any).getProperty?.('style') || 
-                            (comp.instance as any)?._props?.style || 
-                            {}
-        const newStyle = { ...currentStyle, [key]: value }
-        ;(comp.instance as any).setStyle(newStyle as Partial<CSSStyleDeclaration>)
-      } else {
-        // 如果没有 setStyle，直接设置到元素的 style 上
-        const element = comp.element as HTMLElement
-        if (element) {
-          if (element.style) {
-            element.style[key as any] = value
-          }
-        }
-      }
-    }
-    // 更新 props 中的样式
-    if (!comp.props.style) {
-      comp.props.style = {}
-    }
-    comp.props.style[key] = value
-    comp.style[key] = value
-    
-    // 更新整个画布以刷新视图
-    canvasComponents.value = [...canvasComponents.value]
-    updateCode()
-    return
-  }
-  
-  // 更新 instance - 优先尝试调用 setter 方法（更可靠）
-  if (comp.instance) {
-    const setterMethod = 'set' + key.charAt(0).toUpperCase() + key.slice(1)
-    if (typeof comp.instance[setterMethod] === 'function') {
-      comp.instance[setterMethod](value)
-    } else if (typeof comp.instance[key] !== 'undefined') {
-      // 如果没有 setter，直接赋值（不推荐，但作为后备方案）
-      comp.instance[key] = value
-    }
-  }
-  
-  // 更新 props
-  comp.props[key] = value
-  
-  // Dialog、Widget、Grid、Container 特殊处理
-  if (comp.type === 'dialog') {
-    updateDialogElement(comp, key, value)
-  } else if (comp.type === 'widget' && comp.instance) {
-    // Widget：直接调用 setter 方法
-    if (key === 'width' || key === 'height') {
-      if (typeof (comp.instance as any).setWidth === 'function' && key === 'width') {
-        ;(comp.instance as any).setWidth(value)
-      }
-      if (typeof (comp.instance as any).setHeight === 'function' && key === 'height') {
-        ;(comp.instance as any).setHeight(value)
-      }
-    } else if (key === 'title') {
-      if (typeof (comp.instance as any).setTitle === 'function') {
-        ;(comp.instance as any).setTitle(value)
-      }
-    } else if (key === 'fullscreen') {
-      if (typeof (comp.instance as any).setFullscreen === 'function') {
-        ;(comp.instance as any).setFullscreen(value)
-      }
-    } else if (key === 'menuBarVisible') {
-      if (typeof (comp.instance as any).setMenuBarVisible === 'function') {
-        ;(comp.instance as any).setMenuBarVisible(value)
-      }
-    }
-    
-    // Widget 窗口独立渲染，不需要替换画布中的元素
-    // 只是更新实例属性即可，Vue 组件会自动响应
-    if (comp.instance && typeof (comp.instance as any).scheduleUpdate === 'function') {
-      ;(comp.instance as any).scheduleUpdate()
-    }
-  } else if ((comp.type === 'grid' || comp.type === 'container') && comp.instance) {
-    // Grid 和 Container：重新渲染时需要保留子组件
-    const oldElement = comp.element
-    const hasChildren = (comp.type === 'grid' && comp.gridInstance?.getChildren().length > 0) ||
-                       (comp.type === 'container' && comp.containerInstance?.getChildren().length > 0)
-    
-    if (hasChildren) {
-      // 如果有子组件，只更新属性，不重新渲染（避免丢失子组件）
-      // setter 方法已经更新了实例的属性，Vue 组件会自动响应
-      // 这里我们可能需要强制更新
-      if (comp.instance && typeof (comp.instance as any).scheduleUpdate === 'function') {
-        ;(comp.instance as any).scheduleUpdate()
-      }
-    } else {
-      // 没有子组件时，可以重新渲染
-      if (oldElement && oldElement.parentNode && comp.instance.unmount) {
-        try {
-          comp.instance.unmount()
-        } catch (e) {
-          // 忽略卸载错误
-        }
-      }
-      const newElement = comp.instance.render()
-      comp.element = newElement
-      if (oldElement && oldElement.parentNode) {
-        oldElement.parentNode.replaceChild(newElement, oldElement)
-      }
-    }
-  } else if (comp.instance && comp.instance.render) {
-    // 其他组件：先卸载旧的，再重新渲染
-    const oldElement = comp.element
-    if (oldElement && oldElement.parentNode && comp.instance.unmount) {
-      // 如果元素已挂载到 DOM，先卸载
-      try {
-        comp.instance.unmount()
-      } catch (e) {
-        // 忽略卸载错误，可能已经卸载
-      }
-    }
-    // 重新渲染
-    const newElement = comp.instance.render()
-    comp.element = newElement
-    
-    // 如果旧元素在 DOM 中，替换它
-    if (oldElement && oldElement.parentNode) {
-      oldElement.parentNode.replaceChild(newElement, oldElement)
-    }
-  }
-  
-  // 更新整个画布以刷新视图
-  canvasComponents.value = [...canvasComponents.value]
-  updateCode()
-}
-
-// 更新选中组件的动态属性（支持对话框内控件）
-const updateSelectedDynamicProp = (key: string, value: any) => {
-  if (selectedComponent.value) {
-    updateDynamicProp(key, value)
-    return
-  }
-  
-  if (!selectedDialogChild.value) return
-  
-  const instance = selectedDialogChild.value
-  
-  // 特殊处理：宽度和高度通过 setStyle 设置
-  if (key === 'width' || key === 'height') {
-    if (instance && typeof (instance as any).setStyle === 'function') {
-      const currentStyle = (instance as any).getProperty?.('style') || 
-                          (instance as any)?._props?.style || 
-                          {}
-      const newStyle = { ...currentStyle, [key]: value }
-      ;(instance as any).setStyle(newStyle as Partial<CSSStyleDeclaration>)
-    } else {
-      // 如果没有 setStyle，直接设置到元素的 style 上
-      const element = instance.getElement?.()
-      if (element && (element as HTMLElement).style) {
-        ;(element as HTMLElement).style[key as any] = value
-      }
-    }
-    updateCode()
-    return
-  }
-  
-  // 尝试调用对应的 setter 方法
-  const setterMethod = 'set' + key.charAt(0).toUpperCase() + key.slice(1)
-  if (typeof (instance as any)[setterMethod] === 'function') {
-    (instance as any)[setterMethod](value)
-    
-    // 重新渲染组件以反映变化
-    const childInfo = dialogChildren.value.get(instance)
-    if (childInfo) {
-      const oldElement = instance.getElement()
-      if (oldElement && oldElement.parentNode) {
-        // 先卸载旧的组件实例
-        if (instance.unmount && typeof instance.unmount === 'function') {
-          try {
-            instance.unmount()
-          } catch (e) {
-            // 忽略卸载错误
-          }
-        }
-        // 重新渲染
-        const newElement = instance.render()
-        // 替换元素
-        if (newElement && newElement !== oldElement && oldElement.parentNode) {
-          childInfo.wrapper.replaceChild(newElement, oldElement)
-        }
-      }
-    }
-    
-    updateCode()
-  }
-}
-
-// 获取选中组件的位置 X（支持对话框内控件）
-const getSelectedPositionX = (): number => {
-  if (selectedComponent.value) {
-    return parseInt(selectedComponent.value.style.left || '0')
-  }
-  if (selectedDialogChild.value) {
-    const childInfo = dialogChildren.value.get(selectedDialogChild.value)
-    if (childInfo) {
-      return childInfo.position.x
-    }
-  }
-  return 0
-}
-
-// 获取选中组件的位置 Y（支持对话框内控件）
-const getSelectedPositionY = (): number => {
-  if (selectedComponent.value) {
-    return parseInt(selectedComponent.value.style.top || '0')
-  }
-  if (selectedDialogChild.value) {
-    const childInfo = dialogChildren.value.get(selectedDialogChild.value)
-    if (childInfo) {
-      return childInfo.position.y
-    }
-  }
-  return 0
-}
-
-// 更新选中组件的位置（支持对话框内控件）
-const updateSelectedPosition = (direction: 'left' | 'top', value: string) => {
-  const numValue = parseInt(value) || 0
-  
-  if (selectedComponent.value) {
-    updateStyle(direction, numValue + 'px')
-    return
-  }
-  
-  if (!selectedDialogChild.value) return
-  
-  const childInfo = dialogChildren.value.get(selectedDialogChild.value)
+const startDragLayoutChild = (instance: any, element: HTMLElement, event: MouseEvent, layoutType: 'grid' | 'container') => {
+  const childInfo = layoutChildren.value.get(instance)
   if (!childInfo) return
   
-  // 更新位置
-  if (direction === 'left') {
-    childInfo.wrapper.style.left = numValue + 'px'
-    childInfo.position.x = numValue
-  } else {
-    childInfo.wrapper.style.top = numValue + 'px'
-    childInfo.position.y = numValue
+  selectedLayoutChild.value = instance
+  clearLayoutChildSelection()
+  childInfo.element.classList.add('selected')
+  
+  // 计算拖拽偏移量（相对于 wrapper 的偏移）
+  const rect = element.getBoundingClientRect()
+  layoutChildDragOffset.x = event.clientX - rect.left
+  layoutChildDragOffset.y = event.clientY - rect.top
+  
+  draggedLayoutChild.value = {
+    instance: instance,
+    element: element,
+    layoutId: childInfo.layoutId,
+    layoutType: layoutType
   }
   
-  updateCode()
+  document.addEventListener('mousemove', handleLayoutChildMouseMove)
+  document.addEventListener('mouseup', handleLayoutChildMouseUp)
+  event.preventDefault()
+  event.stopPropagation()
 }
 
-// Dialog 元素更新
-const updateDialogElement = (comp: CanvasComponent, key: string, value: any) => {
-  const header = comp.element.querySelector('.dialog-window-header')
-  const body = comp.element.querySelector('.dialog-content-area') as HTMLElement
-  const footer = comp.element.querySelector('.dialog-window-footer')
+const handleLayoutChildMouseMove = (event: MouseEvent) => {
+  if (!draggedLayoutChild.value) return
   
-  if (key === 'title' && header) {
-    const textNode = Array.from(header.childNodes).find(node => node.nodeType === Node.TEXT_NODE || node.nodeType === Node.ELEMENT_NODE)
-    if (textNode && textNode.nodeType === Node.TEXT_NODE) {
-      textNode.textContent = value
-    } else {
-      // 如果没有文本节点，替换第一个子节点
-      const nodes = Array.from(header.childNodes).filter(node => node.nodeType !== Node.ELEMENT_NODE || !(node as Element).classList.contains('dialog-window-close'))
-      nodes.forEach(node => node.remove())
-      header.insertBefore(document.createTextNode(value), header.firstChild)
-    }
-  } else if (key === 'width' && comp.element) {
-    (comp.element as HTMLElement).style.width = value
-  } else if (key === 'showFooter') {
-    if (value && !footer && body) {
-      // 创建底部
-      const footerEl = document.createElement('div')
-      footerEl.className = 'dialog-window-footer'
-      footerEl.style.cssText = `
-        padding: 12px 20px;
-        border-top: 1px solid #ebeef5;
-        background: #fafafa;
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-      `
-      const cancelBtn = document.createElement('button')
-      cancelBtn.textContent = '取消'
-      cancelBtn.style.cssText = 'padding: 8px 16px; border: 1px solid #dcdfe6; background: white; border-radius: 4px; cursor: pointer;'
-      const confirmBtn = document.createElement('button')
-      confirmBtn.textContent = '确定'
-      confirmBtn.style.cssText = 'padding: 8px 16px; border: none; background: #409eff; color: white; border-radius: 4px; cursor: pointer;'
-      footerEl.appendChild(cancelBtn)
-      footerEl.appendChild(confirmBtn)
-      comp.element.appendChild(footerEl)
-    } else if (!value && footer) {
-      footer.remove()
-    }
+  const childInfo = layoutChildren.value.get(draggedLayoutChild.value.instance)
+  if (!childInfo) return
+  
+  // 查找布局容器
+  const layoutElement = document.querySelector(`[data-id="${draggedLayoutChild.value.layoutId}"]`)
+  if (!layoutElement) return
+  
+  let layoutContainer: HTMLElement | null = null
+  if (draggedLayoutChild.value.layoutType === 'grid') {
+    layoutContainer = layoutElement.querySelector('.vue-grid') as HTMLElement
+  } else {
+    layoutContainer = layoutElement.querySelector('.vue-container') as HTMLElement
   }
+  
+  if (!layoutContainer) return
+  
+  // Grid 使用 flex 布局，不支持通过拖拽改变位置（位置由 Grid 的布局属性控制）
+  // Container 支持绝对定位拖拽
+  if (draggedLayoutChild.value.layoutType === 'grid') {
+    // Grid 的 flex 布局会自动排列子控件，不支持自由拖拽移动
+    // 如果需要改变顺序，应该通过调整 Grid 的布局属性或 DOM 顺序来实现
+    return
+  }
+  
+  const rect = layoutContainer.getBoundingClientRect()
+  
+  // 计算新位置（相对于布局容器）
+  let x = event.clientX - rect.left - layoutChildDragOffset.x
+  let y = event.clientY - rect.top - layoutChildDragOffset.y
+  
+  // 限制在容器内
+  x = Math.max(0, Math.min(x, rect.width - 50))
+  y = Math.max(0, Math.min(y, rect.height - 30))
+  
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+  }
+  
+  rafId = requestAnimationFrame(() => {
+    if (!draggedLayoutChild.value) return
+    
+    const info = layoutChildren.value.get(draggedLayoutChild.value.instance)
+    if (!info) return
+    
+    // Container 可以使用绝对定位移动
+    info.element.style.position = 'relative'
+    info.element.style.left = x + 'px'
+    info.element.style.top = y + 'px'
+  })
 }
+
+const handleLayoutChildMouseUp = () => {
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  
+  // 拖拽结束后更新代码
+  updateCode()
+  
+  draggedLayoutChild.value = null
+  document.removeEventListener('mousemove', handleLayoutChildMouseMove)
+  document.removeEventListener('mouseup', handleLayoutChildMouseUp)
+}
+
+// 属性配置已迁移到 usePropertyPanel composable
+// 获取属性值已迁移到 usePropertyEditor composable
 
 // 移除组件
 const removeComponent = (index: number) => {
@@ -2090,1398 +2157,119 @@ const removeComponent = (index: number) => {
   updateCode()
 }
 
-// 移除对话框内的控件
-const removeDialogChild = () => {
-  if (!selectedDialogChild.value) return
-  
-  // 确认删除
-  if (!confirm('确定要删除这个控件吗？')) {
-    return
-  }
-  
-  const instance = selectedDialogChild.value
-  const childInfo = dialogChildren.value.get(instance)
-  
-  if (!childInfo) return
-  
-  // 找到对话框组件
-  const dialogComp = canvasComponents.value.find(c => c.id === childInfo.dialogId && c.type === 'dialog')
-  
-  // 从对话框实例中移除子组件
-  if (dialogComp?.dialogInstance) {
-    dialogComp.dialogInstance.removeChild(instance)
-  }
-  
-  // 卸载子组件实例（清理资源）
-  if (instance && typeof instance.unmount === 'function') {
-    instance.unmount()
-  }
-  
-  // 从 DOM 中移除包装器
-  if (childInfo.wrapper && childInfo.wrapper.parentNode) {
-    childInfo.wrapper.parentNode.removeChild(childInfo.wrapper)
-  }
-  
-  // 从映射中移除
-  dialogChildren.value.delete(instance)
-  
-  // 如果对话框内没有控件了，显示占位符
-  if (dialogComp?.dialogInstance) {
-    const remainingChildren = dialogComp.dialogInstance.getChildren()
-    if (remainingChildren.length === 0) {
-      const dialogElement = document.querySelector(`.dialog-window[data-id="${childInfo.dialogId}"]`)
-      if (dialogElement) {
-        const bodyDiv = dialogElement.querySelector('.dialog-content-area')
-        if (bodyDiv && !bodyDiv.querySelector('.dialog-placeholder')) {
-          const placeholder = document.createElement('div')
-          placeholder.className = 'dialog-placeholder'
-          placeholder.textContent = '从左侧拖拽组件到这里'
-          placeholder.style.cssText = `
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #c0c4cc;
-            font-size: 14px;
-            pointer-events: none;
-          `
-          bodyDiv.appendChild(placeholder)
-        }
-      }
-    }
-  }
-  
-  // 清除选中状态
-  selectedDialogChild.value = null
-  
-  // 更新代码
-  updateCode()
-}
-
-// 生成代码
-const generatedCode = ref('')
-
-const updateCode = () => {
-  if (canvasComponents.value.length === 0) {
-    generatedCode.value = '// 暂无组件，请从左侧拖拽组件到画布'
-    return
-  }
-  
-  // 收集所有需要的类
-  const usedTypes = new Set(canvasComponents.value.map(c => c.type))
-  const imports = []
-  if (usedTypes.has('button')) imports.push('NhaiButtonCommand')
-  if (usedTypes.has('input')) imports.push('NhaiInputCommand')
-  if (usedTypes.has('select')) imports.push('NhaiSelectCommand')
-  if (usedTypes.has('switch')) imports.push('NhaiSwitchCommand')
-  if (usedTypes.has('checkbox')) imports.push('NhaiCheckboxCommand')
-  if (usedTypes.has('dialog')) imports.push('NhaiDialogCommand')
-  if (usedTypes.has('widget')) imports.push('NhaiWidgetCommand')
-  if (usedTypes.has('card')) imports.push('NhaiCardCommand')
-  if (usedTypes.has('grid')) imports.push('NhaiGridCommand')
-  if (usedTypes.has('container')) imports.push('NhaiContainerCommand')
-  if (usedTypes.has('splitpanel')) imports.push('NhaiSplitPanelCommand')
-  
-  let code = '// 复制以下代码到 showcase 的运行框中\n\n'
-  code += `const { ${imports.join(', ')} } = window\n\n`
-  code += 'const container = document.createElement(\'div\')\n\n'
-  
-  canvasComponents.value.forEach((comp, index) => {
-    switch (comp.type) {
-      case 'button': {
-        const btnText = comp.props?.text || '按钮'
-        const btnType = comp.props?.type || 'primary'
-        code += `const ${comp.type}${index} = new NhaiButtonCommand('${btnText}')\n`
-        if (btnType !== 'primary') {
-          code += `${comp.type}${index}.setType('${btnType}')\n`
-        }
-        if (comp.props?.size && comp.props.size !== 'default') {
-          code += `${comp.type}${index}.setSize('${comp.props.size}')\n`
-        }
-        if (comp.props?.icon) {
-          code += `${comp.type}${index}.setIcon('${comp.props.icon}')\n`
-        }
-        if (comp.props?.plain) {
-          code += `${comp.type}${index}.setPlain(true)\n`
-        }
-        if (comp.props?.round) {
-          code += `${comp.type}${index}.setRound(true)\n`
-        }
-        if (comp.props?.circle) {
-          code += `${comp.type}${index}.setCircle(true)\n`
-        }
-        if (comp.props?.loading) {
-          code += `${comp.type}${index}.setLoading(true)\n`
-        }
-        if (comp.props?.disabled) {
-          code += `${comp.type}${index}.setDisabled(true)\n`
-        }
-        // 生成宽度和高度的样式设置
-        const style = comp.props?.style || comp.style || {}
-        if (style.width || style.height) {
-          const styleProps: string[] = []
-          if (style.width) styleProps.push(`width: '${style.width}'`)
-          if (style.height) styleProps.push(`height: '${style.height}'`)
-          if (styleProps.length > 0) {
-            code += `${comp.type}${index}.setStyle({ ${styleProps.join(', ')} })\n`
-          }
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        break
-      }
-      case 'input': {
-        const inputProps = comp.props || {}
-        code += `const ${comp.type}${index} = new NhaiInputCommand()\n`
-        if (inputProps.placeholder) {
-          code += `${comp.type}${index}.setPlaceholder('${inputProps.placeholder}')\n`
-        }
-        if (inputProps.type && inputProps.type !== 'text') {
-          code += `${comp.type}${index}.setType('${inputProps.type}')\n`
-        }
-        if (inputProps.value) {
-          code += `${comp.type}${index}.setValue('${inputProps.value}')\n`
-        }
-        if (inputProps.size && inputProps.size !== 'default') {
-          code += `${comp.type}${index}.setSize('${inputProps.size}')\n`
-        }
-        if (inputProps.disabled) {
-          code += `${comp.type}${index}.setDisabled(true)\n`
-        }
-        if (inputProps.clearable) {
-          code += `${comp.type}${index}.setClearable(true)\n`
-        }
-        if (inputProps.showPassword) {
-          code += `${comp.type}${index}.setShowPassword(true)\n`
-        }
-        if (inputProps.prefixIcon) {
-          code += `${comp.type}${index}.configure({ prefixIcon: '${inputProps.prefixIcon}' })\n`
-        }
-        if (inputProps.suffixIcon) {
-          code += `${comp.type}${index}.configure({ suffixIcon: '${inputProps.suffixIcon}' })\n`
-        }
-        if (inputProps.maxlength && inputProps.maxlength > 0) {
-          code += `${comp.type}${index}.setMaxlength(${inputProps.maxlength})\n`
-        }
-        if (inputProps.minlength && inputProps.minlength > 0) {
-          code += `${comp.type}${index}.setMinlength(${inputProps.minlength})\n`
-        }
-        // 生成宽度和高度的样式设置
-        const inputStyle = inputProps.style || comp.style || {}
-        if (inputStyle.width || inputStyle.height) {
-          const styleProps: string[] = []
-          if (inputStyle.width) styleProps.push(`width: '${inputStyle.width}'`)
-          if (inputStyle.height) styleProps.push(`height: '${inputStyle.height}'`)
-          if (styleProps.length > 0) {
-            code += `${comp.type}${index}.setStyle({ ${styleProps.join(', ')} })\n`
-          }
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        break
-      }
-      case 'select': {
-        const selectProps = comp.props || {}
-        code += `const ${comp.type}${index} = new NhaiSelectCommand()\n`
-        if (selectProps.placeholder) {
-          code += `${comp.type}${index}.setPlaceholder('${selectProps.placeholder}')\n`
-        }
-        if (selectProps.size && selectProps.size !== 'default') {
-          code += `${comp.type}${index}.setSize('${selectProps.size}')\n`
-        }
-        if (selectProps.disabled) {
-          code += `${comp.type}${index}.setDisabled(true)\n`
-        }
-        if (selectProps.clearable) {
-          code += `${comp.type}${index}.setClearable(true)\n`
-        }
-        if (selectProps.multiple) {
-          code += `${comp.type}${index}.setMultiple(true)\n`
-        }
-        if (selectProps.options && Array.isArray(selectProps.options) && selectProps.options.length > 0) {
-          const optionsStr = selectProps.options.map((opt: any) => 
-            `{label: '${opt.label || opt.value}', value: '${opt.value}'}`
-          ).join(', ')
-          code += `${comp.type}${index}.setOptions([${optionsStr}])\n`
-        }
-        // 生成宽度和高度的样式设置
-        const selectStyle = selectProps.style || comp.style || {}
-        if (selectStyle.width || selectStyle.height) {
-          const styleProps: string[] = []
-          if (selectStyle.width) styleProps.push(`width: '${selectStyle.width}'`)
-          if (selectStyle.height) styleProps.push(`height: '${selectStyle.height}'`)
-          if (styleProps.length > 0) {
-            code += `${comp.type}${index}.setStyle({ ${styleProps.join(', ')} })\n`
-          }
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        break
-      }
-      case 'switch': {
-        const switchProps = comp.props || {}
-        const switchValue = switchProps.value ?? false
-        code += `const ${comp.type}${index} = new NhaiSwitchCommand(${switchValue})\n`
-        if (switchProps.size && switchProps.size !== 'default') {
-          code += `${comp.type}${index}.setSize('${switchProps.size}')\n`
-        }
-        if (switchProps.disabled) {
-          code += `${comp.type}${index}.setDisabled(true)\n`
-        }
-        if (switchProps.activeText) {
-          code += `${comp.type}${index}.setActiveText('${switchProps.activeText}')\n`
-        }
-        if (switchProps.inactiveText) {
-          code += `${comp.type}${index}.setInactiveText('${switchProps.inactiveText}')\n`
-        }
-        if (switchProps.activeColor) {
-          code += `${comp.type}${index}.setActiveColor('${switchProps.activeColor}')\n`
-        }
-        if (switchProps.inactiveColor) {
-          code += `${comp.type}${index}.setInactiveColor('${switchProps.inactiveColor}')\n`
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        break
-      }
-      case 'checkbox': {
-        const checkboxProps = comp.props || {}
-        const checkboxText = checkboxProps.text || '复选框'
-        code += `const ${comp.type}${index} = new NhaiCheckboxCommand('${checkboxText}')\n`
-        if (checkboxProps.value) {
-          code += `${comp.type}${index}.setValue(true)\n`
-        }
-        if (checkboxProps.size && checkboxProps.size !== 'default') {
-          code += `${comp.type}${index}.setSize('${checkboxProps.size}')\n`
-        }
-        if (checkboxProps.disabled) {
-          code += `${comp.type}${index}.setDisabled(true)\n`
-        }
-        if (checkboxProps.indeterminate) {
-          code += `${comp.type}${index}.setIndeterminate(true)\n`
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        break
-      }
-      case 'card': {
-        const cardProps = comp.props || {}
-        const cardHeader = cardProps.header || '标题'
-        const cardContent = cardProps.content || '内容'
-        code += `const ${comp.type}${index} = new NhaiCardCommand('${cardHeader}', '${cardContent}')\n`
-        if (cardProps.shadow && cardProps.shadow !== 'always') {
-          code += `${comp.type}${index}.setShadow('${cardProps.shadow}')\n`
-        }
-        // 生成宽度和高度的样式设置
-        const cardStyle = cardProps.style || comp.style || {}
-        if (cardStyle.width || cardStyle.height) {
-          const styleProps: string[] = []
-          if (cardStyle.width) styleProps.push(`width: '${cardStyle.width}'`)
-          if (cardStyle.height) styleProps.push(`height: '${cardStyle.height}'`)
-          if (styleProps.length > 0) {
-            code += `${comp.type}${index}.setStyle({ ${styleProps.join(', ')} })\n`
-          }
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        break
-      }
-      case 'dialog': {
-        const dialogProps = comp.props || {}
-        const dialogTitle = dialogProps.title || '提示'
-        const dialogContent = dialogProps.content || ''
-        const dialogInstance = comp.dialogInstance
-        
-        code += `// Dialog 触发器按钮\n`
-        code += `const ${comp.type}${index}Trigger = document.createElement('button')\n`
-        code += `${comp.type}${index}Trigger.textContent = '点击打开对话框'\n`
-        code += `${comp.type}${index}Trigger.onclick = () => {\n`
-        code += `  const dialog = new NhaiDialogCommand('${dialogTitle}', '${dialogContent}')\n`
-        code += `  dialog.setAppendToBody(true)\n`
-        if (dialogProps.width) {
-          code += `  dialog.setWidth('${dialogProps.width}')\n`
-        }
-        if (dialogProps.fullscreen) {
-          code += `  dialog.setFullscreen(true)\n`
-        }
-        if (dialogProps.modal === false) {
-          code += `  dialog.setModal(false)\n`
-        }
-        if (dialogProps.showFooter) {
-          code += `  dialog.setShowFooter(true)\n`
-          if (dialogProps.confirmText) {
-            code += `  dialog.setConfirmText('${dialogProps.confirmText}')\n`
-          }
-          if (dialogProps.cancelText) {
-            code += `  dialog.setCancelText('${dialogProps.cancelText}')\n`
-          }
-        }
-        if (dialogProps.draggable) {
-          code += `  dialog.setDraggable(true)\n`
-        }
-        if (dialogProps.center) {
-          code += `  dialog.setCenter(true)\n`
-        }
-        if (dialogProps.closeOnClickModal) {
-          code += `  dialog.setCloseOnClickModal(true)\n`
-        }
-        if (dialogProps.closeOnPressEscape === false) {
-          code += `  dialog.setCloseOnPressEscape(false)\n`
-        }
-        if (dialogProps.showClose === false) {
-          code += `  dialog.setShowClose(false)\n`
-        }
-        code += `  dialog.setModelValue(true)\n`
-        code += `  dialog.render()\n`
-        
-        // 生成对话框内子组件的代码
-        if (dialogInstance) {
-          const children = dialogInstance.getChildren()
-          if (children && children.length > 0) {
-            // 为每个子组件生成代码
-            children.forEach((child: any, childIndex: number) => {
-              const childInfo = dialogChildren.value.get(child)
-              if (!childInfo) return
-              
-              let childVarName = ''
-              let childCode = ''
-              
-              // 根据子组件类型生成代码
-              if (child instanceof NhaiButtonCommand) {
-                childVarName = `dialogChild${index}_button${childIndex}`
-                const text = child.getText?.() || (child as any).text || '按钮'
-                const type = (child as any).type || 'primary'
-                const size = (child as any).size || 'default'
-                const icon = (child as any).icon
-                const plain = (child as any).plain || false
-                const round = (child as any).round || false
-                const circle = (child as any).circle || false
-                const loading = (child as any).loading || false
-                const disabled = (child as any).disabled || false
-                
-                childCode = `  const ${childVarName} = new NhaiButtonCommand('${text}')\n`
-                if (type !== 'primary') {
-                  childCode += `  ${childVarName}.setType('${type}')\n`
-                }
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if (icon) {
-                  childCode += `  ${childVarName}.setIcon('${icon}')\n`
-                }
-                if (plain) {
-                  childCode += `  ${childVarName}.setPlain(true)\n`
-                }
-                if (round) {
-                  childCode += `  ${childVarName}.setRound(true)\n`
-                }
-                if (circle) {
-                  childCode += `  ${childVarName}.setCircle(true)\n`
-                }
-                if (loading) {
-                  childCode += `  ${childVarName}.setLoading(true)\n`
-                }
-                if (disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                // 生成宽度和高度的样式设置
-                const childStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
-                if (childStyle.width || childStyle.height) {
-                  const styleProps: string[] = []
-                  if (childStyle.width) styleProps.push(`width: '${childStyle.width}'`)
-                  if (childStyle.height) styleProps.push(`height: '${childStyle.height}'`)
-                  if (styleProps.length > 0) {
-                    childCode += `  ${childVarName}.setStyle({ ${styleProps.join(', ')} })\n`
-                  }
-                }
-                if (!usedTypes.has('button')) {
-                  imports.push('NhaiButtonCommand')
-                  usedTypes.add('button')
-                }
-              } else if (child instanceof NhaiInputCommand) {
-                childVarName = `dialogChild${index}_input${childIndex}`
-                const childOptions = (child as any)._options || {}
-                childCode = `  const ${childVarName} = new NhaiInputCommand()\n`
-                if (childOptions.placeholder) {
-                  childCode += `  ${childVarName}.setPlaceholder('${childOptions.placeholder}')\n`
-                }
-                if (childOptions.type && childOptions.type !== 'text') {
-                  childCode += `  ${childVarName}.setType('${childOptions.type}')\n`
-                }
-                if (childOptions.value) {
-                  childCode += `  ${childVarName}.setValue('${childOptions.value}')\n`
-                }
-                if (childOptions.size && childOptions.size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${childOptions.size}')\n`
-                }
-                if (childOptions.disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                if (childOptions.clearable) {
-                  childCode += `  ${childVarName}.setClearable(true)\n`
-                }
-                if (childOptions.showPassword) {
-                  childCode += `  ${childVarName}.setShowPassword(true)\n`
-                }
-                if (childOptions.prefixIcon) {
-                  childCode += `  ${childVarName}.configure({ prefixIcon: '${childOptions.prefixIcon}' })\n`
-                }
-                if (childOptions.suffixIcon) {
-                  childCode += `  ${childVarName}.configure({ suffixIcon: '${childOptions.suffixIcon}' })\n`
-                }
-                if (childOptions.maxlength && childOptions.maxlength > 0) {
-                  childCode += `  ${childVarName}.setMaxlength(${childOptions.maxlength})\n`
-                }
-                if (childOptions.minlength && childOptions.minlength > 0) {
-                  childCode += `  ${childVarName}.setMinlength(${childOptions.minlength})\n`
-                }
-                const childStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
-                if (childStyle.width || childStyle.height) {
-                  const styleProps: string[] = []
-                  if (childStyle.width) styleProps.push(`width: '${childStyle.width}'`)
-                  if (childStyle.height) styleProps.push(`height: '${childStyle.height}'`)
-                  if (styleProps.length > 0) {
-                    childCode += `  ${childVarName}.setStyle({ ${styleProps.join(', ')} })\n`
-                  }
-                }
-                if (!usedTypes.has('input')) {
-                  imports.push('NhaiInputCommand')
-                  usedTypes.add('input')
-                }
-              } else if (child instanceof NhaiSelectCommand) {
-                childVarName = `dialogChild${index}_select${childIndex}`
-                childCode = `  const ${childVarName} = new NhaiSelectCommand()\n`
-                const placeholder = (child as any).placeholder || '请选择'
-                if (placeholder !== '请选择') {
-                  childCode += `  ${childVarName}.setPlaceholder('${placeholder}')\n`
-                }
-                const size = (child as any).size || 'default'
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if ((child as any).disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                if ((child as any).clearable) {
-                  childCode += `  ${childVarName}.setClearable(true)\n`
-                }
-                if ((child as any).multiple) {
-                  childCode += `  ${childVarName}.setMultiple(true)\n`
-                }
-                const options = (child as any).options || []
-                if (options.length > 0) {
-                  const optionsStr = options.map((opt: any) => 
-                    `{label: '${opt.label}', value: '${opt.value}'}`
-                  ).join(', ')
-                  childCode += `  ${childVarName}.setOptions([${optionsStr}])\n`
-                }
-                const childStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
-                if (childStyle.width || childStyle.height) {
-                  const styleProps: string[] = []
-                  if (childStyle.width) styleProps.push(`width: '${childStyle.width}'`)
-                  if (childStyle.height) styleProps.push(`height: '${childStyle.height}'`)
-                  if (styleProps.length > 0) {
-                    childCode += `  ${childVarName}.setStyle({ ${styleProps.join(', ')} })\n`
-                  }
-                }
-                if (!usedTypes.has('select')) {
-                  imports.push('NhaiSelectCommand')
-                  usedTypes.add('select')
-                }
-              } else if (child instanceof NhaiSwitchCommand) {
-                childVarName = `dialogChild${index}_switch${childIndex}`
-                const value = (child as any).value ?? false
-                childCode = `  const ${childVarName} = new NhaiSwitchCommand(${value})\n`
-                const size = (child as any).size || 'default'
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if ((child as any).disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                const activeText = (child as any).activeText
-                if (activeText) {
-                  childCode += `  ${childVarName}.setActiveText('${activeText}')\n`
-                }
-                const inactiveText = (child as any).inactiveText
-                if (inactiveText) {
-                  childCode += `  ${childVarName}.setInactiveText('${inactiveText}')\n`
-                }
-                const activeColor = (child as any).activeColor
-                if (activeColor) {
-                  childCode += `  ${childVarName}.setActiveColor('${activeColor}')\n`
-                }
-                const inactiveColor = (child as any).inactiveColor
-                if (inactiveColor) {
-                  childCode += `  ${childVarName}.setInactiveColor('${inactiveColor}')\n`
-                }
-                if (!usedTypes.has('switch')) {
-                  imports.push('NhaiSwitchCommand')
-                  usedTypes.add('switch')
-                }
-              } else if (child instanceof NhaiCheckboxCommand) {
-                childVarName = `dialogChild${index}_checkbox${childIndex}`
-                const text = (child as any).text || '复选框'
-                childCode = `  const ${childVarName} = new NhaiCheckboxCommand('${text}')\n`
-                if ((child as any).value) {
-                  childCode += `  ${childVarName}.setValue(true)\n`
-                }
-                const size = (child as any).size || 'default'
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if ((child as any).disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                if ((child as any).indeterminate) {
-                  childCode += `  ${childVarName}.setIndeterminate(true)\n`
-                }
-                if (!usedTypes.has('checkbox')) {
-                  imports.push('NhaiCheckboxCommand')
-                  usedTypes.add('checkbox')
-                }
-              } else if (child instanceof NhaiCardCommand) {
-                childVarName = `dialogChild${index}_card${childIndex}`
-                const header = (child as any).header || '卡片标题'
-                const content = (child as any).content || '卡片内容'
-                childCode = `  const ${childVarName} = new NhaiCardCommand('${header}', '${content}')\n`
-                if (!usedTypes.has('card')) {
-                  imports.push('NhaiCardCommand')
-                  usedTypes.add('card')
-                }
-              }
-              
-              if (childCode) {
-                code += childCode
-                code += `  ${childVarName}.render()\n`
-                // 设置位置
-                const posX = childInfo.position.x
-                const posY = childInfo.position.y
-                code += `  ${childVarName}.getElement().style.position = 'absolute'\n`
-                code += `  ${childVarName}.getElement().style.left = '${posX}px'\n`
-                code += `  ${childVarName}.getElement().style.top = '${posY}px'\n`
-                // 添加到对话框
-                code += `  dialog.addChild(${childVarName})\n`
-              }
-            })
-          }
-        }
-        
-        code += `  dialog.on('closed', () => dialog.unmount())\n`
-        code += `}\n`
-        code += `const element${index} = ${comp.type}${index}Trigger\n`
-        break
-      }
-      case 'widget': {
-        const widgetProps = comp.props || {}
-        const widgetTitle = widgetProps.title || '窗口标题'
-        const widgetInstance = comp.widgetInstance
-        
-        code += `const ${comp.type}${index} = new NhaiWidgetCommand('${widgetTitle}')\n`
-        if (widgetProps.width && widgetProps.width !== '800px') {
-          code += `${comp.type}${index}.setWidth('${widgetProps.width}')\n`
-        }
-        if (widgetProps.height && widgetProps.height !== '600px') {
-          code += `${comp.type}${index}.setHeight('${widgetProps.height}')\n`
-        }
-        if (widgetProps.fullscreen) {
-          code += `${comp.type}${index}.setFullscreen(true)\n`
-        }
-        if (widgetProps.menuBarVisible === false) {
-          code += `${comp.type}${index}.setMenuBarVisible(false)\n`
-        }
-        if (widgetProps.canMinimize === false) {
-          code += `${comp.type}${index}.canMinimize = false\n`
-        }
-        if (widgetProps.canMaximize === false) {
-          code += `${comp.type}${index}.canMaximize = false\n`
-        }
-        if (widgetProps.canClose === false) {
-          code += `${comp.type}${index}.canClose = false\n`
-        }
-        if (widgetProps.position && (widgetProps.position.x !== 100 || widgetProps.position.y !== 100)) {
-          code += `${comp.type}${index}.setPosition(${widgetProps.position.x}, ${widgetProps.position.y})\n`
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        code += `document.body.appendChild(element${index})\n`
-        
-        // 生成 Widget 的子组件代码
-        if (widgetInstance) {
-          const children = widgetInstance.getChildren()
-          if (children && children.length > 0) {
-            // 使用 Set 去重，避免同一个子组件被处理多次
-            const processedChildren = new Set<any>()
-            let actualChildIndex = 0
-            
-            children.forEach((child: any) => {
-              // 如果已经处理过这个子组件，跳过
-              if (processedChildren.has(child)) {
-                return
-              }
-              processedChildren.add(child)
-              
-              const childInfo = dialogChildren.value.get(child)
-              if (!childInfo) return
-              
-              // 使用实际的索引（去重后的）
-              const childIndex = actualChildIndex++
-              
-              let childVarName = ''
-              let childCode = ''
-              
-              // 根据子组件类型生成代码（复用对话框内的完整逻辑）
-              if (child instanceof NhaiButtonCommand) {
-                childVarName = `widgetChild${index}_button${childIndex}`
-                const text = child.getText?.() || (child as any).text || '按钮'
-                const type = (child as any).type || 'primary'
-                const size = (child as any).size || 'default'
-                const icon = (child as any).icon
-                const plain = (child as any).plain || false
-                const round = (child as any).round || false
-                const circle = (child as any).circle || false
-                const loading = (child as any).loading || false
-                const disabled = (child as any).disabled || false
-                
-                childCode = `  const ${childVarName} = new NhaiButtonCommand('${text}')\n`
-                if (type !== 'primary') {
-                  childCode += `  ${childVarName}.setType('${type}')\n`
-                }
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if (icon) {
-                  childCode += `  ${childVarName}.setIcon('${icon}')\n`
-                }
-                if (plain) {
-                  childCode += `  ${childVarName}.setPlain(true)\n`
-                }
-                if (round) {
-                  childCode += `  ${childVarName}.setRound(true)\n`
-                }
-                if (circle) {
-                  childCode += `  ${childVarName}.setCircle(true)\n`
-                }
-                if (loading) {
-                  childCode += `  ${childVarName}.setLoading(true)\n`
-                }
-                if (disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                const childStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
-                if (childStyle.width || childStyle.height) {
-                  const styleProps: string[] = []
-                  if (childStyle.width) styleProps.push(`width: '${childStyle.width}'`)
-                  if (childStyle.height) styleProps.push(`height: '${childStyle.height}'`)
-                  if (styleProps.length > 0) {
-                    childCode += `  ${childVarName}.setStyle({ ${styleProps.join(', ')} })\n`
-                  }
-                }
-                if (!usedTypes.has('button')) {
-                  imports.push('NhaiButtonCommand')
-                  usedTypes.add('button')
-                }
-              } else if (child instanceof NhaiInputCommand) {
-                childVarName = `widgetChild${index}_input${childIndex}`
-                const childOptions = (child as any)._options || {}
-                childCode = `  const ${childVarName} = new NhaiInputCommand()\n`
-                if (childOptions.placeholder) {
-                  childCode += `  ${childVarName}.setPlaceholder('${childOptions.placeholder}')\n`
-                }
-                if (childOptions.type && childOptions.type !== 'text') {
-                  childCode += `  ${childVarName}.setType('${childOptions.type}')\n`
-                }
-                if (childOptions.value) {
-                  childCode += `  ${childVarName}.setValue('${childOptions.value}')\n`
-                }
-                if (childOptions.size && childOptions.size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${childOptions.size}')\n`
-                }
-                if (childOptions.disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                if (childOptions.clearable) {
-                  childCode += `  ${childVarName}.setClearable(true)\n`
-                }
-                if (childOptions.showPassword) {
-                  childCode += `  ${childVarName}.setShowPassword(true)\n`
-                }
-                if (childOptions.prefixIcon) {
-                  childCode += `  ${childVarName}.configure({ prefixIcon: '${childOptions.prefixIcon}' })\n`
-                }
-                if (childOptions.suffixIcon) {
-                  childCode += `  ${childVarName}.configure({ suffixIcon: '${childOptions.suffixIcon}' })\n`
-                }
-                if (childOptions.maxlength && childOptions.maxlength > 0) {
-                  childCode += `  ${childVarName}.setMaxlength(${childOptions.maxlength})\n`
-                }
-                if (childOptions.minlength && childOptions.minlength > 0) {
-                  childCode += `  ${childVarName}.setMinlength(${childOptions.minlength})\n`
-                }
-                const childStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
-                if (childStyle.width || childStyle.height) {
-                  const styleProps: string[] = []
-                  if (childStyle.width) styleProps.push(`width: '${childStyle.width}'`)
-                  if (childStyle.height) styleProps.push(`height: '${childStyle.height}'`)
-                  if (styleProps.length > 0) {
-                    childCode += `  ${childVarName}.setStyle({ ${styleProps.join(', ')} })\n`
-                  }
-                }
-                if (!usedTypes.has('input')) {
-                  imports.push('NhaiInputCommand')
-                  usedTypes.add('input')
-                }
-              } else if (child instanceof NhaiSelectCommand) {
-                childVarName = `widgetChild${index}_select${childIndex}`
-                childCode = `  const ${childVarName} = new NhaiSelectCommand()\n`
-                const placeholder = (child as any).placeholder || '请选择'
-                if (placeholder !== '请选择') {
-                  childCode += `  ${childVarName}.setPlaceholder('${placeholder}')\n`
-                }
-                const size = (child as any).size || 'default'
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if ((child as any).disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                if ((child as any).clearable) {
-                  childCode += `  ${childVarName}.setClearable(true)\n`
-                }
-                if ((child as any).multiple) {
-                  childCode += `  ${childVarName}.setMultiple(true)\n`
-                }
-                const options = (child as any).options || []
-                if (options.length > 0) {
-                  const optionsStr = options.map((opt: any) => 
-                    `{label: '${opt.label}', value: '${opt.value}'}`
-                  ).join(', ')
-                  childCode += `  ${childVarName}.setOptions([${optionsStr}])\n`
-                }
-                const childStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
-                if (childStyle.width || childStyle.height) {
-                  const styleProps: string[] = []
-                  if (childStyle.width) styleProps.push(`width: '${childStyle.width}'`)
-                  if (childStyle.height) styleProps.push(`height: '${childStyle.height}'`)
-                  if (styleProps.length > 0) {
-                    childCode += `  ${childVarName}.setStyle({ ${styleProps.join(', ')} })\n`
-                  }
-                }
-                if (!usedTypes.has('select')) {
-                  imports.push('NhaiSelectCommand')
-                  usedTypes.add('select')
-                }
-              } else if (child instanceof NhaiSwitchCommand) {
-                childVarName = `widgetChild${index}_switch${childIndex}`
-                const value = (child as any).value ?? false
-                childCode = `  const ${childVarName} = new NhaiSwitchCommand(${value})\n`
-                const size = (child as any).size || 'default'
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if ((child as any).disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                const activeText = (child as any).activeText
-                if (activeText) {
-                  childCode += `  ${childVarName}.setActiveText('${activeText}')\n`
-                }
-                const inactiveText = (child as any).inactiveText
-                if (inactiveText) {
-                  childCode += `  ${childVarName}.setInactiveText('${inactiveText}')\n`
-                }
-                const activeColor = (child as any).activeColor
-                if (activeColor) {
-                  childCode += `  ${childVarName}.setActiveColor('${activeColor}')\n`
-                }
-                const inactiveColor = (child as any).inactiveColor
-                if (inactiveColor) {
-                  childCode += `  ${childVarName}.setInactiveColor('${inactiveColor}')\n`
-                }
-                if (!usedTypes.has('switch')) {
-                  imports.push('NhaiSwitchCommand')
-                  usedTypes.add('switch')
-                }
-              } else if (child instanceof NhaiCheckboxCommand) {
-                childVarName = `widgetChild${index}_checkbox${childIndex}`
-                const text = (child as any).text || '复选框'
-                childCode = `  const ${childVarName} = new NhaiCheckboxCommand('${text}')\n`
-                if ((child as any).value) {
-                  childCode += `  ${childVarName}.setValue(true)\n`
-                }
-                const size = (child as any).size || 'default'
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if ((child as any).disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                if ((child as any).indeterminate) {
-                  childCode += `  ${childVarName}.setIndeterminate(true)\n`
-                }
-                if (!usedTypes.has('checkbox')) {
-                  imports.push('NhaiCheckboxCommand')
-                  usedTypes.add('checkbox')
-                }
-              } else if (child instanceof NhaiCardCommand) {
-                childVarName = `widgetChild${index}_card${childIndex}`
-                const header = (child as any).header || '卡片标题'
-                const content = (child as any).content || '卡片内容'
-                childCode = `  const ${childVarName} = new NhaiCardCommand('${header}', '${content}')\n`
-                if (!usedTypes.has('card')) {
-                  imports.push('NhaiCardCommand')
-                  usedTypes.add('card')
-                }
-              }
-              
-              if (childCode && childVarName) {
-                code += childCode
-                code += `  ${childVarName}.render()\n`
-                // 设置位置
-                const posX = childInfo.position.x
-                const posY = childInfo.position.y
-                code += `  ${childVarName}.getElement().style.position = 'absolute'\n`
-                code += `  ${childVarName}.getElement().style.left = '${posX}px'\n`
-                code += `  ${childVarName}.getElement().style.top = '${posY}px'\n`
-                // 添加到 Widget
-                code += `  ${comp.type}${index}.addChild(${childVarName})\n`
-              }
-            })
-          }
-        }
-        break
-      }
-      case 'grid': {
-        const gridProps = comp.props || {}
-        code += `const ${comp.type}${index} = new NhaiGridCommand()\n`
-        if (gridProps.container) {
-          code += `${comp.type}${index}.setContainer(true)\n`
-        }
-        if (gridProps.spacing && gridProps.spacing !== 2) {
-          code += `${comp.type}${index}.setSpacing(${gridProps.spacing})\n`
-        }
-        if (gridProps.direction && gridProps.direction !== 'row') {
-          code += `${comp.type}${index}.setDirection('${gridProps.direction}')\n`
-        }
-        if (gridProps.justify && gridProps.justify !== 'flex-start') {
-          code += `${comp.type}${index}.setJustify('${gridProps.justify}')\n`
-        }
-        if (gridProps.alignItems && gridProps.alignItems !== 'stretch') {
-          code += `${comp.type}${index}.setAlignItems('${gridProps.alignItems}')\n`
-        }
-        if (gridProps.wrap && gridProps.wrap !== 'wrap') {
-          code += `${comp.type}${index}.setWrap('${gridProps.wrap}')\n`
-        }
-        // 生成宽度和高度的样式设置
-        const gridStyle = gridProps.style || comp.style || {}
-        if (gridStyle.width || gridStyle.height) {
-          const styleProps: string[] = []
-          if (gridStyle.width) styleProps.push(`width: '${gridStyle.width}'`)
-          if (gridStyle.height) styleProps.push(`height: '${gridStyle.height}'`)
-          if (styleProps.length > 0) {
-            code += `${comp.type}${index}.setStyle({ ${styleProps.join(', ')} })\n`
-          }
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        
-        // 生成 Grid 的子组件代码
-        if (comp.gridInstance) {
-          const children = comp.gridInstance.getChildren()
-          if (children && children.length > 0) {
-            children.forEach((child: any, childIndex: number) => {
-              let childVarName = ''
-              let childCode = ''
-              
-              // 根据子组件类型生成代码（复用对话框内的完整逻辑）
-              if (child instanceof NhaiButtonCommand) {
-                childVarName = `gridChild${index}_button${childIndex}`
-                const text = child.getText?.() || (child as any).text || '按钮'
-                const type = (child as any).type || 'primary'
-                const size = (child as any).size || 'default'
-                const icon = (child as any).icon
-                const plain = (child as any).plain || false
-                const round = (child as any).round || false
-                const circle = (child as any).circle || false
-                const loading = (child as any).loading || false
-                const disabled = (child as any).disabled || false
-                
-                childCode = `const ${childVarName} = new NhaiButtonCommand('${text}')\n`
-                if (type !== 'primary') {
-                  childCode += `  ${childVarName}.setType('${type}')\n`
-                }
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if (icon) {
-                  childCode += `  ${childVarName}.setIcon('${icon}')\n`
-                }
-                if (plain) {
-                  childCode += `  ${childVarName}.setPlain(true)\n`
-                }
-                if (round) {
-                  childCode += `  ${childVarName}.setRound(true)\n`
-                }
-                if (circle) {
-                  childCode += `  ${childVarName}.setCircle(true)\n`
-                }
-                if (loading) {
-                  childCode += `  ${childVarName}.setLoading(true)\n`
-                }
-                if (disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                const childStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
-                if (childStyle.width || childStyle.height) {
-                  const styleProps: string[] = []
-                  if (childStyle.width) styleProps.push(`width: '${childStyle.width}'`)
-                  if (childStyle.height) styleProps.push(`height: '${childStyle.height}'`)
-                  if (styleProps.length > 0) {
-                    childCode += `  ${childVarName}.setStyle({ ${styleProps.join(', ')} })\n`
-                  }
-                }
-                if (!usedTypes.has('button')) {
-                  imports.push('NhaiButtonCommand')
-                  usedTypes.add('button')
-                }
-              } else if (child instanceof NhaiInputCommand) {
-                childVarName = `gridChild${index}_input${childIndex}`
-                const childOptions = (child as any)._options || {}
-                childCode = `const ${childVarName} = new NhaiInputCommand()\n`
-                if (childOptions.placeholder) {
-                  childCode += `  ${childVarName}.setPlaceholder('${childOptions.placeholder}')\n`
-                }
-                if (childOptions.type && childOptions.type !== 'text') {
-                  childCode += `  ${childVarName}.setType('${childOptions.type}')\n`
-                }
-                if (childOptions.size && childOptions.size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${childOptions.size}')\n`
-                }
-                if (childOptions.disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                if (childOptions.clearable) {
-                  childCode += `  ${childVarName}.setClearable(true)\n`
-                }
-                if (!usedTypes.has('input')) {
-                  imports.push('NhaiInputCommand')
-                  usedTypes.add('input')
-                }
-              } else if (child instanceof NhaiSelectCommand) {
-                childVarName = `gridChild${index}_select${childIndex}`
-                childCode = `const ${childVarName} = new NhaiSelectCommand()\n`
-                const placeholder = (child as any).placeholder || '请选择'
-                if (placeholder !== '请选择') {
-                  childCode += `  ${childVarName}.setPlaceholder('${placeholder}')\n`
-                }
-                const options = (child as any).options || []
-                if (options.length > 0) {
-                  const optionsStr = options.map((opt: any) => 
-                    `{label: '${opt.label}', value: '${opt.value}'}`
-                  ).join(', ')
-                  childCode += `  ${childVarName}.setOptions([${optionsStr}])\n`
-                }
-                if (!usedTypes.has('select')) {
-                  imports.push('NhaiSelectCommand')
-                  usedTypes.add('select')
-                }
-              } else if (child instanceof NhaiSwitchCommand) {
-                childVarName = `gridChild${index}_switch${childIndex}`
-                const value = (child as any).value ?? false
-                childCode = `const ${childVarName} = new NhaiSwitchCommand(${value})\n`
-                if (!usedTypes.has('switch')) {
-                  imports.push('NhaiSwitchCommand')
-                  usedTypes.add('switch')
-                }
-              } else if (child instanceof NhaiCheckboxCommand) {
-                childVarName = `gridChild${index}_checkbox${childIndex}`
-                const text = (child as any).text || '复选框'
-                childCode = `const ${childVarName} = new NhaiCheckboxCommand('${text}')\n`
-                if (!usedTypes.has('checkbox')) {
-                  imports.push('NhaiCheckboxCommand')
-                  usedTypes.add('checkbox')
-                }
-              }
-              
-              if (childCode && childVarName) {
-                code += childCode
-                code += `${childVarName}.render()\n`
-                code += `${comp.type}${index}.addChild(${childVarName})\n`
-              }
-            })
-          }
-        }
-        break
-      }
-      case 'container': {
-        const containerProps = comp.props || {}
-        code += `const ${comp.type}${index} = new NhaiContainerCommand()\n`
-        if (containerProps.maxWidth !== undefined && containerProps.maxWidth !== 'lg') {
-          if (containerProps.maxWidth === 'false' || containerProps.maxWidth === false) {
-            code += `${comp.type}${index}.setMaxWidth(false)\n`
-          } else {
-            code += `${comp.type}${index}.setMaxWidth('${containerProps.maxWidth}')\n`
-          }
-        }
-        if (containerProps.fixed) {
-          code += `${comp.type}${index}.setFixed(true)\n`
-        }
-        if (containerProps.disableGutters) {
-          code += `${comp.type}${index}.setDisableGutters(true)\n`
-        }
-        // 生成宽度和高度的样式设置
-        const containerStyle = containerProps.style || comp.style || {}
-        if (containerStyle.width || containerStyle.height) {
-          const styleProps: string[] = []
-          if (containerStyle.width) styleProps.push(`width: '${containerStyle.width}'`)
-          if (containerStyle.height) styleProps.push(`height: '${containerStyle.height}'`)
-          if (styleProps.length > 0) {
-            code += `${comp.type}${index}.setStyle({ ${styleProps.join(', ')} })\n`
-          }
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        
-        // 生成 Container 的子组件代码
-        if (comp.containerInstance) {
-          const children = comp.containerInstance.getChildren()
-          if (children && children.length > 0) {
-            children.forEach((child: any, childIndex: number) => {
-              let childVarName = ''
-              let childCode = ''
-              
-              // 根据子组件类型生成代码（复用 Grid 的完整逻辑）
-              if (child instanceof NhaiButtonCommand) {
-                childVarName = `containerChild${index}_button${childIndex}`
-                const text = child.getText?.() || (child as any).text || '按钮'
-                const type = (child as any).type || 'primary'
-                const size = (child as any).size || 'default'
-                const icon = (child as any).icon
-                const plain = (child as any).plain || false
-                const round = (child as any).round || false
-                const circle = (child as any).circle || false
-                const loading = (child as any).loading || false
-                const disabled = (child as any).disabled || false
-                
-                childCode = `const ${childVarName} = new NhaiButtonCommand('${text}')\n`
-                if (type !== 'primary') {
-                  childCode += `  ${childVarName}.setType('${type}')\n`
-                }
-                if (size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${size}')\n`
-                }
-                if (icon) {
-                  childCode += `  ${childVarName}.setIcon('${icon}')\n`
-                }
-                if (plain) {
-                  childCode += `  ${childVarName}.setPlain(true)\n`
-                }
-                if (round) {
-                  childCode += `  ${childVarName}.setRound(true)\n`
-                }
-                if (circle) {
-                  childCode += `  ${childVarName}.setCircle(true)\n`
-                }
-                if (loading) {
-                  childCode += `  ${childVarName}.setLoading(true)\n`
-                }
-                if (disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                const childStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
-                if (childStyle.width || childStyle.height) {
-                  const styleProps: string[] = []
-                  if (childStyle.width) styleProps.push(`width: '${childStyle.width}'`)
-                  if (childStyle.height) styleProps.push(`height: '${childStyle.height}'`)
-                  if (styleProps.length > 0) {
-                    childCode += `  ${childVarName}.setStyle({ ${styleProps.join(', ')} })\n`
-                  }
-                }
-                if (!usedTypes.has('button')) {
-                  imports.push('NhaiButtonCommand')
-                  usedTypes.add('button')
-                }
-              } else if (child instanceof NhaiInputCommand) {
-                childVarName = `containerChild${index}_input${childIndex}`
-                const childOptions = (child as any)._options || {}
-                childCode = `const ${childVarName} = new NhaiInputCommand()\n`
-                if (childOptions.placeholder) {
-                  childCode += `  ${childVarName}.setPlaceholder('${childOptions.placeholder}')\n`
-                }
-                if (childOptions.type && childOptions.type !== 'text') {
-                  childCode += `  ${childVarName}.setType('${childOptions.type}')\n`
-                }
-                if (childOptions.size && childOptions.size !== 'default') {
-                  childCode += `  ${childVarName}.setSize('${childOptions.size}')\n`
-                }
-                if (childOptions.disabled) {
-                  childCode += `  ${childVarName}.setDisabled(true)\n`
-                }
-                if (childOptions.clearable) {
-                  childCode += `  ${childVarName}.setClearable(true)\n`
-                }
-                if (!usedTypes.has('input')) {
-                  imports.push('NhaiInputCommand')
-                  usedTypes.add('input')
-                }
-              } else if (child instanceof NhaiSelectCommand) {
-                childVarName = `containerChild${index}_select${childIndex}`
-                childCode = `const ${childVarName} = new NhaiSelectCommand()\n`
-                const placeholder = (child as any).placeholder || '请选择'
-                if (placeholder !== '请选择') {
-                  childCode += `  ${childVarName}.setPlaceholder('${placeholder}')\n`
-                }
-                const options = (child as any).options || []
-                if (options.length > 0) {
-                  const optionsStr = options.map((opt: any) => 
-                    `{label: '${opt.label}', value: '${opt.value}'}`
-                  ).join(', ')
-                  childCode += `  ${childVarName}.setOptions([${optionsStr}])\n`
-                }
-                if (!usedTypes.has('select')) {
-                  imports.push('NhaiSelectCommand')
-                  usedTypes.add('select')
-                }
-              } else if (child instanceof NhaiSwitchCommand) {
-                childVarName = `containerChild${index}_switch${childIndex}`
-                const value = (child as any).value ?? false
-                childCode = `const ${childVarName} = new NhaiSwitchCommand(${value})\n`
-                if (!usedTypes.has('switch')) {
-                  imports.push('NhaiSwitchCommand')
-                  usedTypes.add('switch')
-                }
-              } else if (child instanceof NhaiCheckboxCommand) {
-                childVarName = `containerChild${index}_checkbox${childIndex}`
-                const text = (child as any).text || '复选框'
-                childCode = `const ${childVarName} = new NhaiCheckboxCommand('${text}')\n`
-                if (!usedTypes.has('checkbox')) {
-                  imports.push('NhaiCheckboxCommand')
-                  usedTypes.add('checkbox')
-                }
-              }
-              
-              if (childCode && childVarName) {
-                code += childCode
-                code += `${childVarName}.render()\n`
-                code += `${comp.type}${index}.addChild(${childVarName})\n`
-              }
-            })
-          }
-        }
-        break
-      }
-      case 'splitpanel': {
-        const splitProps = comp.props || {}
-        code += `const ${comp.type}${index} = new NhaiSplitPanelCommand()\n`
-        if (splitProps.orientation && splitProps.orientation !== 'horizontal') {
-          code += `${comp.type}${index}.setOrientation('${splitProps.orientation}')\n`
-        }
-        if (splitProps.splitPosition && splitProps.splitPosition !== 50) {
-          code += `${comp.type}${index}.setSplitPosition(${splitProps.splitPosition})\n`
-        }
-        if (splitProps.minSize && splitProps.minSize !== 20) {
-          code += `${comp.type}${index}.setMinSize(${splitProps.minSize})\n`
-        }
-        if (splitProps.maxSize && splitProps.maxSize !== 80) {
-          code += `${comp.type}${index}.setMaxSize(${splitProps.maxSize})\n`
-        }
-        if (splitProps.resizable === false) {
-          code += `${comp.type}${index}.setResizable(false)\n`
-        }
-        if (splitProps.disabled) {
-          code += `${comp.type}${index}.setDisabled(true)\n`
-        }
-        if (splitProps.leftContent) {
-          code += `${comp.type}${index}.setLeftContent('${splitProps.leftContent}')\n`
-        }
-        if (splitProps.rightContent) {
-          code += `${comp.type}${index}.setRightContent('${splitProps.rightContent}')\n`
-        }
-        code += `const element${index} = ${comp.type}${index}.render()\n`
-        break
-      }
-      default:
-        return
-    }
-    
-    // 只为需要绝对定位的组件设置位置样式（Dialog、Widget、Grid、Container 不需要）
-    if (comp.type !== 'dialog' && comp.type !== 'widget' && comp.type !== 'grid' && comp.type !== 'container') {
-      code += `element${index}.style.position = 'absolute'\n`
-      code += `element${index}.style.left = '${comp.style.left}'\n`
-      code += `element${index}.style.top = '${comp.style.top}'\n`
-    }
-    
-    code += `container.appendChild(element${index})\n\n`
-  })
-  
-  code += 'return container\n'
-  generatedCode.value = code
-}
-
-// 切换代码面板
-const toggleCodePanel = () => {
-  showCodePanel.value = !showCodePanel.value
-}
-
-// 复制代码
-const copyCode = async () => {
-  if (codeRef.value) {
-    const text = codeRef.value.textContent || ''
-    await navigator.clipboard.writeText(text)
-    alert('✅ 代码已复制到剪贴板！')
-  }
-}
-
-// 清空画布
-const clearCanvas = () => {
-  if (canvasComponents.value.length > 0 && confirm('确定要清空画布吗？')) {
-    canvasComponents.value = []
-    selectedComponent.value = null
-    updateCode()
-  }
-}
-
-// 保存设计
-const saveDesign = () => {
-  const data = {
-    components: canvasComponents.value.map(c => ({
-      type: c.type,
-      props: c.props,
-      style: c.style
-    })),
-    timestamp: Date.now()
-  }
-  
-  localStorage.setItem('nhai-design', JSON.stringify(data))
-  alert('✅ 设计已保存到本地存储')
-}
-
-// 节流函数
-const throttle = (func: Function, delay: number) => {
-  let lastExecTime = 0
-  return (...args: any[]) => {
-    const now = Date.now()
-    if (now - lastExecTime >= delay) {
-      func(...args)
-      lastExecTime = now
-    }
-  }
-}
-
-// 节流的更新代码函数
-const throttledUpdateCode = throttle(() => {
-  updateCode()
-}, 300)
-
-// 监听选中组件变化，更新代码（节流）
-watch([canvasComponents, selectedComponent], () => {
-  // 拖拽时不更新代码
-  if (!draggedElement.value) {
-    throttledUpdateCode()
-  }
-}, { deep: true })
-
-// 暴露组件类到 window
-onMounted(() => {
-  ;(window as any).NhaiButtonCommand = NhaiButtonCommand
-  ;(window as any).NhaiInputCommand = NhaiInputCommand
-  ;(window as any).NhaiSelectCommand = NhaiSelectCommand
-  ;(window as any).NhaiSwitchCommand = NhaiSwitchCommand
-  ;(window as any).NhaiCheckboxCommand = NhaiCheckboxCommand
-  ;(window as any).NhaiCardCommand = NhaiCardCommand
-  ;(window as any).NhaiWidgetCommand = NhaiWidgetCommand
-  ;(window as any).NhaiDialogCommand = NhaiDialogCommand
-  ;(window as any).NhaiGridCommand = NhaiGridCommand
-  ;(window as any).NhaiContainerCommand = NhaiContainerCommand
-  ;(window as any).NhaiSplitPanelCommand = NhaiSplitPanelCommand
-  console.log('✓ 所有组件类已暴露到全局作用域')
-  
-  updateCode()
-})
 </script>
 
 <style scoped>
+/* 设计器主容器 */
 .designer-app {
+  width: 100vw;
   height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f5f5f5;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* 顶部工具栏 */
 .designer-header {
+  height: 60px;
   background: white;
-  padding: 12px 24px;
-  padding-right: 64px;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  justify-content: space-between;
+  padding: 0 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  z-index: 100;
 }
 
 .header-left h1 {
   margin: 0;
-  font-size: 20px;
-  color: #1890ff;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2937;
 }
 
-.tagline {
-  color: #8c8c8c;
-  font-size: 14px;
+.header-left .tagline {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: 12px;
 }
 
 .header-right {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
-.header-right button {
+.btn-code,
+.btn-clear,
+.btn-save {
   padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
   cursor: pointer;
   font-size: 14px;
   transition: all 0.2s;
 }
 
-.btn-code {
-  background: #1890ff;
-  color: white;
-}
-
-.btn-code:hover {
-  background: #40a9ff;
-}
-
-.btn-clear {
-  background: #ff4d4f;
-  color: white;
-}
-
-.btn-clear:hover {
-  background: #ff7875;
-}
-
-.btn-save {
-  background: #52c41a;
-  color: white;
-}
-
+.btn-code:hover,
+.btn-clear:hover,
 .btn-save:hover {
-  background: #73d13d;
+  background: #f9fafb;
+  border-color: #9ca3af;
 }
 
+.btn-code:active,
+.btn-clear:active,
+.btn-save:active {
+  background: #f3f4f6;
+}
+
+/* 主内容区域 */
 .designer-main {
   flex: 1;
   display: flex;
-  gap: 1px;
-  background: #e8e8e8;
   overflow: hidden;
-}
-
-.panel-container {
   position: relative;
 }
 
-.left-panel {
-  width: 280px;
-  background: white;
+/* 面板容器 */
+.panel-container {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-right: 1px solid #e8e8e8;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+}
+
+.panel-container.left {
+  width: 280px;
   transition: width 0.3s ease;
+}
+
+.panel-container.left:has(.left-panel.collapsed) {
+  width: 0;
+}
+
+.panel-container.right {
+  width: 320px;
+  transition: width 0.3s ease;
+}
+
+.panel-container.right:has(.right-panel.collapsed) {
+  width: 0;
+}
+
+/* 左侧面板 */
+.left-panel {
+  width: 100%;
   height: 100%;
+  background: #f9fafb;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.3s ease;
 }
 
 .left-panel.collapsed {
@@ -3489,150 +2277,17 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.panel-toggle {
-  position: absolute;
-  top: 50%;
-  right: -1px;
-  transform: translateY(-50%) translateX(50%);
-  width: 20px;
-  height: 60px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: 2px solid white;
-  border-radius: 0 10px 10px 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 2px 2px 8px rgba(102, 126, 234, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  z-index: 100;
-}
-
-.panel-toggle::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.panel-toggle:hover::before {
-  opacity: 1;
-}
-
-.panel-toggle:hover {
-  transform: translateY(-50%) translateX(calc(50% + 2px));
-  box-shadow: 4px 4px 12px rgba(102, 126, 234, 0.5);
-}
-
-.panel-toggle:active {
-  transform: translateY(-50%) translateX(calc(50% + 1px));
-}
-
-.panel-toggle svg {
-  position: relative;
-  z-index: 1;
-  transition: transform 0.3s ease;
-}
-
-.panel-toggle:hover svg {
-  transform: scale(1.2);
-}
-
-.panel-toggle.right {
-  left: -1px;
-  right: auto;
-  transform: translateY(-50%) translateX(-50%);
-  border-radius: 10px 0 0 10px;
-  box-shadow: -2px 2px 8px rgba(102, 126, 234, 0.4);
-}
-
-.panel-toggle.right:hover {
-  transform: translateY(-50%) translateX(calc(-50% - 2px));
-  box-shadow: -4px 4px 12px rgba(102, 126, 234, 0.5);
-}
-
-.right-panel {
-  width: 300px;
-  background: white;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-left: 1px solid #e8e8e8;
-  transition: width 0.3s ease;
-  height: 100%;
-}
-
-.right-panel.collapsed {
-  width: 0;
-  overflow: hidden;
-}
-
 .panel-section {
-  flex: 1;
   padding: 16px;
-  overflow-y: auto;
-}
-
-.property-section {
-  min-height: 300px;
-  overflow-y: auto;
 }
 
 .section-title {
-  margin: 0 0 16px 0;
   font-size: 14px;
-  color: #333;
   font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 16px 0;
   padding-bottom: 8px;
-  border-bottom: 2px solid #1890ff;
-}
-
-.component-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.component-item {
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  cursor: move;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  user-select: none;
-  transition: all 0.2s;
-}
-
-.component-item:hover {
-  background: #f5f5f5;
-  border-color: #1890ff;
-  transform: translateX(2px);
-}
-
-.component-item i {
-  font-size: 18px;
-}
-
-.property-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.property-empty {
-  padding: 20px;
-  text-align: center;
-  color: #999;
-  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .component-category {
@@ -3640,121 +2295,112 @@ onMounted(() => {
 }
 
 .category-title {
-  margin: 0 0 8px 0;
   font-size: 12px;
-  color: #666;
-  text-transform: uppercase;
   font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
   letter-spacing: 0.5px;
 }
 
-.property-group {
-  margin-bottom: 16px;
-}
-
-.property-group label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 14px;
-  color: #666;
-}
-
-.property-group input,
-.property-group select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.property-group input:focus,
-.property-group select:focus {
-  outline: none;
-  border-color: #1890ff;
-}
-
-.property-group input.disabled {
-  background: #f5f5f5;
-  cursor: not-allowed;
-}
-
-.property-divider {
-  margin: 16px 0 8px 0;
-  padding-top: 16px;
-  border-top: 1px solid #e8e8e8;
-  font-size: 12px;
-  font-weight: 600;
-  color: #666;
-  text-transform: uppercase;
-}
-
-.btn-delete {
-  width: 100%;
-  padding: 10px 16px;
-  background: #ff4d4f;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
+.component-list {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.btn-delete:hover {
-  background: #ff7875;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3);
-}
-
-.btn-delete:active {
-  transform: translateY(0);
-  box-shadow: 0 1px 4px rgba(255, 77, 79, 0.2);
-}
-
-.checkbox-label {
+.component-item {
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: grab;
   display: flex;
   align-items: center;
   gap: 8px;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.component-item:hover {
+  background: #f0f9ff;
+  border-color: #3b82f6;
+  transform: translateX(2px);
+}
+
+.component-item:active {
+  cursor: grabbing;
+  background: #dbeafe;
+}
+
+.component-item i {
+  font-size: 18px;
+}
+
+.component-item span {
+  font-size: 13px;
+  color: #374151;
+}
+
+/* 面板收起按钮 */
+.panel-toggle {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 48px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-left: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
 }
 
-.checkbox-label input[type="checkbox"] {
-  width: auto;
+.panel-container.left .panel-toggle {
+  right: -24px;
+  border-radius: 0 6px 6px 0;
 }
 
-.checkbox-label span {
-  color: #666;
-  font-size: 14px;
+.panel-container.right .panel-toggle {
+  left: -24px;
+  border-radius: 6px 0 0 6px;
+  border-left: 1px solid #e5e7eb;
+  border-right: none;
 }
 
+.panel-toggle:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* 画布区域 */
 .canvas-area {
   flex: 1;
-  background: white;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  background: white;
+  overflow: hidden;
 }
 
 .canvas-header {
-  padding: 12px 20px;
-  border-bottom: 1px solid #e8e8e8;
+  height: 50px;
+  padding: 0 20px;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   background: #fafafa;
 }
 
 .canvas-header h3 {
   margin: 0;
-  font-size: 15px;
-  color: #333;
+  font-size: 14px;
   font-weight: 600;
+  color: #1f2937;
 }
 
 .canvas-tools {
@@ -3765,85 +2411,72 @@ onMounted(() => {
 
 .tool-hint {
   font-size: 12px;
-  color: #666;
+  color: #6b7280;
 }
 
 .canvas-content {
   flex: 1;
   position: relative;
-  background: 
-    linear-gradient(0deg, #f0f0f0 1px, transparent 1px),
-    linear-gradient(90deg, #f0f0f0 1px, transparent 1px);
-  background-size: 20px 20px;
-  background-position: 0 0, 0 0;
   overflow: auto;
+  background: #fafafa;
+  background-image: 
+    linear-gradient(to right, #e5e7eb 1px, transparent 1px),
+    linear-gradient(to bottom, #e5e7eb 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
 .canvas-content-wrapper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  min-width: 1920px;
-  min-height: 1080px;
-  background: white;
+  position: relative;
+  min-height: 100%;
+  min-width: 100%;
 }
 
 .canvas-component {
   position: absolute;
-  cursor: move;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.95);
   border: 2px solid transparent;
   border-radius: 4px;
-  transition: all 0.2s;
+  cursor: move;
+  transition: border-color 0.2s;
+  z-index: 1;
 }
 
 .canvas-component:hover {
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-color: #93c5fd;
 }
 
-.canvas-component.selected,
-.dialog-child-component.selected {
-  outline: 2px solid #1890ff;
-  outline-offset: 2px;
-}
-
-.canvas-component.selected::before,
-.dialog-child-component.selected::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: rgba(24, 144, 255, 0.1);
-  border-radius: 4px;
+.canvas-component.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 .remove-btn {
   position: absolute;
-  top: -10px;
-  right: -10px;
+  top: -12px;
+  right: -12px;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
-  background: #ff4d4f;
+  background: #ef4444;
   color: white;
   border: 2px solid white;
+  border-radius: 50%;
   cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.2s;
   z-index: 10;
 }
 
+.canvas-component:hover .remove-btn,
+.canvas-component.selected .remove-btn {
+  opacity: 1;
+}
+
 .remove-btn:hover {
-  background: #ff7875;
+  background: #dc2626;
 }
 
 .empty-canvas {
@@ -3852,74 +2485,184 @@ onMounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  color: #999;
-  background: white;
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+  color: #9ca3af;
 }
 
 .empty-canvas p {
-  margin: 4px 0;
+  margin: 8px 0;
+  font-size: 14px;
 }
 
+/* 右侧属性面板 */
+.right-panel {
+  width: 100%;
+  height: 100%;
+  background: white;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: 1px solid #e5e7eb;
+}
+
+.right-panel.collapsed {
+  width: 0;
+  overflow: hidden;
+}
+
+.property-content {
+  padding: 16px;
+}
+
+.property-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+.property-divider {
+  margin: 20px 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.property-group {
+  margin-bottom: 16px;
+}
+
+.property-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.property-group input[type="text"],
+.property-group input[type="number"],
+.property-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.property-group input:focus,
+.property-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.property-group input.disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.btn-delete {
+  width: 100%;
+  padding: 10px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn-delete:hover {
+  background: #dc2626;
+}
+
+/* 代码面板 */
 .code-panel {
-  width: 400px;
-  background: #1e1e1e;
-  color: #d4d4d4;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 500px;
+  height: 100%;
+  background: #1e293b;
+  border-left: 1px solid #334155;
   display: flex;
   flex-direction: column;
-  border-left: 1px solid #333;
+  z-index: 200;
 }
 
 .code-header {
-  padding: 12px 16px;
-  border-bottom: 1px solid #333;
+  height: 50px;
+  padding: 0 20px;
+  border-bottom: 1px solid #334155;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: #252526;
+  justify-content: space-between;
+  background: #0f172a;
 }
 
 .code-header h3 {
   margin: 0;
   font-size: 14px;
-  color: #d4d4d4;
+  font-weight: 600;
+  color: white;
 }
 
 .btn-copy {
-  background: #1890ff;
+  padding: 6px 12px;
+  background: #3b82f6;
   color: white;
   border: none;
-  padding: 4px 12px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
+  transition: all 0.2s;
 }
 
 .btn-copy:hover {
-  background: #40a9ff;
+  background: #2563eb;
 }
 
 .code-content {
   flex: 1;
+  padding: 20px;
+  margin: 0;
   overflow: auto;
-  padding: 16px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 
-
-/* 对话框窗口样式 - 所有样式都在 JavaScript 中设置，无需 CSS */
+/* 对话框子组件样式 */
 .dialog-content-area {
   position: relative;
+  min-height: 200px;
+  background: white;
 }
 
-/* 拖放到对话框时的视觉效果 */
 .dialog-content-area.drag-over {
-  background: repeating-linear-gradient(45deg, #ecf5ff, #ecf5ff 20px, #ffffff 20px, #ffffff 40px) !important;
-  border: 2px dashed #409eff !important;
-  border-radius: 4px !important;
+  background: #eff6ff;
+  border: 2px dashed #3b82f6;
 }
 
 .dialog-placeholder {
@@ -3928,12 +2671,78 @@ onMounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   color: #c0c4cc;
-  font-size: 12px;
+  font-size: 14px;
   pointer-events: none;
-  transition: opacity 0.3s;
 }
 
-.dialog-content-area:has(.canvas-component) .dialog-placeholder {
-  display: none;
+/* 对话框子组件包装器 */
+.dialog-child-component {
+  position: absolute;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: move;
+  transition: border-color 0.2s;
 }
+
+.dialog-child-component:hover {
+  border-color: #93c5fd;
+}
+
+.dialog-child-component.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* 布局子组件样式 */
+.grid-child-component,
+.container-child-component {
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: move;
+  transition: border-color 0.2s;
+}
+
+.grid-child-component:hover,
+.container-child-component:hover {
+  border-color: #93c5fd;
+}
+
+.grid-child-component.selected,
+.container-child-component.selected {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* 滚动条样式 */
+.left-panel::-webkit-scrollbar,
+.right-panel::-webkit-scrollbar,
+.canvas-content::-webkit-scrollbar,
+.code-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.left-panel::-webkit-scrollbar-track,
+.right-panel::-webkit-scrollbar-track,
+.canvas-content::-webkit-scrollbar-track,
+.code-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.left-panel::-webkit-scrollbar-thumb,
+.right-panel::-webkit-scrollbar-thumb,
+.canvas-content::-webkit-scrollbar-thumb,
+.code-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.left-panel::-webkit-scrollbar-thumb:hover,
+.right-panel::-webkit-scrollbar-thumb:hover,
+.canvas-content::-webkit-scrollbar-thumb:hover,
+.code-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 </style>
