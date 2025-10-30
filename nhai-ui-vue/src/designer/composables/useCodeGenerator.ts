@@ -789,38 +789,44 @@ export function useCodeGenerator(deps: CodeGeneratorDependencies) {
         }
         case 'grid': {
           const gridProps = comp.props || {}
+          // 过滤掉 Grid 不支持的属性（如 direction, justify, wrap 等）
+          const validGridProps = { ...gridProps }
+          delete validGridProps.direction
+          delete validGridProps.justify
+          delete validGridProps.wrap
+          
           code += `const ${comp.type}${index} = new NhaiGridCommand()\n`
-          if (gridProps.container !== undefined && gridProps.container !== true) {
+          if (validGridProps.container !== undefined && validGridProps.container !== true) {
             code += `${comp.type}${index}.setContainer(false)\n`
           }
-          if (gridProps.columns !== undefined && gridProps.columns !== 12) {
-            if (typeof gridProps.columns === 'number') {
-              code += `${comp.type}${index}.setColumns(${gridProps.columns})\n`
+          if (validGridProps.columns !== undefined && validGridProps.columns !== 12) {
+            if (typeof validGridProps.columns === 'number') {
+              code += `${comp.type}${index}.setColumns(${validGridProps.columns})\n`
             } else {
-              code += `${comp.type}${index}.setColumns('${gridProps.columns}')\n`
+              code += `${comp.type}${index}.setColumns('${validGridProps.columns}')\n`
             }
           }
-          if (gridProps.rows !== undefined) {
-            if (typeof gridProps.rows === 'number') {
-              code += `${comp.type}${index}.setRows(${gridProps.rows})\n`
+          if (validGridProps.rows !== undefined) {
+            if (typeof validGridProps.rows === 'number') {
+              code += `${comp.type}${index}.setRows(${validGridProps.rows})\n`
             } else {
-              code += `${comp.type}${index}.setRows('${gridProps.rows}')\n`
+              code += `${comp.type}${index}.setRows('${validGridProps.rows}')\n`
             }
           }
-          if (gridProps.templateAreas) code += `${comp.type}${index}.setTemplateAreas('${gridProps.templateAreas}')\n`
-          if (gridProps.autoFlow && gridProps.autoFlow !== 'row') code += `${comp.type}${index}.setAutoFlow('${gridProps.autoFlow}')\n`
-          if (gridProps.justifyItems && gridProps.justifyItems !== 'stretch') code += `${comp.type}${index}.setJustifyItems('${gridProps.justifyItems}')\n`
-          if (gridProps.alignItems && gridProps.alignItems !== 'stretch') code += `${comp.type}${index}.setAlignItems('${gridProps.alignItems}')\n`
-          if (gridProps.justifyContent) code += `${comp.type}${index}.setJustifyContent('${gridProps.justifyContent}')\n`
-          if (gridProps.alignContent) code += `${comp.type}${index}.setAlignContent('${gridProps.alignContent}')\n`
-          if (gridProps.spacing !== undefined && gridProps.spacing !== 2) {
-            if (typeof gridProps.spacing === 'number') {
-              code += `${comp.type}${index}.setSpacing(${gridProps.spacing})\n`
+          if (validGridProps.templateAreas) code += `${comp.type}${index}.setTemplateAreas('${validGridProps.templateAreas}')\n`
+          if (validGridProps.autoFlow && validGridProps.autoFlow !== 'row') code += `${comp.type}${index}.setAutoFlow('${validGridProps.autoFlow}')\n`
+          if (validGridProps.justifyItems && validGridProps.justifyItems !== 'stretch') code += `${comp.type}${index}.setJustifyItems('${validGridProps.justifyItems}')\n`
+          if (validGridProps.alignItems && validGridProps.alignItems !== 'stretch') code += `${comp.type}${index}.setAlignItems('${validGridProps.alignItems}')\n`
+          if (validGridProps.justifyContent) code += `${comp.type}${index}.setJustifyContent('${validGridProps.justifyContent}')\n`
+          if (validGridProps.alignContent) code += `${comp.type}${index}.setAlignContent('${validGridProps.alignContent}')\n`
+          if (validGridProps.spacing !== undefined && validGridProps.spacing !== 2) {
+            if (typeof validGridProps.spacing === 'number') {
+              code += `${comp.type}${index}.setSpacing(${validGridProps.spacing})\n`
             } else {
-              code += `${comp.type}${index}.setSpacing('${gridProps.spacing}')\n`
+              code += `${comp.type}${index}.setSpacing('${validGridProps.spacing}')\n`
             }
           }
-          if (gridProps.gap) code += `${comp.type}${index}.setGap('${gridProps.gap}')\n`
+          if (validGridProps.gap) code += `${comp.type}${index}.setGap('${validGridProps.gap}')\n`
           const gridStyle = gridProps.style || comp.style || {}
           if (gridStyle.width || gridStyle.height) {
             const styleProps: string[] = []
@@ -830,8 +836,8 @@ export function useCodeGenerator(deps: CodeGeneratorDependencies) {
               code += `${comp.type}${index}.setStyle({ ${styleProps.join(', ')} })\n`
             }
           }
-          code += `const element${index} = ${comp.type}${index}.render()\n`
           
+          // 在 render() 之前先添加所有子组件
           if (comp.gridInstance) {
             const children = comp.gridInstance.getChildren()
             if (children && children.length > 0) {
@@ -926,6 +932,9 @@ export function useCodeGenerator(deps: CodeGeneratorDependencies) {
               })
             }
           }
+          
+          // 在所有子组件添加完成后，再调用 render()
+          code += `const element${index} = ${comp.type}${index}.render()\n`
           break
         }
         case 'container': {

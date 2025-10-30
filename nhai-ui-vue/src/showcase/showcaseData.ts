@@ -250,33 +250,27 @@ return splitPanel.render()`
         id: 'grid-demo',
         title: 'Grid - 网格布局',
         description: '创建网格布局容器',
-        code: `const { NhaiGridCommand } = window
+        code: `const { NhaiGridCommand, NhaiButtonCommand } = window
 
 const grid = new NhaiGridCommand()
 grid.setContainer(true)
 grid.setSpacing(16)
-grid.setDirection('row')
-grid.setJustify('flex-start')
-grid.setAlignItems('flex-start')
-grid.setWrap('wrap')
+grid.setColumns(12)
+grid.setAutoFlow('row')
+grid.setJustifyItems('start')
+grid.setAlignItems('start')
 
-// 创建一些子元素
-const container = document.createElement('div')
-container.appendChild(grid.render())
-
+// 先添加子组件，再 render
 for (let i = 0; i < 6; i++) {
-  const card = document.createElement('div')
-  card.style.width = '200px'
-  card.style.height = '100px'
-  card.style.backgroundColor = '#1890ff'
-  card.style.display = 'flex'
-  card.style.alignItems = 'center'
-  card.style.justifyContent = 'center'
-  card.style.color = 'white'
-  card.style.borderRadius = '4px'
-  card.textContent = \`Card \${i + 1}\`
-  grid.addChild(card)
+  const button = new NhaiButtonCommand('Card ' + (i + 1))
+  button.setStyle({ width: '200px', height: '100px' })
+  grid.addChild(button)
 }
+
+// 创建容器并渲染 Grid
+const container = document.createElement('div')
+const gridElement = grid.render()
+container.appendChild(gridElement)
 
 return container`
       },

@@ -1687,12 +1687,18 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
     // Grid
     if (compDef.type === 'grid') {
       const gridInstance = instance as any
-      props.container = gridInstance.container ?? false
+      // 只使用 gridCommand 中实际存在的属性
+      props.container = gridInstance.container ?? true
+      props.columns = gridInstance.columns ?? 12
+      props.rows = gridInstance.rows
+      props.templateAreas = gridInstance.templateAreas
+      props.autoFlow = gridInstance.autoFlow ?? 'row'
+      props.justifyItems = gridInstance.justifyItems ?? 'stretch'
+      props.alignItems = gridInstance.alignItems ?? 'stretch'
+      props.justifyContent = gridInstance.justifyContent
+      props.alignContent = gridInstance.alignContent
       props.spacing = gridInstance.spacing ?? 2
-      props.direction = gridInstance.direction || 'row'
-      props.justify = gridInstance.justify || 'flex-start'
-      props.alignItems = gridInstance.alignItems || 'stretch'
-      props.wrap = gridInstance.wrap || 'wrap'
+      props.gap = gridInstance.gap
       // 设置默认宽度和高度
       if (!props.style) {
         props.style = {}

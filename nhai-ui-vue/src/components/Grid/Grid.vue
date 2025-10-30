@@ -63,19 +63,43 @@ const gridStyles = computed(() => {
     style.justifyItems = props.justifyItems
     style.alignItems = props.alignItems
     
-    // 处理列模板
-    if (typeof props.columns === 'number') {
-      style.gridTemplateColumns = `repeat(${props.columns}, 1fr)`
-    } else {
-      style.gridTemplateColumns = props.columns
-    }
+    // 根据 autoFlow 方向决定如何应用 columns 和 rows
+    const isColumnFlow = autoFlowValue === 'column' || autoFlowValue === 'column dense'
     
-    // 处理行模板
-    if (props.rows) {
-      if (typeof props.rows === 'number') {
-        style.gridTemplateRows = `repeat(${props.rows}, 1fr)`
+    if (isColumnFlow) {
+      // 当 autoFlow 是 column 时，项目按列方向排列（先填充列，再换下一列）
+      // columns 控制列数
+      if (typeof props.columns === 'number') {
+        style.gridTemplateColumns = `repeat(${props.columns}, 1fr)`
+      } else if (props.columns) {
+        style.gridTemplateColumns = props.columns
+      }
+      // 对于 column flow，如果设置了 rows，使用 grid-template-rows
+      // 否则使用 auto-rows 让行自动创建
+      if (props.rows) {
+        if (typeof props.rows === 'number') {
+          style.gridTemplateRows = `repeat(${props.rows}, 1fr)`
+        } else {
+          style.gridTemplateRows = props.rows
+        }
       } else {
-        style.gridTemplateRows = props.rows
+        // 使用 auto-rows 让行根据内容自动调整
+        style.gridAutoRows = 'auto'
+      }
+    } else {
+      // 当 autoFlow 是 row（默认）时，正常处理
+      if (typeof props.columns === 'number') {
+        style.gridTemplateColumns = `repeat(${props.columns}, 1fr)`
+      } else if (props.columns) {
+        style.gridTemplateColumns = props.columns
+      }
+      
+      if (props.rows) {
+        if (typeof props.rows === 'number') {
+          style.gridTemplateRows = `repeat(${props.rows}, 1fr)`
+        } else {
+          style.gridTemplateRows = props.rows
+        }
       }
     }
     

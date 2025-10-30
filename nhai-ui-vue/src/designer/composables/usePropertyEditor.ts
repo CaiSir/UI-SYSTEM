@@ -187,6 +187,15 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
     
     // 更新 instance - 优先尝试调用 setter 方法
     if (comp.instance) {
+      // Grid 组件不支持这些属性，直接跳过 setter 调用
+      if (comp.type === 'grid' && (key === 'direction' || key === 'justify' || key === 'wrap')) {
+        // 这些属性不存在于 NhaiGridCommand，只更新 props，不调用 setter
+        comp.props[key] = value
+        canvasComponents.value = [...canvasComponents.value]
+        updateCode()
+        return
+      }
+      
       const setterMethod = 'set' + key.charAt(0).toUpperCase() + key.slice(1)
       if (typeof comp.instance[setterMethod] === 'function') {
         if ((comp.type === 'grid') && (key === 'columns' || key === 'rows')) {

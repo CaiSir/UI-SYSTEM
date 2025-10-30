@@ -131,11 +131,11 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
     this.autoFlow = autoFlow
     this.setProperty('autoFlow', autoFlow)
     console.log('[Grid.setAutoFlow] 设置完成，_mounted:', this._mounted, 'autoFlow:', this.autoFlow)
-    // 不在这里调用 scheduleUpdate，让 DesignerApp 直接调用 update() 来避免重复
-    // if (this._mounted) {
-    //   console.log('[Grid.setAutoFlow] 调用 scheduleUpdate')
-    //   this.scheduleUpdate()
-    // }
+    // 如果已经挂载，立即触发更新以确保样式正确应用
+    if (this._mounted) {
+      console.log('[Grid.setAutoFlow] 触发 update 以确保样式正确应用')
+      this.scheduleUpdate()
+    }
     return this
   }
 
@@ -414,6 +414,63 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
       if (!this.childElements || this.childElements.size === 0) {
         this.renderAllChildren()
       }
+      
+      // 强制应用样式以确保 grid-auto-flow 等属性正确生效
+      if (this.contentContainer) {
+        const gridElement = (this.contentContainer.classList?.contains('vue-grid') 
+          ? this.contentContainer 
+          : this.contentContainer.querySelector('.vue-grid')) as HTMLElement
+        if (gridElement) {
+          requestAnimationFrame(() => {
+            nextTick(() => {
+              // 强制应用所有 Grid 样式
+              const isColumnFlow = this.autoFlow === 'column' || this.autoFlow === 'column dense'
+              gridElement.style.setProperty('display', 'grid', 'important')
+              gridElement.style.setProperty('grid-auto-flow', this.autoFlow, 'important')
+              
+              // 根据 autoFlow 方向决定如何应用 columns 和 rows
+              if (isColumnFlow) {
+                if (typeof this.columns === 'number') {
+                  gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
+                } else if (this.columns) {
+                  gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
+                }
+                if (this.rows) {
+                  if (typeof this.rows === 'number') {
+                    gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
+                  } else {
+                    gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
+                  }
+                } else {
+                  gridElement.style.setProperty('grid-auto-rows', 'auto', 'important')
+                }
+              } else {
+                if (typeof this.columns === 'number') {
+                  gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
+                } else if (this.columns) {
+                  gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
+                }
+                if (this.rows) {
+                  if (typeof this.rows === 'number') {
+                    gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
+                  } else {
+                    gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
+                  }
+                }
+              }
+              
+              gridElement.style.setProperty('justify-items', this.justifyItems, 'important')
+              gridElement.style.setProperty('align-items', this.alignItems, 'important')
+              if (this.gap) {
+                gridElement.style.setProperty('gap', this.gap, 'important')
+              } else if (this.spacing) {
+                const gapValue = typeof this.spacing === 'number' ? `${this.spacing * 8}px` : String(this.spacing)
+                gridElement.style.setProperty('gap', gapValue, 'important')
+              }
+            })
+          })
+        }
+      }
     })
     
     this._appInstance = app
@@ -627,17 +684,42 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
                 gridElement.style.setProperty('display', 'grid', 'important')
                 
                 // 确保所有 Grid 样式都正确应用（使用 !important 防止被覆盖）
+                const isColumnFlow = this.autoFlow === 'column' || this.autoFlow === 'column dense'
                 gridElement.style.setProperty('grid-auto-flow', this.autoFlow, 'important')
-                if (typeof this.columns === 'number') {
-                  gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
-                } else if (this.columns) {
-                  gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
-                }
-                if (this.rows) {
-                  if (typeof this.rows === 'number') {
-                    gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
+                
+                // 根据 autoFlow 方向决定如何应用 columns 和 rows
+                if (isColumnFlow) {
+                  // 当 autoFlow 是 column 时，columns 控制列数
+                  if (typeof this.columns === 'number') {
+                    gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
+                  } else if (this.columns) {
+                    gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
+                  }
+                  // 对于 column flow，如果设置了 rows，使用 grid-template-rows
+                  // 否则使用 auto-rows 让行自动创建
+                  if (this.rows) {
+                    if (typeof this.rows === 'number') {
+                      gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
+                    } else {
+                      gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
+                    }
                   } else {
-                    gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
+                    // 使用 auto-rows 让行根据内容自动调整
+                    gridElement.style.setProperty('grid-auto-rows', 'auto', 'important')
+                  }
+                } else {
+                  // 当 autoFlow 是 row（默认）时，正常处理
+                  if (typeof this.columns === 'number') {
+                    gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
+                  } else if (this.columns) {
+                    gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
+                  }
+                  if (this.rows) {
+                    if (typeof this.rows === 'number') {
+                      gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
+                    } else {
+                      gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
+                    }
                   }
                 }
                 gridElement.style.setProperty('justify-items', this.justifyItems, 'important')
@@ -663,7 +745,8 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
                 console.log('[Grid.update] 强制设置样式后的检查:', {
                   display: recomputedStyle.display,
                   gridAutoFlow: recomputedStyle.gridAutoFlow || '(空)',
-                  gridTemplateColumns: recomputedStyle.gridTemplateColumns || '(空)'
+                  gridTemplateColumns: recomputedStyle.gridTemplateColumns || '(空)',
+                  gridTemplateRows: recomputedStyle.gridTemplateRows || '(空)'
                 })
               }
               
@@ -695,23 +778,44 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
   // 统一的样式应用方法
   private applyGridStyles(gridElement: HTMLElement): void {
     // 统一应用所有 Grid 样式属性
+    const isColumnFlow = this.autoFlow === 'column' || this.autoFlow === 'column dense'
     gridElement.style.setProperty('grid-auto-flow', this.autoFlow, 'important')
     gridElement.style.setProperty('justify-items', this.justifyItems, 'important')
     gridElement.style.setProperty('align-items', this.alignItems, 'important')
     
-    // 列模板
-    if (typeof this.columns === 'number') {
-      gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
-    } else if (this.columns) {
-      gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
-    }
-    
-    // 行模板
-    if (this.rows) {
-      if (typeof this.rows === 'number') {
-        gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
+    // 根据 autoFlow 方向决定如何应用 columns 和 rows
+    if (isColumnFlow) {
+      // 当 autoFlow 是 column 时，columns 控制列数
+      if (typeof this.columns === 'number') {
+        gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
+      } else if (this.columns) {
+        gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
+      }
+      // 对于 column flow，如果设置了 rows，使用 grid-template-rows
+      // 否则使用 auto-rows 让行自动创建
+      if (this.rows) {
+        if (typeof this.rows === 'number') {
+          gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
+        } else {
+          gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
+        }
       } else {
-        gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
+        // 使用 auto-rows 让行根据内容自动调整
+        gridElement.style.setProperty('grid-auto-rows', 'auto', 'important')
+      }
+    } else {
+      // 当 autoFlow 是 row（默认）时，正常处理
+      if (typeof this.columns === 'number') {
+        gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
+      } else if (this.columns) {
+        gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
+      }
+      if (this.rows) {
+        if (typeof this.rows === 'number') {
+          gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
+        } else {
+          gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
+        }
       }
     }
     
