@@ -24,4 +24,5 @@ export type { MenuItem } from './MenuBar'
 export type { LayoutItem } from './LayoutBuilder'
 export type { AbsoluteItem } from './AbsolutePanel'
 export type { MenuItem as WidgetMenuItem } from './Widget'
+export type { GridOptions, GridEvents, GridItemConfig } from './Grid'
 

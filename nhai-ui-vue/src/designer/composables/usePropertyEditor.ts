@@ -3,6 +3,108 @@ import { nextTick } from 'vue'
 import type { CanvasComponent } from '../types/designer'
 import type { Ref } from 'vue'
 
+// 辅助函数：恢复子控件到 Grid 容器
+function restoreChildrenToGrid(
+  actualGridContainer: HTMLElement,
+  savedChildMappings: Array<{ child: any, wrapper: HTMLElement }>,
+  gridInstance: any,
+  compId: string,
+  _compType: string,
+  layoutChildren: Ref<Map<any, any>>
+) {
+  gridInstance.contentContainer = actualGridContainer
+  
+  if (savedChildMappings.length > 0) {
+    gridInstance.childElements.clear()
+    
+    savedChildMappings.forEach(({ child, wrapper }) => {
+      // 确保 wrapper 从旧位置移除
+      if (wrapper.parentNode && wrapper.parentNode !== actualGridContainer) {
+        wrapper.parentNode.removeChild(wrapper)
+      }
+      // 添加到新的 Grid 容器
+      if (!actualGridContainer.contains(wrapper)) {
+        actualGridContainer.appendChild(wrapper)
+      }
+      // 更新 gridInstance.childElements
+      gridInstance.childElements.set(child, wrapper)
+      
+      // 同时更新 layoutChildren，确保映射关系正确
+      const existingInfo = layoutChildren.value.get(child)
+      if (existingInfo && existingInfo.layoutId === compId) {
+        layoutChildren.value.set(child, {
+          ...existingInfo,
+          element: wrapper  // 更新 wrapper 引用
+        })
+      }
+    })
+    
+    // 强制更新 layoutChildren 以触发响应式更新
+    layoutChildren.value = new Map(layoutChildren.value)
+  }
+}
+
+// 辅助函数：更新 Grid element
+function updateGridElement(
+  newElement: HTMLElement,
+  _gridInstance: any,
+  comp: any,
+  savedChildMappings: Array<{ child: any, wrapper: HTMLElement }>,
+  canvasComponents: Ref<any[]>,
+  updateCode: () => void
+) {
+  // 更新 element，此时子控件已经在正确的位置了
+  ;(comp.instance as any)._element = newElement
+  ;(comp.instance as any)._mounted = true
+  ;(comp.instance as any).didMount()
+  comp.element = newElement
+  
+  const index = canvasComponents.value.findIndex(c => c.id === comp.id)
+  if (index >= 0) {
+    const renderKey = (comp._renderKey || 0) + 1
+    comp._renderKey = renderKey
+    canvasComponents.value[index] = { 
+      ...canvasComponents.value[index], 
+      element: newElement,
+      _renderKey: renderKey
+    }
+    canvasComponents.value = [...canvasComponents.value]
+    
+    // 等待 DOM 更新，然后设置样式
+    nextTick(() => {
+      const canvasWrapper = document.querySelector(`[data-component-id="${comp.id}"]`)
+      if (canvasWrapper) {
+        const actualGridContainer = canvasWrapper.querySelector('.vue-grid') as HTMLElement
+        if (actualGridContainer) {
+          const gridAutoFlow = window.getComputedStyle(actualGridContainer).gridAutoFlow || ''
+          const gridOuterElement = comp.element as HTMLElement
+          
+          // 不再强制设置宽度，让 Grid 根据内容自适应
+          // 只设置最小尺寸确保可见
+          if (!gridOuterElement.style.minWidth) {
+            gridOuterElement.style.minWidth = '200px'
+          }
+          if (!gridOuterElement.style.minHeight) {
+            gridOuterElement.style.minHeight = '100px'
+          }
+          
+          if (gridAutoFlow.includes('column')) {
+            // 垂直布局时，确保有足够高度
+            const estimatedHeight = savedChildMappings.length * 100 + (savedChildMappings.length - 1) * 16 + 40
+            const currentHeight = parseInt(window.getComputedStyle(actualGridContainer).height || '0')
+            const minHeight = parseInt(window.getComputedStyle(actualGridContainer).minHeight || '0')
+            if (currentHeight < estimatedHeight && minHeight < estimatedHeight) {
+              actualGridContainer.style.minHeight = `${estimatedHeight}px`
+            }
+          }
+        }
+      }
+      
+      updateCode()
+    })
+  }
+}
+
 interface PropertyEditorDependencies {
   canvasComponents: Ref<CanvasComponent[]>
   dialogChildren: Ref<Map<any, any>>
@@ -256,6 +358,9 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
         try {
           const gridInstance = comp.instance as any
           const savedChildMappings: Array<{ child: any, wrapper: HTMLElement }> = []
+          
+          // 同时从 gridInstance.childElements 和 layoutChildren 中获取子组件映射
+          // 因为子控件的 wrapper 可能存储在 layoutChildren 中
           if (gridInstance.childElements && gridInstance.childElements.size > 0) {
             gridInstance.childElements.forEach((wrapper: HTMLElement, child: any) => {
               if (wrapper && child) {
@@ -267,6 +372,21 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
             })
           }
           
+          // 也从 layoutChildren 中获取，确保不遗漏
+          layoutChildren.value.forEach((info, childInstance) => {
+            if (info.layoutId === comp.id && info.layoutType === comp.type) {
+              // 检查是否已经在 savedChildMappings 中
+              const exists = savedChildMappings.some(item => item.child === childInstance)
+              if (!exists && info.element) {
+                // 从父节点中移除，但保留 wrapper
+                if (info.element.parentNode) {
+                  info.element.parentNode.removeChild(info.element)
+                }
+                savedChildMappings.push({ child: childInstance, wrapper: info.element })
+              }
+            }
+          })
+          
           if ((comp.instance as any)._appInstance) {
             try {
               ;(comp.instance as any)._appInstance.unmount()
@@ -276,91 +396,44 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
           }
           
           const newElement = (comp.instance as any).doRender()
-          ;(comp.instance as any)._element = newElement
-          ;(comp.instance as any)._mounted = true
-          ;(comp.instance as any).didMount()
-          comp.element = newElement
           
-          const index = canvasComponents.value.findIndex(c => c.id === comp.id)
-          if (index >= 0) {
-            comp.element = newElement
-            const renderKey = (comp._renderKey || 0) + 1
-            comp._renderKey = renderKey
-            canvasComponents.value[index] = { 
-              ...canvasComponents.value[index], 
-              element: newElement,
-              _renderKey: renderKey
-            }
-            canvasComponents.value = [...canvasComponents.value]
+          // 关键：在更新 element 之前，必须先将子控件添加到新的 Grid 容器
+          // 因为 v-html 会使用 outerHTML，如果子控件不在 element 内部，会被丢失
+          // 使用 nextTick 确保 Vue 组件已经挂载，然后立即添加子控件
+          nextTick(() => {
+            // 同步查找，因为 Vue 组件应该已经挂载
+            let actualGridContainer = newElement.querySelector('.vue-grid') as HTMLElement
             
-            requestAnimationFrame(() => {
-              nextTick(() => {
-                nextTick(() => {
-                  const canvasWrapper = document.querySelector(`[data-component-id="${comp.id}"]`)
-                  if (canvasWrapper) {
-                    const actualGridContainer = canvasWrapper.querySelector('.vue-grid') as HTMLElement
-                    if (actualGridContainer) {
-                      gridInstance.contentContainer = actualGridContainer
-                      
-                      const gridAutoFlow = window.getComputedStyle(actualGridContainer).gridAutoFlow || ''
-                      const gridOuterElement = comp.element as HTMLElement
-                      const gridOuterStyle = window.getComputedStyle(gridOuterElement)
-                      
-                      const currentOuterWidth = parseInt(gridOuterStyle.width || '0') || parseInt(gridOuterStyle.minWidth || '0')
-                      const minRequiredWidth = 600
-                      if (currentOuterWidth < minRequiredWidth) {
-                        gridOuterElement.style.minWidth = `${minRequiredWidth}px`
-                        if (!gridOuterElement.style.width || parseInt(gridOuterElement.style.width) < minRequiredWidth) {
-                          gridOuterElement.style.width = `${minRequiredWidth}px`
-                        }
-                      }
-                      
-                      if (gridAutoFlow.includes('column')) {
-                        const estimatedHeight = savedChildMappings.length * 100 + (savedChildMappings.length - 1) * 16 + 40
-                        const currentHeight = parseInt(window.getComputedStyle(actualGridContainer).height || '0')
-                        const minHeight = parseInt(window.getComputedStyle(actualGridContainer).minHeight || '0')
-                        if (currentHeight < estimatedHeight && minHeight < estimatedHeight) {
-                          actualGridContainer.style.minHeight = `${estimatedHeight}px`
-                        }
-                      }
-                      
-                      if (!actualGridContainer.style.width || parseInt(actualGridContainer.style.width) < minRequiredWidth) {
-                        actualGridContainer.style.width = '100%'
-                        actualGridContainer.style.minWidth = `${minRequiredWidth}px`
-                      }
-                      
-                      const autoRenderedChildren = Array.from(actualGridContainer.children).filter((el: Element) => {
-                        return !(el instanceof HTMLElement && 
-                               (el.classList.contains('grid-child-component') || 
-                                el.classList.contains('layout-child-component')))
-                      })
-                      autoRenderedChildren.forEach((el: Element) => {
-                        actualGridContainer.removeChild(el)
-                      })
-                      
-                      if (savedChildMappings.length > 0) {
-                        gridInstance.childElements.clear()
-                        
-                        savedChildMappings.forEach(({ child, wrapper }) => {
-                          if (wrapper.parentNode && wrapper.parentNode !== actualGridContainer) {
-                            wrapper.parentNode.removeChild(wrapper)
-                          }
-                          if (!actualGridContainer.contains(wrapper)) {
-                            actualGridContainer.appendChild(wrapper)
-                          }
-                          gridInstance.childElements.set(child, wrapper)
-                        })
-                        
-                        void actualGridContainer.offsetHeight
+            // 如果找不到，等待一下再尝试（Vue 组件可能需要更多时间渲染）
+            if (!actualGridContainer) {
+              setTimeout(() => {
+                actualGridContainer = newElement.querySelector('.vue-grid') as HTMLElement
+                if (actualGridContainer) {
+                  restoreChildrenToGrid(actualGridContainer, savedChildMappings, gridInstance, comp.id, comp.type, layoutChildren)
+                  // 子控件已添加，现在更新 element
+                  updateGridElement(newElement, gridInstance, comp, savedChildMappings, canvasComponents, updateCode)
+                } else {
+                  // 如果还是找不到，直接更新 element，子控件会在后续通过 DOM 操作恢复
+                  updateGridElement(newElement, gridInstance, comp, savedChildMappings, canvasComponents, updateCode)
+                  // 尝试从 DOM 中找到并恢复子控件
+                  nextTick(() => {
+                    const canvasWrapper = document.querySelector(`[data-component-id="${comp.id}"]`)
+                    if (canvasWrapper) {
+                      const gridContainer = canvasWrapper.querySelector('.vue-grid') as HTMLElement
+                      if (gridContainer) {
+                        restoreChildrenToGrid(gridContainer, savedChildMappings, gridInstance, comp.id, comp.type, layoutChildren)
                       }
                     }
-                  }
-                  
-                  updateCode()
-                })
-              })
-            })
-          }
+                  })
+                }
+              }, 100)
+            } else {
+              // 立即恢复子控件到新 element
+              restoreChildrenToGrid(actualGridContainer, savedChildMappings, gridInstance, comp.id, comp.type, layoutChildren)
+              // 子控件已添加，现在更新 element（此时子控件已经包含在 newElement.outerHTML 中了）
+              updateGridElement(newElement, gridInstance, comp, savedChildMappings, canvasComponents, updateCode)
+            }
+          })
         } catch (e) {
           console.error('[DesignerApp.updateDynamicProp] doRender() 失败:', e)
         }

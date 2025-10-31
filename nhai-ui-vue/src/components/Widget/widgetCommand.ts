@@ -3,7 +3,7 @@
  * 提供窗口管理功能（最大化、最小化、关闭）和子控件支持
  */
 
-import { createApp, h, defineComponent, nextTick } from 'vue'
+import { createApp, h, defineComponent, nextTick, ref } from 'vue'
 import Widget from './Widget.vue'
 import { BaseCommand, IBaseCommandProps, IBaseCommandEvents } from '../../lib/BaseCommand'
 
@@ -52,9 +52,9 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
   private canClose: boolean = true
   private minimized: boolean = false
   private maximized: boolean = false
-  private position: { x: number; y: number } = { x: 100, y: 100 }
+  private position?: { x: number; y: number }  // 默认不设置位置，居中显示
   private zIndex: number = 1000
-  private previousState?: { width: string | number; height: string | number; position: { x: number; y: number } }
+  private previousState?: { width: string | number; height: string | number; position?: { x: number; y: number } }
 
   // 子组件管理
   protected childElements: Map<BaseCommand<any, any>, HTMLElement> = new Map()
@@ -77,7 +77,7 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
     this.canClose = options.canClose ?? true
     this.minimized = options.minimized ?? false
     this.maximized = options.maximized ?? false
-    this.position = options.position ?? { x: 100, y: 100 }
+    this.position = options.position  // 默认不设置位置，居中显示
     this.zIndex = options.zIndex ?? 1000
 
     Object.assign(this._props, {
@@ -92,7 +92,7 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
       canClose: this.canClose,
       minimized: this.minimized,
       maximized: this.maximized,
-      position: this.position,
+      position: this.position,  // undefined 表示居中
       zIndex: this.zIndex,
       ...options
     })
@@ -171,16 +171,20 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
   }
 
   setPosition(x: number, y: number): this {
-    this.position = { x, y }
+    this.position = { x, y }  // 设置位置后，窗口从居中切换到固定位置
     this.setProperty('position', this.position)
+    // 更新响应式引用
+    if ((this as any)._positionRef) {
+      ;(this as any)._positionRef.value = { x, y }
+    }
     if (this._mounted) {
       this.scheduleUpdate()
     }
     return this
   }
 
-  getPosition(): { x: number; y: number } {
-    return { ...this.position }
+  getPosition(): { x: number; y: number } | undefined {
+    return this.position ? { ...this.position } : undefined
   }
 
   setZIndex(zIndex: number): this {
@@ -190,6 +194,52 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
       this.scheduleUpdate()
     }
     return this
+  }
+
+  // ==================== 更新方法 ====================
+
+  protected override update(): void {
+    // 更新响应式引用，触发 Vue 组件重新渲染
+    if ((this as any)._titleRef) {
+      ;(this as any)._titleRef.value = this.title
+    }
+    if ((this as any)._widthRef) {
+      ;(this as any)._widthRef.value = this.width
+    }
+    if ((this as any)._heightRef) {
+      ;(this as any)._heightRef.value = this.height
+    }
+    if ((this as any)._fullscreenRef) {
+      ;(this as any)._fullscreenRef.value = this.fullscreen
+    }
+    if ((this as any)._menuBarVisibleRef) {
+      ;(this as any)._menuBarVisibleRef.value = this.menuBarVisible
+    }
+    if ((this as any)._menuItemsRef) {
+      ;(this as any)._menuItemsRef.value = this.menuItems
+    }
+    if ((this as any)._canMinimizeRef) {
+      ;(this as any)._canMinimizeRef.value = this.canMinimize
+    }
+    if ((this as any)._canMaximizeRef) {
+      ;(this as any)._canMaximizeRef.value = this.canMaximize
+    }
+    if ((this as any)._canCloseRef) {
+      ;(this as any)._canCloseRef.value = this.canClose
+    }
+    if ((this as any)._minimizedRef) {
+      ;(this as any)._minimizedRef.value = this.minimized
+    }
+    if ((this as any)._maximizedRef) {
+      ;(this as any)._maximizedRef.value = this.maximized
+    }
+    if ((this as any)._positionRef) {
+      ;(this as any)._positionRef.value = this.position
+    }
+    if ((this as any)._zIndexRef) {
+      ;(this as any)._zIndexRef.value = this.zIndex
+    }
+    super.update()
   }
 
   // ==================== 窗口操作方法 ====================
@@ -202,7 +252,7 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
       this.previousState = {
         width: this.width,
         height: this.height,
-        position: { ...this.position }
+        position: this.position ? { ...this.position } : undefined
       }
     }
     
@@ -211,7 +261,7 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
     this.emit('minimize')
     
     if (this._mounted) {
-      this.scheduleUpdate()
+      this.scheduleUpdate()  // update() 方法会更新所有响应式引用
     }
     return this
   }
@@ -228,7 +278,7 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
         this.previousState = {
           width: this.width,
           height: this.height,
-          position: { ...this.position }
+          position: this.position ? { ...this.position } : undefined
         }
       }
       this.maximized = true
@@ -238,7 +288,7 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
       this.emit('maximize')
       
       if (this._mounted) {
-        this.scheduleUpdate()
+        this.scheduleUpdate()  // update() 方法会更新所有响应式引用
       }
     }
     return this
@@ -248,7 +298,7 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
     if (this.previousState) {
       this.width = this.previousState.width
       this.height = this.previousState.height
-      this.position = { ...this.previousState.position }
+      this.position = this.previousState.position ? { ...this.previousState.position } : undefined
       this.setProperty('width', this.width)
       this.setProperty('height', this.height)
       this.setProperty('position', this.position)
@@ -262,14 +312,25 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
     this.emit('restore')
     
     if (this._mounted) {
-      this.scheduleUpdate()
+      this.scheduleUpdate()  // update() 方法会更新所有响应式引用
     }
     return this
   }
 
   close(): this {
     this.emit('close')
-    // 关闭时可以选择卸载组件或隐藏
+    
+    // 卸载组件实例（包括从 DOM 中移除）
+    if (this._mounted) {
+      // 先从 DOM 中移除元素
+      if (this._element && this._element.parentNode) {
+        this._element.parentNode.removeChild(this._element)
+      }
+      
+      // 卸载组件（清理 Vue 实例、子组件等）
+      this.unmount()
+    }
+    
     return this
   }
 
@@ -462,22 +523,53 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
     const container = document.createElement('div')
     const self = this
 
+    // 使用响应式引用，确保属性变化时组件会更新
+    const titleRef = ref(self.title)
+    const widthRef = ref(self.width)
+    const heightRef = ref(self.height)
+    const fullscreenRef = ref(self.fullscreen)
+    const menuBarVisibleRef = ref(self.menuBarVisible)
+    const menuItemsRef = ref(self.menuItems)
+    const canMinimizeRef = ref(self.canMinimize)
+    const canMaximizeRef = ref(self.canMaximize)
+    const canCloseRef = ref(self.canClose)
+    const minimizedRef = ref(self.minimized)
+    const maximizedRef = ref(self.maximized)
+    const positionRef = ref(self.position)
+    const zIndexRef = ref(self.zIndex)
+
+    // 保存引用以便后续更新
+    ;(this as any)._titleRef = titleRef
+    ;(this as any)._widthRef = widthRef
+    ;(this as any)._heightRef = heightRef
+    ;(this as any)._fullscreenRef = fullscreenRef
+    ;(this as any)._menuBarVisibleRef = menuBarVisibleRef
+    ;(this as any)._menuItemsRef = menuItemsRef
+    ;(this as any)._canMinimizeRef = canMinimizeRef
+    ;(this as any)._canMaximizeRef = canMaximizeRef
+    ;(this as any)._canCloseRef = canCloseRef
+    ;(this as any)._minimizedRef = minimizedRef
+    ;(this as any)._maximizedRef = maximizedRef
+    ;(this as any)._positionRef = positionRef
+    ;(this as any)._zIndexRef = zIndexRef
+
     const WidgetWrapper = defineComponent({
       setup() {
         return () => h(Widget, {
-          title: self.title,
-          width: self.width,
-          height: self.height,
-          fullscreen: self.fullscreen,
-          menuBarVisible: self.menuBarVisible,
-          menuItems: self.menuItems,
-          canMinimize: self.canMinimize,
-          canMaximize: self.canMaximize,
-          canClose: self.canClose,
-          minimized: self.minimized,
-          maximized: self.maximized,
-          position: self.position,
-          zIndex: self.zIndex,
+          key: `${minimizedRef.value}-${maximizedRef.value}-${fullscreenRef.value}`, // 添加 key 强制更新
+          title: titleRef.value,
+          width: widthRef.value,
+          height: heightRef.value,
+          fullscreen: fullscreenRef.value,
+          menuBarVisible: menuBarVisibleRef.value,
+          menuItems: menuItemsRef.value,
+          canMinimize: canMinimizeRef.value,
+          canMaximize: canMaximizeRef.value,
+          canClose: canCloseRef.value,
+          minimized: minimizedRef.value,
+          maximized: maximizedRef.value,
+          position: positionRef.value,
+          zIndex: zIndexRef.value,
           onMinimize: () => {
             self.minimize()
           },
@@ -497,8 +589,10 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
             self.emit('focus')
           },
           onPositionChange: (pos: { x: number; y: number }) => {
+            // 拖拽后设置位置，从居中切换到固定位置
             self.position = pos
             self.setProperty('position', pos)
+            positionRef.value = pos
           }
         }, {
           default: () => {
@@ -528,6 +622,20 @@ export class NhaiWidgetCommand extends BaseCommand<WidgetOptions, WidgetEvents> 
   override unmount(): void {
     this.childElements.clear()
     this.contentContainer = undefined
+    // 清理响应式引用
+    ;(this as any)._titleRef = undefined
+    ;(this as any)._widthRef = undefined
+    ;(this as any)._heightRef = undefined
+    ;(this as any)._fullscreenRef = undefined
+    ;(this as any)._menuBarVisibleRef = undefined
+    ;(this as any)._menuItemsRef = undefined
+    ;(this as any)._canMinimizeRef = undefined
+    ;(this as any)._canMaximizeRef = undefined
+    ;(this as any)._canCloseRef = undefined
+    ;(this as any)._minimizedRef = undefined
+    ;(this as any)._maximizedRef = undefined
+    ;(this as any)._positionRef = undefined
+    ;(this as any)._zIndexRef = undefined
     super.unmount()
   }
 }

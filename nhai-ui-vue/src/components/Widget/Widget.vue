@@ -12,10 +12,10 @@
         <span v-if="menuBarVisible && menuItems && menuItems.length > 0" class="menu-icon">☰</span>
         <span>{{ title }}</span>
       </div>
-      <div class="widget-actions">
-        <button v-if="canMinimize" class="widget-btn minimize" @click="handleMinimize" title="最小化">−</button>
-        <button v-if="canMaximize" class="widget-btn maximize" @click="handleMaximize" title="最大化/还原">□</button>
-        <button v-if="canClose" class="widget-btn close" @click="handleClose" title="关闭">×</button>
+      <div class="widget-actions" @mousedown.stop>
+        <button v-if="canMinimize" class="widget-btn minimize" @click.stop="handleMinimize" title="最小化">−</button>
+        <button v-if="canMaximize" class="widget-btn maximize" @click.stop="handleMaximize" title="最大化/还原">□</button>
+        <button v-if="canClose" class="widget-btn close" @click.stop="handleClose" title="关闭">×</button>
       </div>
     </div>
 
@@ -89,7 +89,7 @@ const props = withDefaults(defineProps<Props>(), {
   canClose: true,
   minimized: false,
   maximized: false,
-  position: () => ({ x: 100, y: 100 }),
+  position: undefined,  // undefined 表示默认居中
   zIndex: 1000
 })
 
@@ -107,13 +107,16 @@ const emit = defineEmits<{
 watch(() => props.position, (newPos) => {
   if (newPos) {
     currentPosition.value = { ...newPos }
+  } else {
+    // position 为 undefined 时，重置为 undefined，使用居中布局
+    currentPosition.value = undefined
   }
 }, { deep: true })
 
 const contentRef = ref<HTMLElement>()
 const isDragging = ref(false)
 const dragOffset = ref({ x: 0, y: 0 })
-const currentPosition = ref({ x: props.position.x, y: props.position.y })
+const currentPosition = ref<{ x: number; y: number } | undefined>(props.position ? { ...props.position } : undefined)
 
 const widgetClasses = computed(() => ({
   'widget-fullscreen': props.fullscreen,
@@ -134,18 +137,33 @@ const widgetStyles = computed(() => {
   if (props.maximized) {
     return {
       width: '100vw',
-      height: 'calc(100vh - 40px)', // 留出底部栏空间
+      height: '100vh', // 铺满整个视口，不留白
       top: '0',
       left: '0',
       zIndex: props.zIndex
     }
   }
-  return {
-    width: typeof props.width === 'number' ? `${props.width}px` : props.width,
-    height: typeof props.height === 'number' ? `${props.height}px` : props.height,
-    left: `${currentPosition.value.x}px`,
-    top: `${currentPosition.value.y}px`,
-    zIndex: props.zIndex
+  // 默认居中显示
+  const hasPosition = props.position && currentPosition.value !== undefined
+  if (hasPosition && currentPosition.value) {
+    // 如果指定了 position，使用指定位置
+    return {
+      width: typeof props.width === 'number' ? `${props.width}px` : props.width,
+      height: typeof props.height === 'number' ? `${props.height}px` : props.height,
+      left: `${currentPosition.value.x}px`,
+      top: `${currentPosition.value.y}px`,
+      zIndex: props.zIndex
+    }
+  } else {
+    // 否则居中显示
+    return {
+      width: typeof props.width === 'number' ? `${props.width}px` : props.width,
+      height: typeof props.height === 'number' ? `${props.height}px` : props.height,
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%)',
+      zIndex: props.zIndex
+    }
   }
 })
 
@@ -197,13 +215,31 @@ const handleDrag = (e: MouseEvent) => {
   const newY = e.clientY - dragOffset.value.y
   
   // 限制在窗口内
-  const maxX = window.innerWidth - (typeof props.width === 'number' ? props.width : parseInt(props.width) || 800)
-  const maxY = window.innerHeight - (typeof props.height === 'number' ? props.height : parseInt(props.height) || 600)
+  const maxX = window.innerWidth - (typeof props.width === 'number' ? props.width : parseInt(String(props.width)) || 800)
+  const maxY = window.innerHeight - (typeof props.height === 'number' ? props.height : parseInt(String(props.height)) || 600)
+  
+  // 如果之前是居中，现在开始拖拽，需要设置初始位置
+  if (!currentPosition.value) {
+    const width = typeof props.width === 'number' ? props.width : parseInt(String(props.width)) || 800
+    const height = typeof props.height === 'number' ? props.height : parseInt(String(props.height)) || 600
+    // 从居中位置开始计算
+    const centerX = window.innerWidth / 2
+    const centerY = window.innerHeight / 2
+    currentPosition.value = {
+      x: centerX - width / 2,
+      y: centerY - height / 2
+    }
+    // 通知父组件位置变化（从居中切换到固定位置）
+    emit('positionChange', currentPosition.value)
+  }
   
   currentPosition.value = {
     x: Math.max(0, Math.min(newX, maxX)),
     y: Math.max(0, Math.min(newY, maxY))
   }
+  
+  // 通知父组件位置变化
+  emit('positionChange', currentPosition.value)
 }
 
 const stopDrag = () => {
@@ -211,8 +247,10 @@ const stopDrag = () => {
   isDragging.value = false
   document.removeEventListener('mousemove', handleDrag)
   document.removeEventListener('mouseup', stopDrag)
-  // 通知父组件位置变化
-  emit('positionChange', currentPosition.value)
+  // 通知父组件位置变化（如果当前有位置）
+  if (currentPosition.value) {
+    emit('positionChange', currentPosition.value)
+  }
 }
 
 const handleMouseDown = () => {
@@ -336,23 +374,41 @@ onUnmounted(() => {
   position: fixed;
   bottom: 0;
   left: 0;
-  right: 0;
-  height: 40px;
-  background: #f5f5f5;
-  border-top: 1px solid #ddd;
+  height: 48px;
+  min-width: 200px;
+  max-width: 400px;
+  background: white;
+  border: 1px solid #ddd;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px;
   z-index: 9999;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.widget-minimized-bar:hover {
+  background: #fafafa;
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .minimized-title {
   font-weight: 500;
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  margin-right: 8px;
 }
 
 .widget-minimized-bar .widget-btn {
-  margin-left: 8px;
+  margin-left: 4px;
+  flex-shrink: 0;
 }
 </style>

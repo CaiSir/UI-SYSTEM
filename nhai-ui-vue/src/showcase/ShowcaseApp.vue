@@ -82,7 +82,8 @@ import {
   NhaiMenuBarCommand,
   NhaiSplitPanelCommand,
   NhaiGridCommand,
-  NhaiContainerCommand
+  NhaiContainerCommand,
+  NhaiWidgetCommand
 } from '../components'
 let editor: any = null
 
@@ -193,6 +194,7 @@ onMounted(async () => {
   ;(window as any).NhaiSplitPanelCommand = NhaiSplitPanelCommand
   ;(window as any).NhaiGridCommand = NhaiGridCommand
   ;(window as any).NhaiContainerCommand = NhaiContainerCommand
+  ;(window as any).NhaiWidgetCommand = NhaiWidgetCommand
   
   console.log('所有组件类已暴露到全局作用域')
   

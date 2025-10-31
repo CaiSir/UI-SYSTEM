@@ -195,12 +195,88 @@
         </div>
         <pre class="code-content" ref="codeRef">{{ generatedCode }}</pre>
       </aside>
+
+      <!-- 布局面板（多选时显示） -->
+      <aside class="layout-panel" v-show="showLayoutPanel && selectedWidgetChildren.size > 0">
+        <div class="layout-panel-header">
+          <h3>📐 布局设置</h3>
+          <button class="btn-close" @click="closeLayoutPanel">×</button>
+        </div>
+        <div class="layout-panel-content">
+          <div class="layout-info">
+            <p>已选中 <strong>{{ selectedWidgetChildren.size }}</strong> 个控件</p>
+          </div>
+          
+          <div class="layout-options">
+            <div class="layout-option-group">
+              <label>布局方式</label>
+              <select v-model="layoutMode" class="layout-select">
+                <option value="grid">Grid 网格布局</option>
+                <option value="flex-row">Flex 水平布局</option>
+                <option value="flex-column">Flex 垂直布局</option>
+              </select>
+            </div>
+
+            <!-- Grid 布局选项 -->
+            <template v-if="layoutMode === 'grid'">
+              <div class="layout-option-group">
+                <label>列数</label>
+                <input 
+                  type="number" 
+                  v-model.number="gridColumns" 
+                  min="1" 
+                  max="12" 
+                  class="layout-input"
+                />
+              </div>
+              <div class="layout-option-group">
+                <label>间距</label>
+                <input 
+                  type="number" 
+                  v-model.number="gridSpacing" 
+                  min="0" 
+                  max="10" 
+                  class="layout-input"
+                />
+              </div>
+            </template>
+
+            <!-- Flex 布局选项 -->
+            <template v-if="layoutMode.startsWith('flex')">
+              <div class="layout-option-group">
+                <label>间距</label>
+                <input 
+                  type="number" 
+                  v-model.number="flexSpacing" 
+                  min="0" 
+                  max="10" 
+                  class="layout-input"
+                />
+              </div>
+              <div class="layout-option-group" v-if="layoutMode === 'flex-row'">
+                <label>对齐方式</label>
+                <select v-model="flexAlignItems" class="layout-select">
+                  <option value="start">开始</option>
+                  <option value="center">居中</option>
+                  <option value="end">结束</option>
+                  <option value="stretch">拉伸</option>
+                </select>
+              </div>
+            </template>
+          </div>
+
+          <div class="layout-actions">
+            <button class="btn-apply" @click="applyLayout">应用布局</button>
+            <button class="btn-cancel" @click="cancelLayout">取消</button>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, markRaw } from 'vue'
+import { ref, markRaw, onMounted, onBeforeUnmount } from 'vue'
 import { nextTick } from 'vue'
 import {
   NhaiButtonCommand,
@@ -278,9 +354,28 @@ const selectedDialogChild = ref<any | null>(null)
 
 // 当前选中的布局内控件（Grid/Container 的子控件）
 const selectedLayoutChild = ref<any | null>(null)
+
+// Widget 内多选的子控件（Set）
+const selectedWidgetChildren = ref<Set<any>>(new Set())
+
+// 框选状态
+const isBoxSelecting = ref(false)
+const boxSelectStart = ref<{ x: number; y: number } | null>(null)
+const boxSelectEnd = ref<{ x: number; y: number } | null>(null)
+const boxSelectElement = ref<HTMLElement | null>(null)
+
+// 显示布局面板
+const showLayoutPanel = ref(false)
 const showCodePanel = ref(false)
 const codeRef = ref<HTMLElement>()
 const canvasContentRef = ref<HTMLElement>()
+
+// 布局面板状态
+const layoutMode = ref<'grid' | 'flex-row' | 'flex-column'>('grid')
+const gridColumns = ref(4)
+const gridSpacing = ref(2)
+const flexSpacing = ref(2)
+const flexAlignItems = ref<'start' | 'center' | 'end' | 'stretch'>('start')
 
 // 面板收起状态
 const leftPanelCollapsed = ref(false)
@@ -620,6 +715,7 @@ const handleDrop = async (event: DragEvent) => {
           // Grid 使用 CSS Grid 布局，子控件作为 grid item 参与布局
           if (layoutComp.type === 'grid') {
             // Grid item：作为 CSS Grid 的子项，不需要 flex 属性
+            // 使用 fit-content 确保 wrapper 不会过度拉伸
             wrapper.style.cssText = `
               cursor: move;
               user-select: none;
@@ -628,6 +724,8 @@ const handleDrop = async (event: DragEvent) => {
               transition: border-color 0.2s;
               min-width: 0;
               min-height: 0;
+              width: fit-content;
+              height: fit-content;
             `
           } else {
             // Container 使用相对定位
@@ -749,6 +847,7 @@ const handleDrop = async (event: DragEvent) => {
           // Grid 使用 CSS Grid 布局，子控件作为 grid item 参与布局
           if (layoutComp.type === 'grid') {
             // Grid item：作为 CSS Grid 的子项，不需要 flex 属性
+            // 使用 fit-content 确保 wrapper 不会过度拉伸
             wrapper.style.cssText = `
               cursor: move;
               user-select: none;
@@ -757,6 +856,8 @@ const handleDrop = async (event: DragEvent) => {
               transition: border-color 0.2s;
               min-width: 0;
               min-height: 0;
+              width: fit-content;
+              height: fit-content;
             `
           } else {
             // Container 使用相对定位
@@ -851,9 +952,19 @@ const handleDrop = async (event: DragEvent) => {
     }
   }
   
-  // 检查是否放置到 Widget 内容区域
-  let widgetBody = (event.target as Element).closest('.widget-content') as HTMLElement
-  if (widgetBody) {
+    // 检查是否放置到 Widget 内容区域
+    let widgetBody = (event.target as Element).closest('.widget-content') as HTMLElement
+    if (widgetBody) {
+      // 在 Widget 内容区域添加框选支持
+      if (!widgetBody.hasAttribute('data-box-select-enabled')) {
+        widgetBody.setAttribute('data-box-select-enabled', 'true')
+        widgetBody.addEventListener('mousedown', (e) => {
+          // 只在左键点击空白区域时开始框选
+          if (e.button === 0 && !(e.ctrlKey || e.metaKey)) {
+            startBoxSelect(e, widgetBody)
+          }
+        })
+      }
     // 向上查找带有 data-id 的父元素
     let parentWithId: Element | null = widgetBody.parentElement
     while (parentWithId && !parentWithId.getAttribute('data-id')) {
@@ -981,13 +1092,28 @@ const handleDrop = async (event: DragEvent) => {
           // 添加选中和拖拽功能
           wrapper.addEventListener('click', (e) => {
             e.stopPropagation()
-            selectDialogChild(childInstance.instance, widgetId) // 复用 Dialog 的选中逻辑
+            // 支持 Ctrl + 左键多选，或者在多选状态下支持切换选中状态
+            if (e.ctrlKey || e.metaKey || selectedWidgetChildren.value.size > 0) {
+              // Ctrl/Cmd 键按下，或者已有多个控件选中，支持多选切换
+              toggleWidgetChildSelection(childInstance.instance, wrapper)
+            } else {
+              // 单选：清除多选，选中当前项
+              selectedWidgetChildren.value.clear()
+              selectDialogChild(childInstance.instance, widgetId) // 复用 Dialog 的选中逻辑
+              updateWidgetChildSelectionStyles()
+            }
           })
           
           wrapper.addEventListener('mousedown', (e) => {
             e.stopPropagation()
-            startDragDialogChild(childInstance.instance, wrapper, e)
+            // 只在非 Ctrl 键按下时才开始拖拽，避免干扰多选
+            if (!(e.ctrlKey || e.metaKey)) {
+              startDragDialogChild(childInstance.instance, wrapper, e)
+            }
           })
+          
+          // 为 wrapper 添加多选标记，用于框选检测
+          wrapper.setAttribute('data-widget-child-instance', String(childInstance.instance))
           
           widgetBody.appendChild(wrapper)
           
@@ -1214,10 +1340,12 @@ const createChildComponentInstance = async (compDef: any): Promise<{ instance: a
       instance = new NhaiSplitPanelCommand()
       break
     case 'widget':
-      instance = new NhaiWidgetCommand('窗口标题')
-      instance.setWidth('800px')
-      instance.setHeight('600px')
-      instance.setPosition(100, 100)
+      instance = new NhaiWidgetCommand({
+        title: '窗口标题',
+        width: '800px',
+        height: '600px'
+        // 不设置 position，默认居中显示
+      })
       break
     default:
       return null
@@ -1307,10 +1435,12 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       element = instance.render()
       break
     case 'widget':
-      instance = new NhaiWidgetCommand('窗口标题')
-      instance.setWidth('800px')
-      instance.setHeight('600px')
-      instance.setPosition(100, 100)
+      instance = new NhaiWidgetCommand({
+        title: '窗口标题',
+        width: '800px',
+        height: '600px'
+        // 不设置 position，默认居中显示
+      })
       element = instance.render()
       element.setAttribute('data-id', id)
       // Widget 在画布中需要调整为相对定位，而不是 fixed
@@ -1693,18 +1823,21 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       props.rows = gridInstance.rows
       props.templateAreas = gridInstance.templateAreas
       props.autoFlow = gridInstance.autoFlow ?? 'row'
-      props.justifyItems = gridInstance.justifyItems ?? 'stretch'
+      props.justifyItems = gridInstance.justifyItems ?? 'start'  // 默认改为 start，避免子项过度拉伸
       props.alignItems = gridInstance.alignItems ?? 'stretch'
       props.justifyContent = gridInstance.justifyContent
       props.alignContent = gridInstance.alignContent
       props.spacing = gridInstance.spacing ?? 2
       props.gap = gridInstance.gap
-      // 设置默认宽度和高度
+      // Grid 不设置固定宽度，让它根据内容自适应
+      // 只设置最小尺寸以确保在画布中可见和可编辑
       if (!props.style) {
         props.style = {}
       }
-      props.style.width = '800px'
-      props.style.height = '600px'
+      // 不设置固定宽度，让 Grid 自适应内容
+      // 只设置最小尺寸
+      props.style.minWidth = '200px'
+      props.style.minHeight = '100px'
     }
     
     // Container
@@ -1745,7 +1878,8 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
       props.canMinimize = widgetInstance.canMinimize ?? true
       props.canMaximize = widgetInstance.canMaximize ?? true
       props.canClose = widgetInstance.canClose ?? true
-      props.position = widgetInstance.position || { x: 100, y: 100 }
+      // Widget 默认居中显示，不设置 position
+      props.position = widgetInstance.position  // undefined 表示居中
     }
   }
   
@@ -1757,7 +1891,15 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
     top: y + 'px',
   }
   
-  if (compDef.type === 'container') {
+  // Grid 不设置固定宽度，让它根据内容自适应
+  if (compDef.type === 'grid') {
+    initialStyle.width = 'fit-content'
+    initialStyle.height = 'fit-content'
+    initialStyle.display = 'inline-block'
+    // 只设置最小尺寸确保可见
+    initialStyle.minWidth = '200px'
+    initialStyle.minHeight = '100px'
+  } else if (compDef.type === 'container') {
     initialStyle.width = '800px'
     initialStyle.height = '600px'
   }
@@ -1857,13 +1999,514 @@ const clearDialogChildSelection = () => {
   })
 }
 
+// Widget 子控件多选相关函数
+const toggleWidgetChildSelection = (instance: any, wrapper?: HTMLElement) => {
+  if (selectedWidgetChildren.value.has(instance)) {
+    // 再次点击已选中的控件，取消选中
+    selectedWidgetChildren.value.delete(instance)
+    if (wrapper) {
+      wrapper.classList.remove('selected')
+      wrapper.classList.remove('multi-selected')
+    }
+  } else {
+    // 点击未选中的控件，添加到多选
+    selectedWidgetChildren.value.add(instance)
+    if (wrapper) {
+      wrapper.classList.add('multi-selected')
+    }
+  }
+  // 清除单选状态
+  selectedDialogChild.value = null
+  // 更新布局面板显示
+  showLayoutPanel.value = selectedWidgetChildren.value.size > 0
+  updateCode()
+}
+
+const updateWidgetChildSelectionStyles = () => {
+  dialogChildren.value.forEach((info) => {
+    if (selectedWidgetChildren.value.has(info.instance)) {
+      info.wrapper.classList.add('multi-selected')
+      info.wrapper.classList.remove('selected')
+    } else {
+      info.wrapper.classList.remove('multi-selected')
+    }
+  })
+}
+
+// 框选功能
+const startBoxSelect = (event: MouseEvent, widgetBody: HTMLElement) => {
+  // 只允许在 Widget 内容区域框选
+  if (!(event.target as HTMLElement).closest('.widget-content')) return
+  
+  // 避免在子控件上开始框选
+  if ((event.target as HTMLElement).closest('[data-widget-child]')) return
+  
+  isBoxSelecting.value = true
+  const rect = widgetBody.getBoundingClientRect()
+  boxSelectStart.value = {
+    x: event.clientX - rect.left,
+    y: event.clientY - rect.top
+  }
+  boxSelectEnd.value = { ...boxSelectStart.value }
+  
+  // 创建框选元素
+  if (!boxSelectElement.value) {
+    boxSelectElement.value = document.createElement('div')
+    boxSelectElement.value.className = 'box-select-overlay'
+    boxSelectElement.value.style.cssText = `
+      position: absolute;
+      border: 2px dashed #409eff;
+      background: rgba(64, 158, 255, 0.1);
+      pointer-events: none;
+      z-index: 1000;
+    `
+    widgetBody.appendChild(boxSelectElement.value)
+  }
+  
+  updateBoxSelectOverlay()
+  
+  const handleBoxSelectMove = (e: MouseEvent) => {
+    if (!isBoxSelecting.value || !boxSelectStart.value) return
+    const rect = widgetBody.getBoundingClientRect()
+    boxSelectEnd.value = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    }
+    updateBoxSelectOverlay()
+    updateBoxSelectChildren(widgetBody)
+  }
+  
+  const handleBoxSelectEnd = () => {
+    if (isBoxSelecting.value && boxSelectStart.value) {
+      // 框选结束，应用选中状态
+      updateBoxSelectChildren(widgetBody, true)
+      showLayoutPanel.value = selectedWidgetChildren.value.size > 0
+      updateCode()
+    }
+    isBoxSelecting.value = false
+    boxSelectStart.value = null
+    boxSelectEnd.value = null
+    if (boxSelectElement.value && boxSelectElement.value.parentNode) {
+      boxSelectElement.value.parentNode.removeChild(boxSelectElement.value)
+      boxSelectElement.value = null
+    }
+    document.removeEventListener('mousemove', handleBoxSelectMove)
+    document.removeEventListener('mouseup', handleBoxSelectEnd)
+  }
+  
+  document.addEventListener('mousemove', handleBoxSelectMove)
+  document.addEventListener('mouseup', handleBoxSelectEnd)
+}
+
+const updateBoxSelectOverlay = () => {
+  if (!boxSelectElement.value || !boxSelectStart.value || !boxSelectEnd.value) return
+  
+  const left = Math.min(boxSelectStart.value.x, boxSelectEnd.value.x)
+  const top = Math.min(boxSelectStart.value.y, boxSelectEnd.value.y)
+  const width = Math.abs(boxSelectEnd.value.x - boxSelectStart.value.x)
+  const height = Math.abs(boxSelectEnd.value.y - boxSelectStart.value.y)
+  
+  boxSelectElement.value.style.left = `${left}px`
+  boxSelectElement.value.style.top = `${top}px`
+  boxSelectElement.value.style.width = `${width}px`
+  boxSelectElement.value.style.height = `${height}px`
+}
+
+const updateBoxSelectChildren = (widgetBody: HTMLElement, finalize: boolean = false) => {
+  if (!boxSelectStart.value || !boxSelectEnd.value) return
+  
+  const left = Math.min(boxSelectStart.value.x, boxSelectEnd.value.x)
+  const top = Math.min(boxSelectStart.value.y, boxSelectEnd.value.y)
+  const right = Math.max(boxSelectStart.value.x, boxSelectEnd.value.x)
+  const bottom = Math.max(boxSelectStart.value.y, boxSelectEnd.value.y)
+  
+  // 清除之前的框选状态
+  if (!finalize) {
+    // 清除所有框选样式
+    widgetBody.querySelectorAll('.box-selecting').forEach((el) => {
+      el.classList.remove('box-selecting')
+    })
+  }
+  
+  // 检测所有子控件是否在框选区域内
+  widgetBody.querySelectorAll('[data-widget-child]').forEach((wrapper) => {
+    const rect = (wrapper as HTMLElement).getBoundingClientRect()
+    const widgetRect = widgetBody.getBoundingClientRect()
+    const wrapperLeft = rect.left - widgetRect.left
+    const wrapperTop = rect.top - widgetRect.top
+    const wrapperRight = wrapperLeft + rect.width
+    const wrapperBottom = wrapperTop + rect.height
+    
+    // 检查是否在框选区域内（至少有一部分重叠）
+    const isInBox = !(wrapperRight < left || wrapperLeft > right || wrapperBottom < top || wrapperTop > bottom)
+    
+    if (isInBox) {
+      // 根据 wrapper 找到对应的 instance
+      dialogChildren.value.forEach((info, instance) => {
+        if (info.wrapper === wrapper) {
+          if (finalize) {
+            selectedWidgetChildren.value.add(instance)
+          } else {
+            (wrapper as HTMLElement).classList.add('box-selecting')
+          }
+        }
+      })
+    }
+  })
+  
+  if (finalize) {
+    // 清除框选中的样式，应用多选样式
+    widgetBody.querySelectorAll('.box-selecting').forEach((el) => {
+      el.classList.remove('box-selecting')
+      el.classList.add('multi-selected')
+    })
+    // 清除单选状态
+    selectedDialogChild.value = null
+    updateWidgetChildSelectionStyles()
+  }
+}
+
+// 布局面板相关函数
+const closeLayoutPanel = () => {
+  showLayoutPanel.value = false
+  selectedWidgetChildren.value.clear()
+  updateWidgetChildSelectionStyles()
+}
+
+const applyLayout = () => {
+  if (selectedWidgetChildren.value.size === 0) return
+  
+  // 找到所有选中的子控件的 wrapper
+  const selectedWrappers: HTMLElement[] = []
+  const selectedInstances: any[] = []
+  
+  dialogChildren.value.forEach((info, instance) => {
+    if (selectedWidgetChildren.value.has(instance)) {
+      selectedWrappers.push(info.wrapper)
+      selectedInstances.push(instance)
+    }
+  })
+  
+  if (selectedWrappers.length === 0) return
+  
+  // 找到这些 wrapper 的父 Widget 容器
+  const firstWrapper = selectedWrappers[0]
+  const widgetBody = firstWrapper.closest('.widget-content') as HTMLElement
+  if (!widgetBody) return
+  
+  // 找到 Widget 实例
+  const widgetElement = widgetBody.closest('[data-id]') as HTMLElement
+  if (!widgetElement) return
+  const widgetId = widgetElement.getAttribute('data-id')
+  const widgetComp = canvasComponents.value.find(c => c.id === widgetId && c.type === 'widget')
+  if (!widgetComp || !widgetComp.widgetInstance) return
+  
+  if (layoutMode.value === 'grid') {
+    // 应用 Grid 布局
+    // 创建一个 Grid 容器包装选中的控件
+    const gridContainer = document.createElement('div')
+    gridContainer.style.cssText = `
+      position: absolute;
+      display: grid;
+      grid-template-columns: repeat(${gridColumns.value}, auto);
+      gap: ${gridSpacing.value * 8}px;
+      padding: 0;
+      margin: 0;
+    `
+    
+    // 计算 Grid 容器的位置（包围所有选中控件的边界框）
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    selectedWrappers.forEach(wrapper => {
+      const rect = wrapper.getBoundingClientRect()
+      const widgetRect = widgetBody.getBoundingClientRect()
+      const left = rect.left - widgetRect.left
+      const top = rect.top - widgetRect.top
+      const right = left + rect.width
+      const bottom = top + rect.height
+      
+      minX = Math.min(minX, left)
+      minY = Math.min(minY, top)
+      maxX = Math.max(maxX, right)
+      maxY = Math.max(maxY, bottom)
+    })
+    
+    gridContainer.style.left = `${minX}px`
+    gridContainer.style.top = `${minY}px`
+    gridContainer.style.width = 'fit-content'
+    gridContainer.style.height = 'fit-content'
+    
+    // 将选中的控件移动到 Grid 容器中
+    selectedWrappers.forEach((wrapper) => {
+      // 移除绝对定位
+      wrapper.style.position = ''
+      wrapper.style.left = ''
+      wrapper.style.top = ''
+      wrapper.style.width = 'auto'
+      wrapper.style.height = 'auto'
+      
+      // 添加到 Grid 容器（先检查是否还是父节点的子节点）
+      if (wrapper.parentNode === widgetBody) {
+        widgetBody.removeChild(wrapper)
+      }
+      gridContainer.appendChild(wrapper)
+    })
+    
+    // 将 Grid 容器添加到 Widget body
+    widgetBody.appendChild(gridContainer)
+    
+    // 更新代码
+    updateCode()
+    
+    // 关闭布局面板，清除多选
+    closeLayoutPanel()
+  } else if (layoutMode.value === 'flex-row' || layoutMode.value === 'flex-column') {
+    // 应用 Flex 布局
+    const flexContainer = document.createElement('div')
+    flexContainer.style.cssText = `
+      position: absolute;
+      display: flex;
+      flex-direction: ${layoutMode.value === 'flex-row' ? 'row' : 'column'};
+      gap: ${flexSpacing.value * 8}px;
+      align-items: ${flexAlignItems.value};
+      padding: 0;
+      margin: 0;
+    `
+    
+    // 计算 Flex 容器的位置
+    let minX = Infinity, minY = Infinity
+    selectedWrappers.forEach(wrapper => {
+      const rect = wrapper.getBoundingClientRect()
+      const widgetRect = widgetBody.getBoundingClientRect()
+      const left = rect.left - widgetRect.left
+      const top = rect.top - widgetRect.top
+      
+      minX = Math.min(minX, left)
+      minY = Math.min(minY, top)
+    })
+    
+    flexContainer.style.left = `${minX}px`
+    flexContainer.style.top = `${minY}px`
+    flexContainer.style.width = 'fit-content'
+    flexContainer.style.height = 'fit-content'
+    
+    // 将选中的控件移动到 Flex 容器中
+    selectedWrappers.forEach((wrapper) => {
+      // 移除绝对定位
+      wrapper.style.position = ''
+      wrapper.style.left = ''
+      wrapper.style.top = ''
+      wrapper.style.width = 'auto'
+      wrapper.style.height = 'auto'
+      
+      // 添加到 Flex 容器（先检查是否还是父节点的子节点）
+      if (wrapper.parentNode === widgetBody) {
+        widgetBody.removeChild(wrapper)
+      }
+      flexContainer.appendChild(wrapper)
+    })
+    
+    // 将 Flex 容器添加到 Widget body
+    widgetBody.appendChild(flexContainer)
+    
+    // 更新代码
+    updateCode()
+    
+    // 关闭布局面板，清除多选
+    closeLayoutPanel()
+  }
+}
+
+const cancelLayout = () => {
+  closeLayoutPanel()
+}
+
+// 监听键盘事件
+onMounted(() => {
+  document.addEventListener('keydown', handleKeyDown)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleKeyDown)
+})
+
 // 画布点击
 const handleCanvasClick = () => {
   selectedComponent.value = null
   selectedDialogChild.value = null
   selectedLayoutChild.value = null
+  selectedWidgetChildren.value.clear()  // 清除多选
+  showLayoutPanel.value = false
   clearDialogChildSelection()
   clearLayoutChildSelection()
+}
+
+// 删除选中的 Widget 子控件
+const deleteSelectedWidgetChildren = () => {
+  if (selectedWidgetChildren.value.size === 0) return
+  
+  const instancesToDelete: any[] = []
+  selectedWidgetChildren.value.forEach(instance => {
+    instancesToDelete.push(instance)
+  })
+  
+  instancesToDelete.forEach(instance => {
+    const childInfo = dialogChildren.value.get(instance)
+    if (childInfo) {
+      // 从 Widget 实例中移除
+      const widgetElement = childInfo.wrapper.closest('[data-id]') as HTMLElement
+      if (widgetElement) {
+        const widgetId = widgetElement.getAttribute('data-id')
+        const widgetComp = canvasComponents.value.find(c => c.id === widgetId && c.type === 'widget')
+        if (widgetComp && widgetComp.widgetInstance) {
+          // 从 Widget 实例中移除子控件
+          if (widgetComp.widgetInstance.removeChild) {
+            widgetComp.widgetInstance.removeChild(instance)
+          }
+        }
+      }
+      
+      // 从 DOM 中移除
+      if (childInfo.wrapper && childInfo.wrapper.parentNode) {
+        childInfo.wrapper.parentNode.removeChild(childInfo.wrapper)
+      }
+      
+      // 从映射中移除
+      dialogChildren.value.delete(instance)
+      
+      // 如果实例有 unmount 方法，调用它
+      if (instance && typeof instance.unmount === 'function') {
+        try {
+          instance.unmount()
+        } catch (e) {
+          console.warn('卸载子控件失败:', e)
+        }
+      }
+    }
+  })
+  
+  // 清除多选状态
+  selectedWidgetChildren.value.clear()
+  showLayoutPanel.value = false
+  selectedDialogChild.value = null
+  updateCode()
+}
+
+// 键盘事件处理
+const handleKeyDown = (event: KeyboardEvent) => {
+  // Delete 或 Backspace 键删除选中的控件
+  if ((event.key === 'Delete' || event.key === 'Backspace') && !event.ctrlKey && !event.metaKey) {
+    // 优先删除多选的 Widget 子控件
+    if (selectedWidgetChildren.value.size > 0) {
+      event.preventDefault()
+      deleteSelectedWidgetChildren()
+      return
+    }
+    
+    // 删除单选的其他控件
+    if (selectedDialogChild.value) {
+      event.preventDefault()
+      // 删除对话框内控件（复用现有逻辑）
+      const instance = selectedDialogChild.value
+      const childInfo = dialogChildren.value.get(instance)
+      if (childInfo) {
+        // 从 Widget/Dialog 实例中移除
+        const widgetElement = childInfo.wrapper.closest('[data-id]') as HTMLElement
+        if (widgetElement) {
+          const widgetId = widgetElement.getAttribute('data-id')
+          const widgetComp = canvasComponents.value.find(c => c.id === widgetId && (c.type === 'widget' || c.type === 'dialog'))
+          if (widgetComp && (widgetComp.widgetInstance || widgetComp.dialogInstance)) {
+            const instanceToRemove = widgetComp.widgetInstance || widgetComp.dialogInstance
+            if (instanceToRemove && instanceToRemove.removeChild) {
+              instanceToRemove.removeChild(instance)
+            }
+          }
+        }
+        
+        // 从 DOM 中移除
+        if (childInfo.wrapper && childInfo.wrapper.parentNode) {
+          childInfo.wrapper.parentNode.removeChild(childInfo.wrapper)
+        }
+        
+        // 从映射中移除
+        dialogChildren.value.delete(instance)
+        
+        // 卸载实例
+        if (instance && typeof instance.unmount === 'function') {
+          try {
+            instance.unmount()
+          } catch (e) {
+            console.warn('卸载子控件失败:', e)
+          }
+        }
+        
+        selectedDialogChild.value = null
+        updateCode()
+      }
+      return
+    }
+    
+    if (selectedLayoutChild.value) {
+      event.preventDefault()
+      // 删除布局内控件（复用现有逻辑）
+      const instance = selectedLayoutChild.value
+      const childInfo = layoutChildren.value.get(instance)
+      if (childInfo) {
+        // 从布局实例中移除
+        const layoutElement = childInfo.element.closest('[data-id]') as HTMLElement
+        if (layoutElement) {
+          const layoutId = layoutElement.getAttribute('data-id')
+          const layoutComp = canvasComponents.value.find(c => c.id === layoutId && (c.type === 'grid' || c.type === 'container'))
+          if (layoutComp && (layoutComp.gridInstance || layoutComp.containerInstance)) {
+            const instanceToRemove = layoutComp.gridInstance || layoutComp.containerInstance
+            if (instanceToRemove && instanceToRemove.removeChild) {
+              instanceToRemove.removeChild(instance)
+            }
+          }
+        }
+        
+        // 从 DOM 中移除
+        if (childInfo.element && childInfo.element.parentNode) {
+          childInfo.element.parentNode.removeChild(childInfo.element)
+        }
+        
+        // 从映射中移除
+        layoutChildren.value.delete(instance)
+        
+        // 卸载实例
+        if (instance && typeof instance.unmount === 'function') {
+          try {
+            instance.unmount()
+          } catch (e) {
+            console.warn('卸载子控件失败:', e)
+          }
+        }
+        
+        selectedLayoutChild.value = null
+        updateCode()
+      }
+      return
+    }
+    
+    // 删除画布组件
+    if (selectedComponent.value) {
+      event.preventDefault()
+      const index = canvasComponents.value.findIndex(c => c.id === selectedComponent.value?.id)
+      if (index >= 0) {
+        const comp = canvasComponents.value[index]
+        // 卸载组件
+        if (comp.instance && typeof comp.instance.unmount === 'function') {
+          try {
+            comp.instance.unmount()
+          } catch (e) {
+            console.warn('卸载组件失败:', e)
+          }
+        }
+        canvasComponents.value.splice(index, 1)
+        selectedComponent.value = null
+        updateCode()
+      }
+    }
+  }
 }
 
 // 拖拽移动相关
@@ -2687,16 +3330,21 @@ const removeComponent = (index: number) => {
   border: 2px solid transparent;
   border-radius: 4px;
   cursor: move;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 }
 
 .dialog-child-component:hover {
   border-color: #93c5fd;
+  background: rgba(147, 197, 253, 0.05);
 }
 
 .dialog-child-component.selected {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6 !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  background: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 8px rgba(59, 130, 246, 0.2) !important;
+  z-index: 100 !important;
 }
 
 /* 布局子组件样式 */
@@ -2706,18 +3354,23 @@ const removeComponent = (index: number) => {
   border: 2px solid transparent;
   border-radius: 4px;
   cursor: move;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
 }
 
 .grid-child-component:hover,
 .container-child-component:hover {
   border-color: #93c5fd;
+  background: rgba(147, 197, 253, 0.05);
 }
 
 .grid-child-component.selected,
 .container-child-component.selected {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6 !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  background: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 8px rgba(59, 130, 246, 0.2) !important;
+  z-index: 100 !important;
 }
 
 /* 滚动条样式 */
@@ -2749,6 +3402,198 @@ const removeComponent = (index: number) => {
 .canvas-content::-webkit-scrollbar-thumb:hover,
 .code-content::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* 多选状态样式 - 确保有明显的选中边框效果 */
+.widget-child-component.multi-selected,
+.dialog-child-component.multi-selected {
+  border-color: #409eff !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  background: rgba(64, 158, 255, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.3), 0 4px 8px rgba(64, 158, 255, 0.2) !important;
+  z-index: 100 !important;
+}
+
+.widget-child-component.box-selecting,
+.dialog-child-component.box-selecting {
+  border-color: #409eff !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  background: rgba(64, 158, 255, 0.1) !important;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2) !important;
+}
+
+/* Widget 子组件样式 - 确保选中时高亮 */
+.widget-child-component {
+  position: absolute;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: move;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.widget-child-component:hover {
+  border-color: #93c5fd;
+  background: rgba(147, 197, 253, 0.05);
+}
+
+.widget-child-component.selected {
+  border-color: #3b82f6 !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  background: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 8px rgba(59, 130, 246, 0.2) !important;
+  z-index: 100 !important;
+}
+
+/* 布局面板样式 */
+.layout-panel {
+  position: fixed;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 300px;
+  max-height: 80vh;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.layout-panel-header {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+}
+
+.layout-panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.btn-close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.btn-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.layout-panel-content {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.layout-info {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 4px;
+}
+
+.layout-info p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.layout-info strong {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.layout-options {
+  margin-bottom: 16px;
+}
+
+.layout-option-group {
+  margin-bottom: 16px;
+}
+
+.layout-option-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.layout-input,
+.layout-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #1f2937;
+  background: white;
+  box-sizing: border-box;
+}
+
+.layout-input:focus,
+.layout-select:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.1);
+}
+
+.layout-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-apply,
+.btn-cancel {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-apply {
+  background: #409eff;
+  color: white;
+}
+
+.btn-apply:hover {
+  background: #337ecc;
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
 }
 
 </style>

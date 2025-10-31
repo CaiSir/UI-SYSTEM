@@ -1,34 +1,45 @@
-import { createApp, h, defineComponent, nextTick } from 'vue'
+import { createApp, h, defineComponent, nextTick, ref } from 'vue'
 import Grid from './Grid.vue'
 import { BaseCommand, IBaseCommandProps, IBaseCommandEvents } from '../../lib/BaseCommand'
 
 // 类型定义
 export interface GridOptions extends IBaseCommandProps {
   container?: boolean
-  // Grid 容器属性
-  columns?: number | string
-  rows?: number | string
-  templateAreas?: string
+  columns?: number | string  // 列数或列模板，如 12 或 "repeat(12, 1fr)"
+  rows?: number | string     // 行数或行模板，可选
+  templateAreas?: string     // 模板区域，如 "a a a" "b b c"
   autoFlow?: 'row' | 'column' | 'row dense' | 'column dense'
   justifyItems?: 'start' | 'end' | 'center' | 'stretch'
   alignItems?: 'start' | 'end' | 'center' | 'stretch'
   justifyContent?: 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly'
   alignContent?: 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly'
-  // 通用属性
-  spacing?: number | string
-  gap?: string
-  // Grid 项目属性
-  column?: string
-  row?: string
-  area?: string
-  justifySelf?: 'start' | 'end' | 'center' | 'stretch'
-  alignSelf?: 'start' | 'end' | 'center' | 'stretch'
+  spacing?: number           // 间距（Material UI 风格，实际间距 = spacing * 8px）
+  gap?: string               // 自定义间距，如 "16px" 或 "1rem"
 }
 
 export interface GridEvents extends IBaseCommandEvents {}
 
+/**
+ * Grid 子项配置接口
+ * 用于配置子组件在 Grid 中的位置和大小
+ */
+export interface GridItemConfig {
+  gridColumnStart?: number | string  // 列起始位置
+  gridColumnEnd?: number | string    // 列结束位置
+  gridRowStart?: number | string     // 行起始位置
+  gridRowEnd?: number | string       // 行结束位置
+  gridArea?: string                  // 网格区域名称或简写，如 "a" 或 "1 / 1 / 3 / 3"
+  span?: number                      // 简写：跨越多列（默认 1）
+  rowSpan?: number                   // 简写：跨越多行（默认 1）
+}
+
+/**
+ * NHAI Grid 的命令式封装
+ * 提供命令式 API 用于在非 Vue 环境中使用
+ * 支持高效的 CSS Grid 布局系统
+ * 继承 BaseCommand 获得统一的接口和生命周期
+ */
 export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
-  private _updating = false // 防止重复更新标志
   private container: boolean = true
   private columns: number | string = 12
   private rows?: number | string
@@ -38,33 +49,40 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
   private alignItems: 'start' | 'end' | 'center' | 'stretch' = 'stretch'
   private justifyContent?: 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly'
   private alignContent?: 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly'
-  private spacing: number | string = 2
+  private spacing: number = 2
   private gap?: string
-  private column?: string
-  private row?: string
-  private area?: string
-  private justifySelf?: 'start' | 'end' | 'center' | 'stretch'
-  private alignSelf?: 'start' | 'end' | 'center' | 'stretch'
 
-  constructor(options: GridOptions = {}) {
-    super(options)
+  // 子组件的 Grid 配置映射
+  private childGridConfigs: Map<BaseCommand<any, any>, GridItemConfig> = new Map()
+
+  constructor(options?: GridOptions | boolean | number) {
+    // 支持多种构造函数重载
+    let opts: GridOptions = {}
     
-    this.container = options.container ?? true
-    this.columns = options.columns ?? 12
-    this.rows = options.rows
-    this.templateAreas = options.templateAreas
-    this.autoFlow = options.autoFlow ?? 'row'
-    this.justifyItems = options.justifyItems ?? 'stretch'
-    this.alignItems = options.alignItems ?? 'stretch'
-    this.justifyContent = options.justifyContent
-    this.alignContent = options.alignContent
-    this.spacing = options.spacing ?? 2
-    this.gap = options.gap
-    this.column = options.column
-    this.row = options.row
-    this.area = options.area
-    this.justifySelf = options.justifySelf
-    this.alignSelf = options.alignSelf
+    if (typeof options === 'boolean') {
+      // NhaiGridCommand(true) -> { container: true }
+      opts = { container: options }
+    } else if (typeof options === 'number') {
+      // NhaiGridCommand(12) -> { columns: 12 }
+      opts = { columns: options }
+    } else if (options) {
+      opts = options
+    }
+    
+    super(opts)
+    
+    // 初始化属性
+    this.container = opts.container ?? true
+    this.columns = opts.columns ?? 12
+    this.rows = opts.rows
+    this.templateAreas = opts.templateAreas
+    this.autoFlow = opts.autoFlow ?? 'row'
+    this.justifyItems = opts.justifyItems ?? 'start'  // 默认改为 start，避免子项过度拉伸
+    this.alignItems = opts.alignItems ?? 'stretch'
+    this.justifyContent = opts.justifyContent
+    this.alignContent = opts.alignContent
+    this.spacing = opts.spacing ?? 2
+    this.gap = opts.gap
     
     Object.assign(this._props, {
       container: this.container,
@@ -78,18 +96,12 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
       alignContent: this.alignContent,
       spacing: this.spacing,
       gap: this.gap,
-      column: this.column,
-      row: this.row,
-      area: this.area,
-      justifySelf: this.justifySelf,
-      alignSelf: this.alignSelf,
-      ...options
+      ...opts
     })
-    
-    // 不再需要同步股 reactiveProps
   }
 
-  // ==================== Grid 容器方法 ====================
+  // ==================== 属性设置方法 ====================
+
   setContainer(container: boolean): this {
     this.container = container
     this.setProperty('container', container)
@@ -117,9 +129,9 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
     return this
   }
 
-  setTemplateAreas(areas: string): this {
-    this.templateAreas = areas
-    this.setProperty('templateAreas', areas)
+  setTemplateAreas(templateAreas: string): this {
+    this.templateAreas = templateAreas
+    this.setProperty('templateAreas', templateAreas)
     if (this._mounted) {
       this.scheduleUpdate()
     }
@@ -127,13 +139,9 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
   }
 
   setAutoFlow(autoFlow: 'row' | 'column' | 'row dense' | 'column dense'): this {
-    console.log('[Grid.setAutoFlow] 开始设置 autoFlow:', autoFlow, '当前值:', this.autoFlow)
     this.autoFlow = autoFlow
     this.setProperty('autoFlow', autoFlow)
-    console.log('[Grid.setAutoFlow] 设置完成，_mounted:', this._mounted, 'autoFlow:', this.autoFlow)
-    // 如果已经挂载，立即触发更新以确保样式正确应用
     if (this._mounted) {
-      console.log('[Grid.setAutoFlow] 触发 update 以确保样式正确应用')
       this.scheduleUpdate()
     }
     return this
@@ -157,7 +165,7 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
     return this
   }
 
-  setJustifyContent(justifyContent: 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly'): this {
+  setJustifyContent(justifyContent?: 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly'): this {
     this.justifyContent = justifyContent
     this.setProperty('justifyContent', justifyContent)
     if (this._mounted) {
@@ -166,7 +174,7 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
     return this
   }
 
-  setAlignContent(alignContent: 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly'): this {
+  setAlignContent(alignContent?: 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly'): this {
     this.alignContent = alignContent
     this.setProperty('alignContent', alignContent)
     if (this._mounted) {
@@ -175,8 +183,7 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
     return this
   }
 
-  // ==================== 间距方法 ====================
-  setSpacing(spacing: number | string): this {
+  setSpacing(spacing: number): this {
     this.spacing = spacing
     this.setProperty('spacing', spacing)
     if (this._mounted) {
@@ -194,63 +201,138 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
     return this
   }
 
-  // ==================== Grid 项目方法 ====================
-  setGridColumn(column: string): this {
-    this.column = column
-    this.setProperty('column', column)
-    if (this._mounted) {
-      this.scheduleUpdate()
+  // ==================== 子组件 Grid 配置方法 ====================
+
+  /**
+   * 为子组件设置 Grid 布局配置
+   * @param child 子组件实例
+   * @param config Grid 布局配置
+   */
+  setChildGridConfig(child: BaseCommand<any, any>, config: GridItemConfig): this {
+    // 确保子组件已经添加到 Grid
+    if (!this._children.includes(child)) {
+      this.addChild(child)
     }
+    
+    this.childGridConfigs.set(child, config)
+    
+    // 如果已经渲染，立即应用配置
+    if (this._mounted && this.contentContainer) {
+      const childElement = this.childElements.get(child)
+      if (childElement) {
+        this.applyGridConfigToElement(childElement, config)
+      }
+    }
+    
     return this
   }
 
-  setGridRow(row: string): this {
-    this.row = row
-    this.setProperty('row', row)
-    if (this._mounted) {
-      this.scheduleUpdate()
+  /**
+   * 获取子组件的 Grid 配置
+   */
+  getChildGridConfig(child: BaseCommand<any, any>): GridItemConfig | undefined {
+    return this.childGridConfigs.get(child)
+  }
+
+  /**
+   * 移除子组件的 Grid 配置
+   */
+  removeChildGridConfig(child: BaseCommand<any, any>): this {
+    this.childGridConfigs.delete(child)
+    
+    // 如果已经渲染，移除配置
+    if (this._mounted && this.contentContainer) {
+      const childElement = this.childElements.get(child)
+      if (childElement) {
+        this.removeGridConfigFromElement(childElement)
+      }
     }
+    
     return this
   }
 
-  setGridArea(area: string): this {
-    this.area = area
-    this.setProperty('area', area)
-    if (this._mounted) {
-      this.scheduleUpdate()
+  /**
+   * 将 Grid 配置应用到 DOM 元素
+   */
+  private applyGridConfigToElement(element: HTMLElement, config: GridItemConfig): void {
+    // 如果指定了 gridArea，优先使用
+    if (config.gridArea) {
+      element.style.gridArea = config.gridArea
+      return
     }
-    return this
-  }
-
-  setJustifySelf(justifySelf: 'start' | 'end' | 'center' | 'stretch'): this {
-    this.justifySelf = justifySelf
-    this.setProperty('justifySelf', justifySelf)
-    if (this._mounted) {
-      this.scheduleUpdate()
+    
+    // 否则使用详细的配置
+    if (config.gridColumnStart !== undefined) {
+      element.style.gridColumnStart = String(config.gridColumnStart)
     }
-    return this
-  }
-
-  setAlignSelf(alignSelf: 'start' | 'end' | 'center' | 'stretch'): this {
-    this.alignSelf = alignSelf
-    this.setProperty('alignSelf', alignSelf)
-    if (this._mounted) {
-      this.scheduleUpdate()
+    if (config.gridColumnEnd !== undefined) {
+      element.style.gridColumnEnd = String(config.gridColumnEnd)
     }
-    return this
+    if (config.gridRowStart !== undefined) {
+      element.style.gridRowStart = String(config.gridRowStart)
+    }
+    if (config.gridRowEnd !== undefined) {
+      element.style.gridRowEnd = String(config.gridRowEnd)
+    }
+    
+    // 使用简写 span
+    if (config.span !== undefined && config.gridColumnStart === undefined && config.gridColumnEnd === undefined) {
+      const columnStart = this.getCurrentColumnForChild(element)
+      if (columnStart > 0) {
+        element.style.gridColumn = `${columnStart} / span ${config.span}`
+      }
+    }
+    if (config.rowSpan !== undefined && config.gridRowStart === undefined && config.gridRowEnd === undefined) {
+      const rowStart = this.getCurrentRowForChild(element)
+      if (rowStart > 0) {
+        element.style.gridRow = `${rowStart} / span ${config.rowSpan}`
+      }
+    }
   }
 
-  // ==================== 快捷方法 ====================
-  setColSpan(span: number): this {
-    return this.setGridColumn(`span ${span}`)
+  /**
+   * 从 DOM 元素移除 Grid 配置
+   */
+  private removeGridConfigFromElement(element: HTMLElement): void {
+    element.style.gridArea = ''
+    element.style.gridColumnStart = ''
+    element.style.gridColumnEnd = ''
+    element.style.gridRowStart = ''
+    element.style.gridRowEnd = ''
+    element.style.gridColumn = ''
+    element.style.gridRow = ''
   }
 
-  setRowSpan(span: number): this {
-    return this.setGridRow(`span ${span}`)
+  /**
+   * 获取子组件当前所在的列（用于计算 span）
+   * 这是一个简化的实现，实际可能需要更复杂的逻辑
+   */
+  private getCurrentColumnForChild(element: HTMLElement): number {
+    // 尝试从现有样式读取
+    const gridColumn = element.style.gridColumn
+    if (gridColumn) {
+      const match = gridColumn.match(/^(\d+)/)
+      if (match) {
+        return parseInt(match[1], 10)
+      }
+    }
+    
+    // 如果没有配置，返回 0 表示自动布局
+    return 0
   }
 
-  setPosition(column: string, row: string): this {
-    return this.setGridColumn(column).setGridRow(row)
+  /**
+   * 获取子组件当前所在的行（用于计算 rowSpan）
+   */
+  private getCurrentRowForChild(element: HTMLElement): number {
+    const gridRow = element.style.gridRow
+    if (gridRow) {
+      const match = gridRow.match(/^(\d+)/)
+      if (match) {
+        return parseInt(match[1], 10)
+      }
+    }
+    return 0
   }
 
   // ==================== 子组件管理 ====================
@@ -258,36 +340,19 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
   protected contentContainer?: HTMLElement
 
   override addChild<C extends BaseCommand<any, any>>(child: C): this {
-    if (this.childElements.has(child)) {
-      if (!this._children.includes(child)) {
-        this._children.push(child)
-        ;(child as any)._parent = this
-      }
-      return this
-    }
-    
     super.addChild(child)
-    
     if (this._mounted && this.contentContainer) {
-      const hasManualChildren = Array.from(this.contentContainer.children).some(
-        c => c.classList && 
-        (c.classList.contains('grid-child-component') || 
-         c.classList.contains('layout-child-component'))
-      )
-      
-      if (this.childElements.has(child)) {
-        return this
-      }
-      
-      if (!hasManualChildren) {
-        this.renderChild(child)
-      }
+      this.renderChild(child)
     }
     return this
   }
 
   override removeChild<C extends BaseCommand<any, any>>(child: C): this {
     super.removeChild(child)
+    
+    // 移除 Grid 配置
+    this.childGridConfigs.delete(child)
+    
     const childElement = this.childElements.get(child)
     if (childElement && childElement.parentNode) {
       childElement.parentNode.removeChild(childElement)
@@ -296,557 +361,348 @@ export class NhaiGridCommand extends BaseCommand<GridOptions, GridEvents> {
     return this
   }
 
+  /**
+   * 渲染子组件到内容容器
+   */
   private renderChild(child: BaseCommand<any, any>): void {
     if (!this.contentContainer) return
     
     try {
-      if (this.childElements.has(child)) {
-        const existingElement = this.childElements.get(child)
-        if (existingElement) {
-          if (existingElement.classList && 
-              (existingElement.classList.contains('grid-child-component') || 
-               existingElement.classList.contains('layout-child-component'))) {
-            return
-          }
-          if (existingElement.parentNode && !this.contentContainer.contains(existingElement)) {
-            return
-          }
-          if (existingElement.parentNode && this.contentContainer.contains(existingElement)) {
-            existingElement.parentNode.removeChild(existingElement)
-          }
-        } else {
-          return
-        }
+      // 如果子组件已经渲染过且有映射，先移除旧的
+      const oldElement = this.childElements.get(child)
+      if (oldElement && oldElement.parentNode) {
+        oldElement.parentNode.removeChild(oldElement)
       }
       
-      const childElementFromInstance = child.getElement()
-      if (childElementFromInstance && childElementFromInstance.parentNode) {
-        let parent: ParentNode | null = childElementFromInstance.parentNode
-        while (parent) {
-          if (parent === this.contentContainer || 
-              (parent instanceof HTMLElement && parent.classList.contains('vue-grid'))) {
-            let wrapperParent: ParentNode | null = childElementFromInstance.parentNode
-            while (wrapperParent && wrapperParent !== parent) {
-              if (wrapperParent instanceof HTMLElement && 
-                  (wrapperParent.classList.contains('grid-child-component') || 
-                   wrapperParent.classList.contains('layout-child-component'))) {
-                this.childElements.set(child, wrapperParent)
-                return
-              }
-              wrapperParent = wrapperParent.parentNode
-            }
-            this.childElements.set(child, childElementFromInstance)
-            return
-          }
-          if (parent instanceof HTMLElement && 
-              (parent.classList.contains('grid-child-component') || 
-               parent.classList.contains('layout-child-component'))) {
-            this.childElements.set(child, parent)
-            return
-          }
-          parent = parent.parentNode
-        }
-        this.childElements.set(child, childElementFromInstance)
-        return
-      }
-      
+      // 渲染子组件
       const childElement = child.render()
-      if (childElement) {
-        if (childElement.parentNode === null) {
-          this.contentContainer.appendChild(childElement)
-          this.childElements.set(child, childElement)
-        } else {
-          this.childElements.set(child, childElement)
-        }
+      
+      // 应用 Grid 配置（如果有）
+      const config = this.childGridConfigs.get(child)
+      if (config) {
+        this.applyGridConfigToElement(childElement, config)
       }
+      
+      // 挂载到内容容器
+      this.contentContainer.appendChild(childElement)
+      
+      // 保存映射关系
+      this.childElements.set(child, childElement)
     } catch (error) {
       console.error('Error rendering child component:', error)
     }
   }
 
+  /**
+   * 渲染所有子组件
+   */
   private renderAllChildren(): void {
     if (!this.contentContainer) return
+    
     this._children.forEach(child => {
       this.renderChild(child)
     })
   }
 
   protected doRender(): HTMLElement {
-    console.log('[Grid.doRender] 开始渲染，属性:', { autoFlow: this.autoFlow, columns: this.columns, rows: this.rows })
     const container = document.createElement('div')
+    // Grid 应该环抱着控件，确保外层容器根据内容自适应
+    container.style.width = 'fit-content'
+    container.style.minWidth = 'fit-content'
+    container.style.maxWidth = 'fit-content'
+    container.style.height = 'fit-content'
+    container.style.minHeight = 'fit-content'
+    container.style.maxHeight = 'fit-content'
+    container.style.display = 'inline-block'
+    // 确保 Grid 紧贴内容，不留多余空白
+    container.style.padding = '0'
+    container.style.margin = '0'
     const self = this
+
+    // 使用响应式引用，确保属性变化时组件会更新
+    const containerRef = ref(self.container)
+    const columnsRef = ref(self.columns)
+    const rowsRef = ref(self.rows)
+    const templateAreasRef = ref(self.templateAreas)
+    const autoFlowRef = ref(self.autoFlow)
+    const justifyItemsRef = ref(self.justifyItems)
+    const alignItemsRef = ref(self.alignItems)
+    const justifyContentRef = ref(self.justifyContent)
+    const alignContentRef = ref(self.alignContent)
+    const spacingRef = ref(self.spacing)
+    const gapRef = ref(self.gap)
 
     const GridWrapper = defineComponent({
       setup() {
-        // 在 doRender() 时直接使用实例属性（此时是最新的）
-        console.log('[Grid.doRender] GridWrapper setup，属性:', { autoFlow: self.autoFlow, columns: self.columns })
-        return () => {
-          console.log('[Grid.doRender] GridWrapper render，属性:', { autoFlow: self.autoFlow, columns: self.columns })
-          return h(Grid, {
-            container: self.container,
-            columns: self.columns,
-            rows: self.rows,
-            templateAreas: self.templateAreas,
-            autoFlow: self.autoFlow,
-            justifyItems: self.justifyItems,
-            alignItems: self.alignItems,
-            justifyContent: self.justifyContent,
-            alignContent: self.alignContent,
-            spacing: self.spacing,
-            gap: self.gap,
-            column: self.column,
-            row: self.row,
-            area: self.area,
-            justifySelf: self.justifySelf,
-            alignSelf: self.alignSelf
-          })
-        }
+        // 响应式属性会自动更新组件
+        return () => h(Grid, {
+          key: `${containerRef.value}-${columnsRef.value}-${rowsRef.value}-${autoFlowRef.value}-${spacingRef.value}`, // 添加 key 强制更新
+          container: containerRef.value,
+          columns: columnsRef.value,
+          rows: rowsRef.value,
+          templateAreas: templateAreasRef.value,
+          autoFlow: autoFlowRef.value,
+          justifyItems: justifyItemsRef.value,
+          alignItems: alignItemsRef.value,
+          justifyContent: justifyContentRef.value,
+          alignContent: alignContentRef.value,
+          spacing: spacingRef.value,
+          gap: gapRef.value
+        })
       }
     })
 
     const app = createApp(GridWrapper)
     app.mount(container)
     
+    // 保存响应式引用，以便后续更新
+    ;(this as any)._containerRef = containerRef
+    ;(this as any)._columnsRef = columnsRef
+    ;(this as any)._rowsRef = rowsRef
+    ;(this as any)._templateAreasRef = templateAreasRef
+    ;(this as any)._autoFlowRef = autoFlowRef
+    ;(this as any)._justifyItemsRef = justifyItemsRef
+    ;(this as any)._alignItemsRef = alignItemsRef
+    ;(this as any)._justifyContentRef = justifyContentRef
+    ;(this as any)._alignContentRef = alignContentRef
+    ;(this as any)._spacingRef = spacingRef
+    ;(this as any)._gapRef = gapRef
+    
+    // 查找实际的 Grid 内容容器（.vue-grid 元素）
     nextTick(() => {
       this.contentContainer = container.querySelector('.vue-grid') || container
-      // 只有在可视化编辑器中（childElements 已存在）时，不自动渲染子组件
-      // 因为子组件会由设计器手动管理
-      if (!this.childElements || this.childElements.size === 0) {
+      // 如果找到了 .vue-grid，确保它能够接收子组件
+      if (this.contentContainer) {
+        // 渲染所有子组件
         this.renderAllChildren()
       }
-      
-      // 强制应用样式以确保 grid-auto-flow 等属性正确生效
-      if (this.contentContainer) {
-        const gridElement = (this.contentContainer.classList?.contains('vue-grid') 
-          ? this.contentContainer 
-          : this.contentContainer.querySelector('.vue-grid')) as HTMLElement
-        if (gridElement) {
-          requestAnimationFrame(() => {
-            nextTick(() => {
-              // 强制应用所有 Grid 样式
-              const isColumnFlow = this.autoFlow === 'column' || this.autoFlow === 'column dense'
-              gridElement.style.setProperty('display', 'grid', 'important')
-              gridElement.style.setProperty('grid-auto-flow', this.autoFlow, 'important')
-              
-              // 根据 autoFlow 方向决定如何应用 columns 和 rows
-              if (isColumnFlow) {
-                if (typeof this.columns === 'number') {
-                  gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
-                } else if (this.columns) {
-                  gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
-                }
-                if (this.rows) {
-                  if (typeof this.rows === 'number') {
-                    gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
-                  } else {
-                    gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
-                  }
-                } else {
-                  gridElement.style.setProperty('grid-auto-rows', 'auto', 'important')
-                }
-              } else {
-                if (typeof this.columns === 'number') {
-                  gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
-                } else if (this.columns) {
-                  gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
-                }
-                if (this.rows) {
-                  if (typeof this.rows === 'number') {
-                    gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
-                  } else {
-                    gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
-                  }
-                }
-              }
-              
-              gridElement.style.setProperty('justify-items', this.justifyItems, 'important')
-              gridElement.style.setProperty('align-items', this.alignItems, 'important')
-              if (this.gap) {
-                gridElement.style.setProperty('gap', this.gap, 'important')
-              } else if (this.spacing) {
-                const gapValue = typeof this.spacing === 'number' ? `${this.spacing * 8}px` : String(this.spacing)
-                gridElement.style.setProperty('gap', gapValue, 'important')
-              }
-            })
-          })
-        }
-      }
     })
+    
+    // 同步方式也尝试查找（如果 Vue 组件已经渲染）
+    setTimeout(() => {
+      if (!this.contentContainer) {
+        this.contentContainer = container.querySelector('.vue-grid') || container
+        this.renderAllChildren()
+      }
+    }, 100)
     
     this._appInstance = app
 
     return container
   }
 
+  /**
+   * 重写 update 方法，确保属性变化时 Vue 组件能响应式更新
+   */
   protected override update(): void {
-    // 防止重复更新
-    if (this._updating) {
-      console.log('[Grid.update] 正在更新中，跳过重复调用')
-      return
+    // 更新响应式引用，触发 Vue 组件重新渲染
+    if ((this as any)._containerRef) {
+      ;(this as any)._containerRef.value = this.container
     }
-    this._updating = true
-    
-    console.log('[Grid.update] 开始更新，_mounted:', this._mounted, 'autoFlow:', this.autoFlow, 'columns:', this.columns)
-    // Grid 使用 Vue 组件，需要重新挂载 Vue 应用以反映属性变化
-    // 但需要保留可视化编辑器中手动添加的 wrapper 元素
-    // 如果没有 contentContainer，说明还没有完全初始化，先尝试获取
-    if (!this.contentContainer && this._element) {
-      this.contentContainer = this._element.querySelector('.vue-grid') || undefined
-      console.log('[Grid.update] 延迟获取 contentContainer:', !!this.contentContainer)
+    if ((this as any)._columnsRef) {
+      ;(this as any)._columnsRef.value = this.columns
+    }
+    if ((this as any)._rowsRef) {
+      ;(this as any)._rowsRef.value = this.rows
+    }
+    if ((this as any)._templateAreasRef) {
+      ;(this as any)._templateAreasRef.value = this.templateAreas
+    }
+    if ((this as any)._autoFlowRef) {
+      ;(this as any)._autoFlowRef.value = this.autoFlow
+    }
+    if ((this as any)._justifyItemsRef) {
+      ;(this as any)._justifyItemsRef.value = this.justifyItems
+    }
+    if ((this as any)._alignItemsRef) {
+      ;(this as any)._alignItemsRef.value = this.alignItems
+    }
+    if ((this as any)._justifyContentRef) {
+      ;(this as any)._justifyContentRef.value = this.justifyContent
+    }
+    if ((this as any)._alignContentRef) {
+      ;(this as any)._alignContentRef.value = this.alignContent
+    }
+    if ((this as any)._spacingRef) {
+      ;(this as any)._spacingRef.value = this.spacing
+    }
+    if ((this as any)._gapRef) {
+      ;(this as any)._gapRef.value = this.gap
     }
     
-    if (this._mounted && this._appInstance && this._element && this.contentContainer) {
-      console.log('[Grid.update] 开始重新挂载 Vue 应用，当前属性:', {
-        autoFlow: this.autoFlow,
-        columns: this.columns,
-        rows: this.rows,
-        justifyItems: this.justifyItems,
-        alignItems: this.alignItems
-      })
-      // 保存所有 wrapper 元素（它们是 .vue-grid 的直接子元素，用于可视化编辑器）
-      const wrapperElements: Array<{ child: BaseCommand<any, any>, wrapper: HTMLElement }> = []
-      this.childElements.forEach((wrapper, child) => {
-        // 检查是否是可视化编辑器中的 wrapper（有特定的 class）
-        if (wrapper && wrapper.classList && 
-            (wrapper.classList.contains('grid-child-component') || 
-             wrapper.classList.contains('layout-child-component'))) {
-          // 从 DOM 中移除 wrapper（但不删除 wrapper 本身）
-          if (wrapper.parentNode) {
-            wrapper.parentNode.removeChild(wrapper)
-          }
-          wrapperElements.push({ child, wrapper })
-        }
-      })
-      
-      // 卸载旧的 Vue 应用
-      try {
-        (this._appInstance as any).unmount()
-      } catch (e) {
-        // 忽略卸载错误
-      }
-      
-      // 保存子组件引用
-      const children = [...this._children]
-      const oldContentContainer = this.contentContainer
-      
-      // 清空容器
-      if (this._element) {
-        this._element.innerHTML = ''
-      }
-      
-      // 重新创建并挂载 Vue 应用
-      const container = this._element
-      const self = this
-      
-      // 直接使用当前属性值创建组件
-      // 注意：props 必须在 render 函数内部创建，这样每次渲染时都会读取最新的类属性值
-      const GridWrapper = defineComponent({
-        setup() {
-          // 返回渲染函数，每次渲染时读取最新的属性值
-          return () => {
-            const props = {
-              container: self.container,
-              columns: self.columns,
-              rows: self.rows,
-              templateAreas: self.templateAreas,
-              autoFlow: self.autoFlow,
-              justifyItems: self.justifyItems,
-              alignItems: self.alignItems,
-              justifyContent: self.justifyContent,
-              alignContent: self.alignContent,
-              spacing: self.spacing,
-              gap: self.gap,
-              column: self.column,
-              row: self.row,
-              area: self.area,
-              justifySelf: self.justifySelf,
-              alignSelf: self.alignSelf
-            }
-            console.log('[Grid.update] GridWrapper render，传递的 props:', { 
-              container: props.container, 
-              autoFlow: props.autoFlow, 
-              columns: props.columns, 
-              rows: props.rows 
-            })
-            return h(Grid, props)
-          }
-        }
-      })
-      
-      const app = createApp(GridWrapper)
-      console.log('[Grid.update] 挂载 Vue 应用')
-      app.mount(container)
-      
+    // 确保子组件也重新渲染
+    if (this._mounted && this.contentContainer) {
       nextTick(() => {
-        this.contentContainer = container.querySelector('.vue-grid') || container
-        console.log('[Grid.update] nextTick 后，contentContainer:', !!this.contentContainer, 'wrapperElements:', wrapperElements.length)
-        
-        // 恢复可视化编辑器中的 wrapper 元素
-        if (this.contentContainer && wrapperElements.length > 0) {
-          wrapperElements.forEach(({ child, wrapper }) => {
-            // 将 wrapper 重新添加到新的 contentContainer
-            this.contentContainer!.appendChild(wrapper)
-            // 更新映射关系
-            this.childElements.set(child, wrapper)
-          })
-        } else if (this.contentContainer && oldContentContainer !== this.contentContainer) {
-          // 如果没有 wrapper 元素，但有子组件，可能需要重新渲染
-          // 但这种情况通常发生在非可视化编辑器模式
-          const childElements = new Map(this.childElements)
-          children.forEach(child => {
-            const oldElement = childElements.get(child)
-            // 如果旧元素不在 DOM 中，重新渲染
-            if (!oldElement || !oldElement.parentNode) {
-              this.renderChild(child)
-            }
-          })
-        }
-        
-        // 检查 Vue 组件是否正确应用了样式
-        if (this.contentContainer) {
-          const gridElement = (this.contentContainer.classList?.contains('vue-grid') 
-            ? this.contentContainer 
-            : this.contentContainer.querySelector('.vue-grid')) as HTMLElement
-          if (gridElement) {
-            // 等待 Vue 下一次渲染周期
-            nextTick(() => {
-              // 检查计算样式
-              const computedStyle = window.getComputedStyle(gridElement)
-              const actualAutoFlow = computedStyle.gridAutoFlow || ''
-              const inlineStyle = gridElement.style.getPropertyValue('grid-auto-flow')
-              const allInlineStyles = Array.from(gridElement.style).map((key: string) => ({
-                key,
-                value: gridElement.style.getPropertyValue(key)
-              })).filter((s: { key: string; value: string }) => s.key.includes('grid'))
-              
-              console.log('[Grid.update] nextTick 后样式检查:', {
-                expectedAutoFlow: this.autoFlow,
-                computedGridAutoFlow: actualAutoFlow || '(空)',
-                inlineGridAutoFlow: inlineStyle || '(空)',
-                gridTemplateColumns: computedStyle.gridTemplateColumns || '(空)',
-                allInlineGridStyles: allInlineStyles
-              })
-              
-              // 如果计算样式仍然是空的，但内联样式已设置，可能是浏览器还没重排
-              if (!actualAutoFlow && inlineStyle) {
-                // 强制触发布局重排
-                void gridElement.offsetHeight
-                const recomputed = window.getComputedStyle(gridElement)
-                console.log('[Grid.update] 强制重排后的计算样式:', {
-                  gridAutoFlow: recomputed.gridAutoFlow || '(空)',
-                  gridTemplateColumns: recomputed.gridTemplateColumns || '(空)'
-                })
-              }
-            })
-          }
-        }
+        this.renderAllChildren()
       })
-      
-      this._appInstance = app
-      
-      // 等待 Vue 渲染完成后检查样式并解锁
-      requestAnimationFrame(() => {
-        nextTick(() => {
-          if (this.contentContainer) {
-            const gridElement = (this.contentContainer.classList?.contains('vue-grid') 
-              ? this.contentContainer 
-              : this.contentContainer.querySelector('.vue-grid')) as HTMLElement
-            if (gridElement) {
-              // 强制触发布局重排
-              void gridElement.offsetHeight
-              
-              const computedStyle = window.getComputedStyle(gridElement)
-              const inlineStyles = Array.from(gridElement.style).filter((k: string) => k.includes('grid')).map((k: string) => ({
-                key: k,
-                value: gridElement.style.getPropertyValue(k),
-                priority: gridElement.style.getPropertyPriority(k)
-              }))
-              
-              // 检查 display 是否是 grid（这很关键）
-              const isDisplayGrid = computedStyle.display === 'grid'
-              
-              console.log('[Grid.update] requestAnimationFrame + nextTick 后样式检查:', {
-                expectedAutoFlow: this.autoFlow,
-                isDisplayGrid: isDisplayGrid,
-                computedDisplay: computedStyle.display || '(空)',
-                computedGridAutoFlow: computedStyle.gridAutoFlow || '(空)',
-                computedGridTemplateColumns: computedStyle.gridTemplateColumns || '(空)',
-                inlineStyles: inlineStyles,
-                styleAttribute: gridElement.getAttribute('style') || '(空)',
-                styleCssText: gridElement.style.cssText || '(空)',
-                elementHTML: gridElement.outerHTML.substring(0, 300)
-              })
-              
-              // 无条件强制应用所有 Grid 样式，确保 Vue 的 :style 绑定失效时也能正常工作
-              // 因为日志显示 Vue 可能没有正确应用 display: grid
-              console.log('[Grid.update] 强制应用所有 Grid 样式以确保正确显示')
-              if (true) { // 无条件执行
-                gridElement.style.setProperty('display', 'grid', 'important')
-                
-                // 确保所有 Grid 样式都正确应用（使用 !important 防止被覆盖）
-                const isColumnFlow = this.autoFlow === 'column' || this.autoFlow === 'column dense'
-                gridElement.style.setProperty('grid-auto-flow', this.autoFlow, 'important')
-                
-                // 根据 autoFlow 方向决定如何应用 columns 和 rows
-                if (isColumnFlow) {
-                  // 当 autoFlow 是 column 时，columns 控制列数
-                  if (typeof this.columns === 'number') {
-                    gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
-                  } else if (this.columns) {
-                    gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
-                  }
-                  // 对于 column flow，如果设置了 rows，使用 grid-template-rows
-                  // 否则使用 auto-rows 让行自动创建
-                  if (this.rows) {
-                    if (typeof this.rows === 'number') {
-                      gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
-                    } else {
-                      gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
-                    }
-                  } else {
-                    // 使用 auto-rows 让行根据内容自动调整
-                    gridElement.style.setProperty('grid-auto-rows', 'auto', 'important')
-                  }
-                } else {
-                  // 当 autoFlow 是 row（默认）时，正常处理
-                  if (typeof this.columns === 'number') {
-                    gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
-                  } else if (this.columns) {
-                    gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
-                  }
-                  if (this.rows) {
-                    if (typeof this.rows === 'number') {
-                      gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
-                    } else {
-                      gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
-                    }
-                  }
-                }
-                gridElement.style.setProperty('justify-items', this.justifyItems, 'important')
-                gridElement.style.setProperty('align-items', this.alignItems, 'important')
-                if (this.justifyContent) {
-                  gridElement.style.setProperty('justify-content', this.justifyContent, 'important')
-                }
-                if (this.alignContent) {
-                  gridElement.style.setProperty('align-content', this.alignContent, 'important')
-                }
-                if (this.gap) {
-                  gridElement.style.setProperty('gap', this.gap, 'important')
-                } else if (this.spacing) {
-                  const gapValue = typeof this.spacing === 'number' ? `${this.spacing * 8}px` : String(this.spacing)
-                  gridElement.style.setProperty('gap', gapValue, 'important')
-                }
-                
-                // 强制触发布局重排
-                void gridElement.offsetHeight
-                
-                // 再次检查
-                const recomputedStyle = window.getComputedStyle(gridElement)
-                console.log('[Grid.update] 强制设置样式后的检查:', {
-                  display: recomputedStyle.display,
-                  gridAutoFlow: recomputedStyle.gridAutoFlow || '(空)',
-                  gridTemplateColumns: recomputedStyle.gridTemplateColumns || '(空)',
-                  gridTemplateRows: recomputedStyle.gridTemplateRows || '(空)'
-                })
-              }
-              
-              // 如果内联样式已设置但计算样式仍然是空的，可能是 CSS 没有正确解析
-              // 这种情况下，布局应该已经改变了（即使计算样式为空）
-              // 检查是否有子元素，如果有，它们的布局应该已经改变
-              const childCount = gridElement.children.length
-              console.log('[Grid.update] Grid 子元素数量:', childCount)
-            }
-          }
-          this._updating = false
-        })
-      })
-    } else {
-      console.log('[Grid.update] 跳过更新，条件不满足:', {
-        _mounted: this._mounted,
-        _appInstance: !!this._appInstance,
-        _element: !!this._element,
-        contentContainer: !!this.contentContainer
-      })
-      // 解除更新锁
-      this._updating = false
     }
     
-    console.log('[Grid.update] 更新完成，发射 updated 事件')
-    this.emit('updated')
-  }
-
-  // 统一的样式应用方法
-  private applyGridStyles(gridElement: HTMLElement): void {
-    // 统一应用所有 Grid 样式属性
-    const isColumnFlow = this.autoFlow === 'column' || this.autoFlow === 'column dense'
-    gridElement.style.setProperty('grid-auto-flow', this.autoFlow, 'important')
-    gridElement.style.setProperty('justify-items', this.justifyItems, 'important')
-    gridElement.style.setProperty('align-items', this.alignItems, 'important')
-    
-    // 根据 autoFlow 方向决定如何应用 columns 和 rows
-    if (isColumnFlow) {
-      // 当 autoFlow 是 column 时，columns 控制列数
-      if (typeof this.columns === 'number') {
-        gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
-      } else if (this.columns) {
-        gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
-      }
-      // 对于 column flow，如果设置了 rows，使用 grid-template-rows
-      // 否则使用 auto-rows 让行自动创建
-      if (this.rows) {
-        if (typeof this.rows === 'number') {
-          gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
-        } else {
-          gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
-        }
-      } else {
-        // 使用 auto-rows 让行根据内容自动调整
-        gridElement.style.setProperty('grid-auto-rows', 'auto', 'important')
-      }
-    } else {
-      // 当 autoFlow 是 row（默认）时，正常处理
-      if (typeof this.columns === 'number') {
-        gridElement.style.setProperty('grid-template-columns', `repeat(${this.columns}, 1fr)`, 'important')
-      } else if (this.columns) {
-        gridElement.style.setProperty('grid-template-columns', String(this.columns), 'important')
-      }
-      if (this.rows) {
-        if (typeof this.rows === 'number') {
-          gridElement.style.setProperty('grid-template-rows', `repeat(${this.rows}, 1fr)`, 'important')
-        } else {
-          gridElement.style.setProperty('grid-template-rows', String(this.rows), 'important')
-        }
-      }
-    }
-    
-    // 网格区域
-    if (this.templateAreas) {
-      gridElement.style.setProperty('grid-template-areas', this.templateAreas, 'important')
-    }
-    
-    // 对齐属性
-    if (this.justifyContent) {
-      gridElement.style.setProperty('justify-content', this.justifyContent, 'important')
-    }
-    if (this.alignContent) {
-      gridElement.style.setProperty('align-content', this.alignContent, 'important')
-    }
-    
-    // 间距
-    if (this.gap) {
-      gridElement.style.setProperty('gap', this.gap, 'important')
-    } else if (this.spacing) {
-      const gapValue = typeof this.spacing === 'number' ? `${this.spacing * 8}px` : String(this.spacing)
-      gridElement.style.setProperty('gap', gapValue, 'important')
-    }
-    
-    // 强制触发布局重排
-    void gridElement.offsetHeight
+    super.update()
   }
 
   override unmount(): void {
+    // 清理响应式引用
+    delete (this as any)._containerRef
+    delete (this as any)._columnsRef
+    delete (this as any)._rowsRef
+    delete (this as any)._templateAreasRef
+    delete (this as any)._autoFlowRef
+    delete (this as any)._justifyItemsRef
+    delete (this as any)._alignItemsRef
+    delete (this as any)._justifyContentRef
+    delete (this as any)._alignContentRef
+    delete (this as any)._spacingRef
+    delete (this as any)._gapRef
+    
+    // 清理 Grid 配置映射
+    this.childGridConfigs.clear()
     super.unmount()
+  }
+
+  // ==================== 便捷方法 ====================
+
+  /**
+   * 根据组件的根式（grid-area 配置）生成高效的 Grid 布局
+   * 这是一个便捷方法，用于快速配置子组件的 Grid 位置
+   * 
+   * @param child 子组件实例
+   * @param areaName 网格区域名称（用于 grid-template-areas）
+   * @param span 跨越多列（默认 1）
+   * @param rowSpan 跨越多行（默认 1）
+   */
+  placeChild(child: BaseCommand<any, any>, areaName?: string, span: number = 1, rowSpan: number = 1): this {
+    if (areaName) {
+      // 如果指定了区域名称，使用 gridArea
+      this.setChildGridConfig(child, { gridArea: areaName })
+    } else {
+      // 否则使用 span
+      this.setChildGridConfig(child, { span, rowSpan })
+    }
+    return this
+  }
+
+  /**
+   * 快速设置 Grid 布局（根据子组件自动生成）
+   * 这是一个高效的方法，可以分析所有子组件的配置并自动生成最优的 Grid 布局
+   * 
+   * 根据子组件的根式（grid-area、grid-column、grid-row 配置）智能生成布局：
+   * 1. 如果子组件使用了 gridArea，会自动生成 grid-template-areas
+   * 2. 如果子组件使用了 span，会自动计算需要的列数和行数
+   * 3. 如果子组件使用了明确的 gridColumn/gridRow，会自动计算网格大小
+   */
+  autoLayout(): this {
+    // 分析所有子组件的配置
+    const areas = new Set<string>()
+    let maxColumn = 0
+    let maxRow = 0
+    
+    this.childGridConfigs.forEach((config, child) => {
+      // 如果使用 gridArea，收集区域名称
+      if (config.gridArea && typeof config.gridArea === 'string') {
+        // gridArea 可能是区域名称或坐标，如 "a" 或 "1 / 1 / 3 / 3"
+        if (!config.gridArea.includes('/')) {
+          // 区域名称
+          areas.add(config.gridArea)
+        } else {
+          // 坐标格式：解析并计算最大行列
+          const coords = config.gridArea.split('/').map(s => parseInt(s.trim(), 10))
+          if (coords.length >= 4) {
+            maxColumn = Math.max(maxColumn, coords[2]) // gridColumnEnd
+            maxRow = Math.max(maxRow, coords[3]) // gridRowEnd
+          }
+        }
+      }
+      
+      // 如果使用明确的 gridColumn/gridRow，计算最大行列
+      if (config.gridColumnStart !== undefined || config.gridColumnEnd !== undefined) {
+        const colStart = typeof config.gridColumnStart === 'number' ? config.gridColumnStart : 1
+        const colEnd = typeof config.gridColumnEnd === 'number' ? config.gridColumnEnd : colStart + (config.span || 1)
+        maxColumn = Math.max(maxColumn, colEnd)
+      }
+      
+      if (config.gridRowStart !== undefined || config.gridRowEnd !== undefined) {
+        const rowStart = typeof config.gridRowStart === 'number' ? config.gridRowStart : 1
+        const rowEnd = typeof config.gridRowEnd === 'number' ? config.gridRowEnd : rowStart + (config.rowSpan || 1)
+        maxRow = Math.max(maxRow, rowEnd)
+      }
+      
+      // 如果使用 span，估算需要的列数
+      if (config.span !== undefined) {
+        // 假设子组件从某个位置开始，加上 span
+        const estimatedColumn = (this._children.indexOf(child) + 1) + config.span
+        maxColumn = Math.max(maxColumn, estimatedColumn)
+      }
+      
+      if (config.rowSpan !== undefined) {
+        const estimatedRow = Math.ceil((this._children.indexOf(child) + 1) / (typeof this.columns === 'number' ? this.columns : 12)) + config.rowSpan
+        maxRow = Math.max(maxRow, estimatedRow)
+      }
+    })
+    
+    // 如果有区域配置，生成 templateAreas
+    if (areas.size > 0) {
+      // 根据区域数量智能生成布局
+      // 简单的单行布局示例（可以扩展为更复杂的布局）
+      const areasArray = Array.from(areas)
+      
+      // 如果只有一个区域，使用单行
+      if (areasArray.length === 1) {
+        this.setTemplateAreas(areasArray[0])
+      } else {
+        // 多个区域：生成多行布局
+        // 这里可以根据实际需求生成更复杂的布局
+        // 当前实现：每行放置所有区域（简化版）
+        this.setTemplateAreas(areasArray.join(' '))
+      }
+    } else if (maxColumn > 0 || maxRow > 0) {
+      // 如果没有区域配置但需要明确的行列，更新列数和行数
+      if (maxColumn > 0 && typeof this.columns === 'number') {
+        // 如果当前列数不足，自动扩展
+        if (this.columns < maxColumn) {
+          this.setColumns(maxColumn)
+        }
+      }
+      
+      if (maxRow > 0 && this.rows === undefined) {
+        // 如果指定了最大行数，设置行数
+        this.setRows(maxRow)
+      }
+    }
+    
+    return this
+  }
+
+  /**
+   * 根据子组件的根式（配置）批量设置布局
+   * 这是一个高效的方法，可以一次性配置多个子组件的 Grid 位置
+   * 
+   * @param configs 子组件配置映射，key 为子组件实例，value 为 Grid 配置
+   */
+  setChildrenLayout(configs: Map<BaseCommand<any, any>, GridItemConfig> | Record<string, GridItemConfig>): this {
+    if (configs instanceof Map) {
+      configs.forEach((config, child) => {
+        this.setChildGridConfig(child, config)
+      })
+    } else {
+      // 如果是普通对象，需要根据实例查找
+      // 这里假设传入的是以某种方式标识的对象
+      // 实际使用时可能需要适配
+      Object.entries(configs).forEach(([key, config]) => {
+        // 这里需要根据实际情况找到对应的子组件实例
+        // 当前实现是一个占位符
+        const child = this._children.find(c => String(c) === key)
+        if (child) {
+          this.setChildGridConfig(child, config)
+        }
+      })
+    }
+    
+    // 自动生成布局
+    this.autoLayout()
+    
+    return this
   }
 }
 
 export default NhaiGridCommand
+

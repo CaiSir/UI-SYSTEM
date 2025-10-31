@@ -252,23 +252,28 @@ return splitPanel.render()`
         description: '创建网格布局容器',
         code: `const { NhaiGridCommand, NhaiButtonCommand } = window
 
-const grid = new NhaiGridCommand()
-grid.setContainer(true)
-grid.setSpacing(16)
-grid.setColumns(12)
-grid.setAutoFlow('row')
+// 创建垂直布局的 Grid（1 列，垂直堆叠）
+const grid = new NhaiGridCommand({
+  container: true,
+  columns: 1,        // 1 列布局（会自动垂直堆叠）
+  spacing: 2,         // spacing * 8 = 16px
+  autoFlow: 'row'    // 按行排列（默认），单列时自动垂直堆叠
+})
 grid.setJustifyItems('start')
 grid.setAlignItems('start')
 
-// 先添加子组件，再 render
+// 添加子组件（会垂直排列）
 for (let i = 0; i < 6; i++) {
-  const button = new NhaiButtonCommand('Card ' + (i + 1))
+  const button = new NhaiButtonCommand('按钮 ' + (i + 1))
   button.setStyle({ width: '200px', height: '100px' })
   grid.addChild(button)
 }
 
 // 创建容器并渲染 Grid
 const container = document.createElement('div')
+container.style.width = '300px'
+container.style.height = '800px'  // 确保容器有足够高度
+container.style.padding = '20px'
 const gridElement = grid.render()
 container.appendChild(gridElement)
 
@@ -356,6 +361,127 @@ menuBar.setMode('horizontal')
 menuBar.setDefaultActive('1')
 
 return menuBar.render()`
+      }
+    ]
+  },
+  {
+    name: '反馈组件',
+    expanded: true,
+    children: [
+      {
+        id: 'widget-basic',
+        title: 'Widget - 基础窗口',
+        description: '创建基础窗口组件（默认屏幕居中）',
+        code: `const { NhaiWidgetCommand } = window
+
+const widget = new NhaiWidgetCommand({
+  title: '窗口标题',
+  width: '600px',
+  height: '400px',
+  canMinimize: true,
+  canMaximize: true,
+  canClose: true
+})
+
+return widget.render()`
+      },
+      {
+        id: 'widget-with-content',
+        title: 'Widget - 带内容的窗口',
+        description: '创建带有子控件的窗口（默认屏幕居中）',
+        code: `const { NhaiWidgetCommand, NhaiButtonCommand, NhaiInputCommand } = window
+
+const widget = new NhaiWidgetCommand({
+  title: '用户设置',
+  width: '500px',
+  height: '350px'
+})
+
+// 添加按钮
+const button1 = new NhaiButtonCommand('保存')
+button1.setType('primary')
+widget.addChild(button1)
+
+// 添加输入框
+const input = new NhaiInputCommand()
+input.setPlaceholder('请输入用户名')
+widget.addChild(input)
+
+// 添加按钮
+const button2 = new NhaiButtonCommand('取消')
+button2.setType('default')
+widget.addChild(button2)
+
+return widget.render()`
+      },
+      {
+        id: 'widget-with-grid',
+        title: 'Widget - 带网格布局的窗口',
+        description: '在窗口中创建网格布局（默认屏幕居中）',
+        code: `const { NhaiWidgetCommand, NhaiGridCommand, NhaiButtonCommand } = window
+
+const widget = new NhaiWidgetCommand({
+  title: '网格布局窗口',
+  width: '700px',
+  height: '500px'
+})
+
+// 在 Widget 中添加 Grid 布局
+const grid = new NhaiGridCommand({
+  container: true,
+  columns: 3,
+  spacing: 2,
+  autoFlow: 'row'
+})
+grid.setJustifyItems('start')
+
+// 添加按钮到 Grid
+for (let i = 0; i < 9; i++) {
+  const button = new NhaiButtonCommand('按钮 ' + (i + 1))
+  button.setType(i % 3 === 0 ? 'primary' : i % 3 === 1 ? 'success' : 'warning')
+  grid.addChild(button)
+}
+
+// 将 Grid 添加到 Widget
+widget.addChild(grid)
+
+return widget.render()`
+      },
+      {
+        id: 'widget-fullscreen',
+        title: 'Widget - 全屏窗口',
+        description: '创建全屏窗口',
+        code: `const { NhaiWidgetCommand } = window
+
+const widget = new NhaiWidgetCommand({
+  title: '全屏窗口',
+  fullscreen: true,
+  canMinimize: false,
+  canMaximize: false,
+  canClose: true
+})
+
+return widget.render()`
+      },
+      {
+        id: 'widget-menu',
+        title: 'Widget - 带菜单栏的窗口',
+        description: '创建带菜单栏的窗口（默认屏幕居中）',
+        code: `const { NhaiWidgetCommand } = window
+
+const widget = new NhaiWidgetCommand({
+  title: '菜单窗口',
+  width: '600px',
+  height: '450px',
+  menuBarVisible: true,
+  menuItems: [
+    { label: '文件', active: false, onClick: () => alert('文件菜单') },
+    { label: '编辑', active: true, onClick: () => alert('编辑菜单') },
+    { label: '视图', active: false, onClick: () => alert('视图菜单') }
+  ]
+})
+
+return widget.render()`
       }
     ]
   }
