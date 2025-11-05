@@ -457,13 +457,15 @@ const getSelectedComponentType = (): string | null => {
   }
   if (selectedDialogChild.value) {
     const instance = selectedDialogChild.value
+    // 注意：这里返回的是类型字符串（用于查找属性配置），不是显示名称
     if (instance instanceof NhaiButtonCommand) return 'button'
     if (instance instanceof NhaiInputCommand) return 'input'
     if (instance instanceof NhaiSelectCommand) return 'select'
     if (instance instanceof NhaiSwitchCommand) return 'switch'
     if (instance instanceof NhaiCheckboxCommand) return 'checkbox'
     if (instance instanceof NhaiCardCommand) return 'card'
-    if (instance instanceof NhaiGridCommand) return 'grid'
+    if (instance instanceof NhaiGridCommand) return 'grid'  // 直接返回 'grid'，不要用 getComponentName
+    if (instance instanceof NhaiContainerCommand) return 'container'  // 直接返回 'container'
   }
   if (selectedLayoutChild.value) {
     const instance = selectedLayoutChild.value
@@ -682,10 +684,10 @@ const handleDrop = async (event: DragEvent) => {
     if (layoutId) {
       const layoutComp = canvasComponents.value.find(c => c.id === layoutId && (c.type === 'grid' || c.type === 'container'))
       if (layoutComp) {
-        // 查找实际的布局容器元素（.vue-grid 或 .vue-container）
+        // 查找实际的布局容器元素（.qt-grid-layout 或 .vue-container）
         let layoutContainer: HTMLElement | null = null
         if (layoutComp.type === 'grid') {
-          layoutContainer = layoutElementWithId.querySelector('.vue-grid') as HTMLElement
+          layoutContainer = layoutElementWithId.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
         } else if (layoutComp.type === 'container') {
           layoutContainer = layoutElementWithId.querySelector('.vue-container') as HTMLElement
         }
@@ -701,10 +703,11 @@ const handleDrop = async (event: DragEvent) => {
           if (!childInstance) return
           
           // 确保 layoutContainer 是实际的容器元素（.vue-grid 或 .vue-container）
-          const actualContainer = layoutContainer.classList.contains('vue-grid') || 
+          const actualContainer = layoutContainer.classList.contains('qt-grid-layout') || 
+                                  layoutContainer.classList.contains('vue-grid') ||
                                   layoutContainer.classList.contains('vue-container')
             ? layoutContainer
-            : (layoutContainer.querySelector('.vue-grid, .vue-container') as HTMLElement) || layoutContainer
+            : (layoutContainer.querySelector('.qt-grid-layout, .vue-grid, .vue-container') as HTMLElement) || layoutContainer
           
           // 创建包装器用于定位和交互（类似 Widget/Dialog）
           const wrapper = document.createElement('div')
@@ -821,7 +824,7 @@ const handleDrop = async (event: DragEvent) => {
   }
   
   // 方法2：检查是否放置到了 .vue-grid 或 .vue-container 内部
-  const layoutContainer = (event.target as Element).closest('.vue-grid, .vue-container') as HTMLElement
+  const layoutContainer = (event.target as Element).closest('.qt-grid-layout, .vue-grid, .vue-container') as HTMLElement
   if (layoutContainer) {
     // 向上查找带有 data-id 的父元素
     let parentWithId: Element | null = layoutContainer.parentElement
@@ -952,8 +955,125 @@ const handleDrop = async (event: DragEvent) => {
     }
   }
   
-    // 检查是否放置到 Widget 内容区域
-    let widgetBody = (event.target as Element).closest('.widget-content') as HTMLElement
+  // 检查是否放置到 Widget 内的 Grid 容器中（优先检查）
+  const gridContainerInWidget = (event.target as Element).closest('.qt-grid-layout[data-is-grid-container="true"], .vue-grid[data-is-grid-container="true"]') as HTMLElement
+  if (gridContainerInWidget) {
+    // 向上查找 Widget 内容区域
+    let widgetBody = gridContainerInWidget.closest('.widget-window-content, .widget-content') as HTMLElement
+    if (!widgetBody) {
+      // 如果没找到，可能是直接拖放到 Grid 元素上
+      widgetBody = gridContainerInWidget.closest('[data-id]')?.parentElement as HTMLElement
+    }
+    
+    if (widgetBody) {
+      // 向上查找带有 data-id 的 Widget 元素
+      let parentWithId: Element | null = gridContainerInWidget.closest('[data-id]')
+      if (!parentWithId) {
+        parentWithId = widgetBody.closest('[data-id]')
+      }
+      
+      if (parentWithId) {
+        const widgetId = parentWithId.getAttribute('data-id')
+        if (widgetId) {
+          const widgetComp = canvasComponents.value.find(c => c.id === widgetId && c.type === 'widget')
+          if (widgetComp && widgetComp.widgetInstance) {
+            // 这是拖放到 Widget 内的 Grid 容器中
+            // 查找 Grid 实例
+            const gridInstance = Array.from(widgetComp.widgetInstance.getChildren?.() || []).find((child: any) => {
+              return child instanceof NhaiGridCommand
+            }) as any
+            
+            if (gridInstance) {
+              // 创建子组件实例
+              const childInstance = await createChildComponentInstance(draggedComponent)
+              if (!childInstance) return
+              
+              // 创建包装器
+              const wrapper = document.createElement('div')
+              wrapper.className = 'grid-child-component widget-child-component'
+              wrapper.style.cssText = `
+                position: relative;
+                width: auto;
+                height: auto;
+                cursor: move;
+                user-select: none;
+                border: 2px solid transparent;
+                border-radius: 4px;
+                transition: border-color 0.2s;
+                z-index: 10;
+              `
+              wrapper.setAttribute('data-widget-child', 'true')
+              wrapper.setAttribute('data-widget-child-instance', String(childInstance.instance))
+              
+              // 获取子组件元素
+              let childElement = childInstance.instance.getElement()
+              if (!childElement) {
+                childElement = childInstance.instance.render()
+              }
+              
+              if (!childElement) {
+                console.warn('子组件元素未找到')
+                return
+              }
+              
+              // 将元素添加到 wrapper
+              wrapper.appendChild(childElement)
+              
+              // 移除可能干扰 Grid 布局的定位样式
+              if (childElement instanceof HTMLElement) {
+                if (childElement.style.position === 'absolute') {
+                  childElement.style.position = ''
+                  childElement.style.left = ''
+                  childElement.style.top = ''
+                }
+              }
+              
+              // 添加到 Grid 容器中
+              gridContainerInWidget.appendChild(wrapper)
+              
+              // 将子组件添加到 Grid 实例（用于代码生成）
+              gridInstance.addChild(childInstance.instance)
+              
+              // 注册到 dialogChildren（Widget 内的子组件使用 dialogChildren）
+              const gridPosition = { x: 0, y: 0 } // Grid 内的位置由 Grid 布局决定
+              dialogChildren.value.set(childInstance.instance, {
+                instance: childInstance.instance,
+                wrapper: wrapper,
+                dialogId: widgetId,
+                position: gridPosition
+              })
+              
+              // 添加选中和拖拽功能
+              wrapper.addEventListener('click', (e) => {
+                e.stopPropagation()
+                if (e.ctrlKey || e.metaKey || selectedWidgetChildren.value.size > 0) {
+                  toggleWidgetChildSelection(childInstance.instance, wrapper)
+                } else {
+                  selectedWidgetChildren.value.clear()
+                  selectDialogChild(childInstance.instance, widgetId)
+                  updateWidgetChildSelectionStyles()
+                }
+              })
+              
+              wrapper.setAttribute('data-widget-child-instance', String(childInstance.instance))
+              
+              // 更新代码
+              updateCode()
+              draggedComponent = null
+              return
+            }
+          }
+        }
+      }
+    }
+  }
+  
+    // 检查是否放置到 Widget 内容区域（可视化编辑器中的占位符）
+    let widgetBody = (event.target as Element).closest('.widget-window-content') as HTMLElement
+    // 如果没找到，也检查真实的 Widget 内容区域（以防万一）
+    if (!widgetBody) {
+      widgetBody = (event.target as Element).closest('.widget-content') as HTMLElement
+    }
     if (widgetBody) {
       // 在 Widget 内容区域添加框选支持
       if (!widgetBody.hasAttribute('data-box-select-enabled')) {
@@ -1025,31 +1145,16 @@ const handleDrop = async (event: DragEvent) => {
           }
           
           wrapper.setAttribute('data-widget-child', 'true')
+          wrapper.setAttribute('data-widget-child-instance', String(childInstance.instance))
           
-          // 关键：在调用 addChild 之前，先设置映射指向 wrapper（空的）
-          // 这样 addChild -> renderChild 会检测到 wrapper 并跳过
-          if (widgetComp.widgetInstance.childElements) {
-            widgetComp.widgetInstance.childElements.set(childInstance.instance, wrapper)
-          }
+          // 在可视化编辑器中，Widget 使用占位符，不需要调用 addChild（会触发真实渲染）
+          // 只渲染子组件并添加到占位符的内容区域
           
-          // 现在可以安全地调用 addChild，renderChild 会检测到 wrapper 并跳过渲染
-          widgetComp.widgetInstance.addChild(childInstance.instance)
-          
-          // 获取子组件元素
+          // 获取子组件元素（如果已渲染）
           let childElement = childInstance.instance.getElement()
           
-          // 如果 addChild 的 renderChild 渲染了元素到 contentContainer，我们需要把它取出来
-          if (childElement && childElement.parentNode) {
-            const contentContainer = widgetComp.widgetInstance.contentContainer
-            if (contentContainer && contentContainer.contains(childElement)) {
-              // 从 contentContainer 中移除
-              contentContainer.removeChild(childElement)
-            } else if (childElement.parentNode) {
-              // 如果不在 contentContainer 中，也在其他地方，也要移除
-              childElement.parentNode.removeChild(childElement)
-            }
-          } else if (!childElement) {
-            // 如果没有元素（renderChild 跳过了），才渲染（避免重复渲染）
+          // 如果子组件还没渲染，渲染它
+          if (!childElement) {
             childElement = childInstance.instance.render()
           }
           
@@ -1058,7 +1163,7 @@ const handleDrop = async (event: DragEvent) => {
             return
           }
           
-          // 将元素添加到 wrapper
+          // 将元素添加到 wrapper（在占位符的内容区域中）
           wrapper.appendChild(childElement)
           
           // 如果是 Grid，设置 Grid 元素填充 wrapper
@@ -1074,7 +1179,7 @@ const handleDrop = async (event: DragEvent) => {
             childElement.style.width = '100%'
             childElement.style.height = '100%'
             // 查找 Grid 的根元素（.vue-grid）并填充
-            const gridRoot = childElement.querySelector('.vue-grid') as HTMLElement
+            const gridRoot = childElement.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
             if (gridRoot) {
               gridRoot.style.width = '100%'
               gridRoot.style.height = '100%'
@@ -1222,7 +1327,7 @@ const handleDrop = async (event: DragEvent) => {
     // 如果是 Grid，设置 Grid 元素填充 wrapper
     if (isGrid && childElement instanceof HTMLElement) {
       // 查找 Grid 的根元素（.vue-grid）
-      const gridRoot = childElement.querySelector('.vue-grid') || childElement
+      const gridRoot = childElement.querySelector('.qt-grid-layout, .vue-grid') || childElement
       if (gridRoot instanceof HTMLElement) {
         gridRoot.style.width = '100%'
         gridRoot.style.height = '100%'
@@ -1441,23 +1546,115 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
         height: '600px'
         // 不设置 position，默认居中显示
       })
-      element = instance.render()
-      element.setAttribute('data-id', id)
-      // Widget 在画布中需要调整为相对定位，而不是 fixed
-      // 这样可以在画布中正常显示
-      nextTick(() => {
-        if (element) {
-          // 查找 Widget 根元素（.nhai-widget）
-          const widgetRoot = element.querySelector('.nhai-widget') as HTMLElement
-          if (widgetRoot) {
-            // 将 fixed 定位改为 relative，以便在画布中显示
-            widgetRoot.style.position = 'relative'
-            // 移除 top 和 left，因为它们已经在 canvas-component 上设置了
-            widgetRoot.style.top = 'auto'
-            widgetRoot.style.left = 'auto'
-          }
-        }
-      })
+      
+      // Widget 在画布上显示为可编辑的窗口占位符（不真实渲染）
+      element = document.createElement('div')
+      element.className = 'widget-window'
+      element.setAttribute('data-id', id)  // 设置 Widget ID，用于拖放时查找
+      element.style.cssText = `
+        width: 800px;
+        min-height: 400px;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        position: relative;
+      `
+      
+      // Widget 头部
+      const widgetHeader = document.createElement('div')
+      widgetHeader.className = 'widget-window-header'
+      widgetHeader.style.cssText = `
+        padding: 8px 12px;
+        border-bottom: 1px solid #ddd;
+        background: #f5f5f5;
+        font-weight: 500;
+        font-size: 14px;
+        color: #333;
+        cursor: grab;
+        user-select: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      `
+      widgetHeader.textContent = '窗口标题'
+      
+      // 操作按钮（仅显示，不可点击）
+      const widgetActions = document.createElement('div')
+      widgetActions.className = 'widget-window-actions'
+      widgetActions.style.cssText = `
+        display: flex;
+        gap: 4px;
+      `
+      const widgetMinimizeBtn = document.createElement('span')
+      widgetMinimizeBtn.textContent = '−'
+      widgetMinimizeBtn.style.cssText = `
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 3px;
+        font-size: 16px;
+        color: #666;
+      `
+      const widgetMaximizeBtn = document.createElement('span')
+      widgetMaximizeBtn.textContent = '□'
+      widgetMaximizeBtn.style.cssText = `
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 3px;
+        font-size: 16px;
+        color: #666;
+      `
+      const widgetCloseBtn = document.createElement('span')
+      widgetCloseBtn.textContent = '×'
+      widgetCloseBtn.style.cssText = `
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 3px;
+        font-size: 16px;
+        color: #666;
+      `
+      widgetActions.appendChild(widgetMinimizeBtn)
+      widgetActions.appendChild(widgetMaximizeBtn)
+      widgetActions.appendChild(widgetCloseBtn)
+      widgetHeader.appendChild(widgetActions)
+      
+      // Widget 内容区域
+      const widgetContent = document.createElement('div')
+      widgetContent.className = 'widget-window-content'
+      widgetContent.style.cssText = `
+        flex: 1;
+        padding: 12px;
+        position: relative;
+        min-height: 300px;
+        background: white;
+      `
+      // 添加提示文本
+      const widgetHint = document.createElement('div')
+      widgetHint.style.cssText = `
+        color: #999;
+        font-size: 12px;
+        text-align: center;
+        padding: 20px;
+        border: 2px dashed #ddd;
+        border-radius: 4px;
+        margin: 10px;
+      `
+      widgetHint.textContent = 'Widget 内容区域 - 可以在此拖放子组件'
+      widgetContent.appendChild(widgetHint)
+      
+      element.appendChild(widgetHeader)
+      element.appendChild(widgetContent)
       break
     case 'dialog':
       // Dialog 在画布上显示为可编辑的窗口
@@ -1611,7 +1808,7 @@ const createComponent = async (compDef: any, x: number, y: number): Promise<Canv
         // 如果是 Grid，设置 Grid 元素填充 wrapper
         if (isGrid && childElement instanceof HTMLElement) {
           // 查找 Grid 的根元素（.vue-grid）
-          const gridRoot = childElement.querySelector('.vue-grid') || childElement
+          const gridRoot = childElement.querySelector('.qt-grid-layout, .vue-grid') || childElement
           if (gridRoot instanceof HTMLElement) {
             gridRoot.style.width = '100%'
             gridRoot.style.height = '100%'
@@ -1995,7 +2192,23 @@ const clearLayoutChildSelection = () => {
 // 清除所有对话框内控件的选中样式
 const clearDialogChildSelection = () => {
   dialogChildren.value.forEach((info) => {
+    // 移除普通子控件的选中样式
     info.wrapper.classList.remove('selected')
+    // 检查是否是 Grid 或 Container 容器，恢复默认高亮样式
+    if (info.instance instanceof NhaiGridCommand || info.instance instanceof NhaiContainerCommand) {
+      const layoutType = info.wrapper.getAttribute('data-layout-type')
+      if (layoutType === 'grid') {
+        // Grid 容器恢复默认样式（2px）
+        info.wrapper.style.border = '2px solid #3b82f6'
+        info.wrapper.style.borderWidth = '2px'
+        info.wrapper.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.2)'
+      } else if (layoutType === 'flex-row' || layoutType === 'flex-column') {
+        // Flex 容器恢复默认样式（2px）
+        info.wrapper.style.border = '2px solid #10b981'
+        info.wrapper.style.borderWidth = '2px'
+        info.wrapper.style.boxShadow = '0 0 0 2px rgba(16, 185, 129, 0.2)'
+      }
+    }
   })
 }
 
@@ -2007,12 +2220,29 @@ const toggleWidgetChildSelection = (instance: any, wrapper?: HTMLElement) => {
     if (wrapper) {
       wrapper.classList.remove('selected')
       wrapper.classList.remove('multi-selected')
+      // 如果是 Grid 或 Container，恢复默认高亮样式（2px）
+      if (instance instanceof NhaiGridCommand) {
+        wrapper.style.border = '2px solid #3b82f6'
+        wrapper.style.borderWidth = '2px'
+        wrapper.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.2)'
+      } else if (instance instanceof NhaiContainerCommand) {
+        const layoutType = wrapper.getAttribute('data-layout-type')
+        if (layoutType === 'flex-row' || layoutType === 'flex-column') {
+          wrapper.style.border = '2px solid #10b981'
+          wrapper.style.borderWidth = '2px'
+          wrapper.style.boxShadow = '0 0 0 2px rgba(16, 185, 129, 0.2)'
+        }
+      }
     }
   } else {
     // 点击未选中的控件，添加到多选
     selectedWidgetChildren.value.add(instance)
     if (wrapper) {
       wrapper.classList.add('multi-selected')
+      // Grid 和 Container 在多选时也使用多选样式
+      if (instance instanceof NhaiGridCommand || instance instanceof NhaiContainerCommand) {
+        // 保持多选样式类，但边框样式由 CSS 控制
+      }
     }
   }
   // 清除单选状态
@@ -2027,16 +2257,41 @@ const updateWidgetChildSelectionStyles = () => {
     if (selectedWidgetChildren.value.has(info.instance)) {
       info.wrapper.classList.add('multi-selected')
       info.wrapper.classList.remove('selected')
+      // Grid 和 Container 在多选时保持多选样式
+      if (info.instance instanceof NhaiGridCommand) {
+        // Grid 多选时使用多选样式（由 CSS 类控制）
+      } else if (info.instance instanceof NhaiContainerCommand) {
+        // Container 多选时使用多选样式（由 CSS 类控制）
+      }
     } else {
       info.wrapper.classList.remove('multi-selected')
+      // 如果不是 Grid 或 Container，或者没有被选中，清除选中样式
+      if (!(info.instance instanceof NhaiGridCommand || info.instance instanceof NhaiContainerCommand)) {
+        // 普通子控件清除选中样式
+      } else {
+        // Grid 或 Container 如果没有被多选，且没有被单选，恢复默认样式
+        if (selectedDialogChild.value !== info.instance) {
+          const layoutType = info.wrapper.getAttribute('data-layout-type')
+          if (info.instance instanceof NhaiGridCommand && layoutType === 'grid') {
+            info.wrapper.style.border = '2px solid #3b82f6'
+            info.wrapper.style.borderWidth = '2px'
+            info.wrapper.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.2)'
+          } else if (info.instance instanceof NhaiContainerCommand && (layoutType === 'flex-row' || layoutType === 'flex-column')) {
+            info.wrapper.style.border = '2px solid #10b981'
+            info.wrapper.style.borderWidth = '2px'
+            info.wrapper.style.boxShadow = '0 0 0 2px rgba(16, 185, 129, 0.2)'
+          }
+        }
+      }
     }
   })
 }
 
 // 框选功能
 const startBoxSelect = (event: MouseEvent, widgetBody: HTMLElement) => {
-  // 只允许在 Widget 内容区域框选
-  if (!(event.target as HTMLElement).closest('.widget-content')) return
+  // 只允许在 Widget 内容区域框选（可视化编辑器中的占位符或真实内容区域）
+  const target = event.target as HTMLElement
+  if (!target.closest('.widget-window-content') && !target.closest('.widget-content')) return
   
   // 避免在子控件上开始框选
   if ((event.target as HTMLElement).closest('[data-widget-child]')) return
@@ -2128,8 +2383,8 @@ const updateBoxSelectChildren = (widgetBody: HTMLElement, finalize: boolean = fa
     })
   }
   
-  // 检测所有子控件是否在框选区域内
-  widgetBody.querySelectorAll('[data-widget-child]').forEach((wrapper) => {
+  // 检测所有子控件是否在框选区域内（包括 Grid 和 Container）
+  widgetBody.querySelectorAll('[data-widget-child], [data-widget-child-instance]').forEach((wrapper) => {
     const rect = (wrapper as HTMLElement).getBoundingClientRect()
     const widgetRect = widgetBody.getBoundingClientRect()
     const wrapperLeft = rect.left - widgetRect.left
@@ -2142,6 +2397,22 @@ const updateBoxSelectChildren = (widgetBody: HTMLElement, finalize: boolean = fa
     
     if (isInBox) {
       // 根据 wrapper 找到对应的 instance
+      // 首先尝试通过 data-widget-child-instance 属性查找
+      const instanceId = (wrapper as HTMLElement).getAttribute('data-widget-child-instance')
+      if (instanceId) {
+        // 通过 instanceId 查找对应的实例（对于 Grid 和 Container）
+        dialogChildren.value.forEach((_info, instance) => {
+          if (String(instance) === instanceId) {
+            if (finalize) {
+              selectedWidgetChildren.value.add(instance)
+            } else {
+              (wrapper as HTMLElement).classList.add('box-selecting')
+            }
+            return
+          }
+        })
+      }
+      // 如果没有找到，使用原来的方法（通过 wrapper 匹配）
       dialogChildren.value.forEach((info, instance) => {
         if (info.wrapper === wrapper) {
           if (finalize) {
@@ -2189,9 +2460,12 @@ const applyLayout = () => {
   
   if (selectedWrappers.length === 0) return
   
-  // 找到这些 wrapper 的父 Widget 容器
+  // 找到这些 wrapper 的父 Widget 容器（可视化编辑器中的占位符或真实内容区域）
   const firstWrapper = selectedWrappers[0]
-  const widgetBody = firstWrapper.closest('.widget-content') as HTMLElement
+  let widgetBody = firstWrapper.closest('.widget-window-content') as HTMLElement
+  if (!widgetBody) {
+    widgetBody = firstWrapper.closest('.widget-content') as HTMLElement
+  }
   if (!widgetBody) return
   
   // 找到 Widget 实例
@@ -2202,18 +2476,7 @@ const applyLayout = () => {
   if (!widgetComp || !widgetComp.widgetInstance) return
   
   if (layoutMode.value === 'grid') {
-    // 应用 Grid 布局
-    // 创建一个 Grid 容器包装选中的控件
-    const gridContainer = document.createElement('div')
-    gridContainer.style.cssText = `
-      position: absolute;
-      display: grid;
-      grid-template-columns: repeat(${gridColumns.value}, auto);
-      gap: ${gridSpacing.value * 8}px;
-      padding: 0;
-      margin: 0;
-    `
-    
+    // 应用 Grid 布局 - 使用 NhaiGridCommand 创建 Grid 实例
     // 计算 Grid 容器的位置（包围所有选中控件的边界框）
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
     selectedWrappers.forEach(wrapper => {
@@ -2230,48 +2493,222 @@ const applyLayout = () => {
       maxY = Math.max(maxY, bottom)
     })
     
-    gridContainer.style.left = `${minX}px`
-    gridContainer.style.top = `${minY}px`
-    gridContainer.style.width = 'fit-content'
-    gridContainer.style.height = 'fit-content'
-    
-    // 将选中的控件移动到 Grid 容器中
-    selectedWrappers.forEach((wrapper) => {
-      // 移除绝对定位
-      wrapper.style.position = ''
-      wrapper.style.left = ''
-      wrapper.style.top = ''
-      wrapper.style.width = 'auto'
-      wrapper.style.height = 'auto'
-      
-      // 添加到 Grid 容器（先检查是否还是父节点的子节点）
-      if (wrapper.parentNode === widgetBody) {
-        widgetBody.removeChild(wrapper)
-      }
-      gridContainer.appendChild(wrapper)
+    // 创建 Grid 实例
+    const gridInstance = new NhaiGridCommand({
+      container: false,  // 不在 Widget 中使用 container 模式
+      columns: gridColumns.value,
+      spacing: gridSpacing.value,
+      justifyItems: 'start',
+      alignItems: 'stretch'
     })
     
-    // 将 Grid 容器添加到 Widget body
-    widgetBody.appendChild(gridContainer)
+    // 渲染 Grid 组件
+    const gridElement = gridInstance.render()
+    gridElement.setAttribute('data-id', `grid-${Date.now()}`)
     
-    // 更新代码
-    updateCode()
+    // 设置 Grid 容器的位置和样式，确保在 Widget 中可见
+    gridElement.style.position = 'absolute'
+    gridElement.style.left = `${minX}px`
+    gridElement.style.top = `${minY}px`
+    // 注意：不要覆盖 Grid 实例的 width 设置，它们可能已经通过属性设置了
+    // 只在没有设置时才应用默认值
+    if (!gridInstance.getProperty('layoutStretch')) {
+      gridElement.style.width = 'fit-content'
+    }
+    gridElement.style.height = 'fit-content'
+    gridElement.style.display = 'block'
+    gridElement.style.minWidth = '200px'
+    gridElement.style.minHeight = '100px'
+    // 注意：边距应该应用到内部的 .qt-grid-layout（作为 padding），而不是外层容器
+    // 这里的边距会通过 Vue props 自动应用到 .qt-grid-layout
     
-    // 关闭布局面板，清除多选
-    closeLayoutPanel()
+    // 确保 Grid 的 .qt-grid-layout 元素也能正确显示
+    nextTick(() => {
+      const vueGrid = gridElement.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
+      if (vueGrid) {
+        vueGrid.style.display = 'grid'
+        vueGrid.style.minWidth = 'fit-content'
+        vueGrid.style.minHeight = 'fit-content'
+      }
+    })
+    
+    // 查找 Grid 的实际内容容器（.vue-grid）并移动 wrapper
+    const moveWrappersToGrid = () => {
+      const gridContentContainer = gridElement.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
+      if (!gridContentContainer) {
+        // 如果没找到，使用 setTimeout 再次尝试
+        setTimeout(() => {
+          const retryContainer = gridElement.querySelector('.vue-grid') as HTMLElement
+          if (retryContainer) {
+            moveWrappersToGrid()
+          } else {
+            console.warn('Grid content container not found')
+          }
+        }, 100)
+        return
+      }
+      
+      // 将选中的控件移动到 Grid 容器中
+      // 注意：Grid 和 Container 本身也可以被选中并添加到新的 Grid 中
+      selectedInstances.forEach((instance, index) => {
+        const wrapper = selectedWrappers[index]
+        if (!wrapper) return
+        
+        // 如果是 Grid 或 Container 实例，需要特殊处理
+        const isGridOrContainer = instance instanceof NhaiGridCommand || instance instanceof NhaiContainerCommand
+        
+        if (isGridOrContainer) {
+          // 对于 Grid 或 Container，wrapper 就是元素本身
+          // 需要将其从当前父容器移除，然后添加到新的 Grid 中
+          const elementToMove = wrapper
+          
+          // 如果元素还在父节点中，先移除
+          if (elementToMove.parentNode && elementToMove.parentNode !== gridContentContainer) {
+            elementToMove.parentNode.removeChild(elementToMove)
+          }
+          
+          // 移除可能影响 Grid 布局的样式
+          elementToMove.style.position = ''
+          elementToMove.style.left = ''
+          elementToMove.style.top = ''
+          elementToMove.style.width = 'auto'
+          elementToMove.style.height = 'auto'
+          
+          // 添加到 Grid 的内容容器
+          gridContentContainer.appendChild(elementToMove)
+          
+          // 将 Grid/Container 实例添加到新的 Grid 实例（用于代码生成）
+          gridInstance.addChild(instance)
+        } else {
+          // 普通子控件的处理（原有逻辑）
+          // 移除绝对定位
+          wrapper.style.position = ''
+          wrapper.style.left = ''
+          wrapper.style.top = ''
+          wrapper.style.width = 'auto'
+          wrapper.style.height = 'auto'
+          
+          // 添加到 Grid 容器（先检查是否还是父节点的子节点）
+          if (wrapper.parentNode === widgetBody) {
+            widgetBody.removeChild(wrapper)
+          }
+          
+          // 添加到 Grid 的内容容器
+          gridContentContainer.appendChild(wrapper)
+          
+          // 将子组件添加到 Grid 实例（用于代码生成）
+          gridInstance.addChild(instance)
+        }
+      })
+      
+      // 给 Grid 元素添加高亮样式，表示它是布局容器
+      gridElement.classList.add('grid-layout-container')
+      gridElement.setAttribute('data-layout-type', 'grid')
+      gridElement.setAttribute('data-grid-instance', String(gridInstance)) // 保存 Grid 实例引用
+      
+      // 设置 Grid 的高亮样式，使其在 Widget 中可见
+      gridElement.style.border = '2px solid #3b82f6'
+      gridElement.style.borderRadius = '4px'
+      gridElement.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.2)'
+      gridElement.style.backgroundColor = 'rgba(59, 130, 246, 0.05)'
+      gridElement.style.cursor = 'pointer' // 添加指针样式，表示可点击
+      
+      // 给 Grid 元素添加标识，用于框选识别
+      gridElement.setAttribute('data-widget-child', 'true')
+      gridElement.setAttribute('data-widget-child-instance', String(gridInstance))
+      
+      // 添加点击事件，支持单选和多选
+      gridElement.addEventListener('click', (e: MouseEvent) => {
+        e.stopPropagation() // 阻止事件冒泡到 Widget
+        
+        // 支持 Ctrl + 左键多选，或者在多选状态下支持切换选中状态
+        if (e.ctrlKey || e.metaKey || selectedWidgetChildren.value.size > 0) {
+          // Ctrl/Cmd 键按下，或者已有多个控件选中，支持多选切换
+          toggleWidgetChildSelection(gridInstance, gridElement)
+        } else {
+          // 单选：清除多选，选中当前项
+          selectedWidgetChildren.value.clear()
+          // 如果已经选中了 Grid，再次点击则取消选中
+          if (selectedDialogChild.value === gridInstance) {
+            selectedDialogChild.value = null
+            // 恢复 Grid 元素的默认高亮样式
+            gridElement.style.border = '2px solid #3b82f6'
+            gridElement.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.2)'
+            updateWidgetChildSelectionStyles()
+          } else {
+            // 选中 Grid 实例
+            selectDialogChild(gridInstance, widgetId || '')
+            // 更新 Grid 元素的选中样式
+            gridElement.style.border = '3px solid #3b82f6'
+            gridElement.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.4)'
+            // 清除其他对话框子控件的选中样式
+            updateWidgetChildSelectionStyles()
+          }
+        }
+      })
+      
+      // 添加拖动事件，支持 Grid 拖动移动
+      gridElement.addEventListener('mousedown', (e: MouseEvent) => {
+        e.stopPropagation() // 阻止事件冒泡到 Widget
+        // 只在非 Ctrl 键按下时才开始拖拽，避免干扰多选
+        if (!(e.ctrlKey || e.metaKey)) {
+          startDragDialogChild(gridInstance, gridElement, e)
+        }
+      })
+      
+      // 添加拖动样式提示
+      gridElement.style.cursor = 'move'
+      
+      // 将 Grid 元素添加到 Widget body
+      widgetBody.appendChild(gridElement)
+      
+      // 重要：将 Grid 实例添加到 Widget 实例，以便代码生成器能找到它
+      // 这样 widgetInstance.getChildren() 会返回 Grid 实例
+      widgetComp.widgetInstance.addChild(gridInstance)
+      
+      // 选中 Grid 容器（高亮显示）
+      setTimeout(() => {
+        // 给 Grid 的 .vue-grid 容器也添加标识，方便拖放检测
+        const vueGrid = gridElement.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
+        if (vueGrid) {
+          vueGrid.setAttribute('data-is-grid-container', 'true')
+          vueGrid.style.minHeight = '100px' // 确保 Grid 有足够的高度用于拖放
+        }
+      }, 100)
+      
+      // 重要：将 Grid 实例注册到 dialogChildren 中，以便代码生成器能识别它
+      // 计算 Grid 的位置（使用包围框的最小位置）
+      const gridPosition = { x: minX, y: minY }
+      dialogChildren.value.set(gridInstance, {
+        instance: gridInstance,
+        wrapper: gridElement,  // Grid 元素本身作为 wrapper
+        dialogId: widgetId || '',
+        position: gridPosition
+      })
+      
+      // 将 Grid 实例保存到对应的 wrapper 中，以便后续编辑
+      selectedInstances.forEach((instance) => {
+        const childInfo = dialogChildren.value.get(instance)
+        if (childInfo) {
+          // 更新 wrapper 的标记，表示它在 Grid 中
+          childInfo.wrapper.setAttribute('data-in-grid', 'true')
+          childInfo.wrapper.setAttribute('data-grid-id', gridElement.getAttribute('data-id') || '')
+        }
+      })
+      
+      // 更新代码
+      updateCode()
+      
+      // 关闭布局面板，清除多选
+      closeLayoutPanel()
+    }
+    
+    // 在 nextTick 中尝试移动 wrapper（确保 Vue 组件已渲染）
+    nextTick(() => {
+      moveWrappersToGrid()
+    })
   } else if (layoutMode.value === 'flex-row' || layoutMode.value === 'flex-column') {
-    // 应用 Flex 布局
-    const flexContainer = document.createElement('div')
-    flexContainer.style.cssText = `
-      position: absolute;
-      display: flex;
-      flex-direction: ${layoutMode.value === 'flex-row' ? 'row' : 'column'};
-      gap: ${flexSpacing.value * 8}px;
-      align-items: ${flexAlignItems.value};
-      padding: 0;
-      margin: 0;
-    `
-    
+    // 应用 Flex 布局 - 使用 NhaiContainerCommand
     // 计算 Flex 容器的位置
     let minX = Infinity, minY = Infinity
     selectedWrappers.forEach(wrapper => {
@@ -2284,35 +2721,253 @@ const applyLayout = () => {
       minY = Math.min(minY, top)
     })
     
-    flexContainer.style.left = `${minX}px`
-    flexContainer.style.top = `${minY}px`
-    flexContainer.style.width = 'fit-content'
-    flexContainer.style.height = 'fit-content'
-    
-    // 将选中的控件移动到 Flex 容器中
-    selectedWrappers.forEach((wrapper) => {
-      // 移除绝对定位
-      wrapper.style.position = ''
-      wrapper.style.left = ''
-      wrapper.style.top = ''
-      wrapper.style.width = 'auto'
-      wrapper.style.height = 'auto'
-      
-      // 添加到 Flex 容器（先检查是否还是父节点的子节点）
-      if (wrapper.parentNode === widgetBody) {
-        widgetBody.removeChild(wrapper)
-      }
-      flexContainer.appendChild(wrapper)
+    // 创建 Container 实例用于 Flex 布局
+    const containerInstance = new NhaiContainerCommand({
+      maxWidth: false,  // 不使用 maxWidth 限制
+      fixed: false,
+      disableGutters: true
     })
     
-    // 将 Flex 容器添加到 Widget body
-    widgetBody.appendChild(flexContainer)
+    // 设置 Flex 布局样式
+    containerInstance.setStyle({
+      position: 'absolute',
+      display: 'flex',
+      flexDirection: layoutMode.value === 'flex-row' ? 'row' : 'column',
+      gap: `${flexSpacing.value * 8}px`,
+      alignItems: flexAlignItems.value,
+      justifyContent: 'flex-start',  // 确保子元素从起始位置开始排列
+      left: `${minX}px`,
+      top: `${minY}px`,
+      width: 'fit-content',
+      height: 'fit-content',
+      minWidth: 'fit-content',  // 最小宽度为内容宽度
+      maxWidth: 'fit-content',  // 最大宽度为内容宽度
+      minHeight: 'fit-content',
+      maxHeight: 'fit-content',
+      padding: '0',
+      margin: '0'
+    })
     
-    // 更新代码
-    updateCode()
+    // 渲染 Container 组件
+    const containerElement = containerInstance.render()
+    containerElement.setAttribute('data-id', `flex-${Date.now()}`)
+    containerElement.setAttribute('data-layout-type', layoutMode.value) // 保存布局类型
+    containerElement.setAttribute('data-container-instance', String(containerInstance)) // 保存 Container 实例引用
     
-    // 关闭布局面板，清除多选
-    closeLayoutPanel()
+    // 给 Container 元素添加高亮样式
+    containerElement.classList.add('flex-layout-container')
+    // 确保默认边框是 2px，不是 3px
+    containerElement.style.border = '2px solid #10b981'
+    containerElement.style.borderWidth = '2px'
+    containerElement.style.borderRadius = '4px'
+    containerElement.style.boxShadow = '0 0 0 2px rgba(16, 185, 129, 0.2)'
+    containerElement.style.backgroundColor = 'rgba(16, 185, 129, 0.05)'
+    containerElement.style.cursor = 'pointer' // 添加指针样式，表示可点击
+    
+    // 给 Container 元素添加标识，用于框选识别
+    containerElement.setAttribute('data-widget-child', 'true')
+    containerElement.setAttribute('data-widget-child-instance', String(containerInstance))
+    
+    // 添加点击事件，支持单选和多选
+    containerElement.addEventListener('click', (e: MouseEvent) => {
+      e.stopPropagation() // 阻止事件冒泡到 Widget
+      
+      // 支持 Ctrl + 左键多选，或者在多选状态下支持切换选中状态
+      if (e.ctrlKey || e.metaKey || selectedWidgetChildren.value.size > 0) {
+        // Ctrl/Cmd 键按下，或者已有多个控件选中，支持多选切换
+        toggleWidgetChildSelection(containerInstance, containerElement)
+      } else {
+        // 单选：清除多选，选中当前项
+        selectedWidgetChildren.value.clear()
+        // 如果已经选中了 Container，再次点击则取消选中
+        if (selectedDialogChild.value === containerInstance) {
+          selectedDialogChild.value = null
+          // 恢复 Container 元素的默认高亮样式（2px）
+          containerElement.style.border = '2px solid #10b981'
+          containerElement.style.borderWidth = '2px'
+          containerElement.style.boxShadow = '0 0 0 2px rgba(16, 185, 129, 0.2)'
+          updateWidgetChildSelectionStyles()
+        } else {
+          // 选中 Container 实例
+          selectDialogChild(containerInstance, widgetId || '')
+          // 更新 Container 元素的选中样式（选中时用 3px 高亮）
+          containerElement.style.border = '3px solid #10b981'
+          containerElement.style.borderWidth = '3px'
+          containerElement.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.4)'
+          // 清除其他对话框子控件的选中样式
+          updateWidgetChildSelectionStyles()
+        }
+      }
+    })
+    
+    // 添加拖动事件，支持 Container 拖动移动
+    containerElement.addEventListener('mousedown', (e: MouseEvent) => {
+      e.stopPropagation() // 阻止事件冒泡到 Widget
+      // 只在非 Ctrl 键按下时才开始拖拽，避免干扰多选
+      if (!(e.ctrlKey || e.metaKey)) {
+        startDragDialogChild(containerInstance, containerElement, e)
+      }
+    })
+    
+    // 查找 Container 的实际内容容器
+    // Flex 布局时，子组件应该直接添加到外层容器，而不是内部的 .vue-container
+    const moveWrappersToContainer = () => {
+      // 检查是否是 Flex 布局
+      const isFlexLayout = containerElement.style.display === 'flex' || 
+                          containerElement.getAttribute('data-layout-type') === 'flex-row' ||
+                          containerElement.getAttribute('data-layout-type') === 'flex-column'
+      
+      if (isFlexLayout) {
+        // Flex 布局时，直接使用外层容器
+        moveWrappersDirectly(containerElement)
+        return
+      }
+      
+      // 非 Flex 布局时，使用内部的 .vue-container
+      const containerContentArea = containerElement.querySelector('.vue-container') as HTMLElement
+      if (!containerContentArea) {
+        // 如果没找到 .vue-container，直接使用 containerElement
+        setTimeout(() => {
+          const retryContainer = containerElement.querySelector('.vue-container') as HTMLElement
+          if (retryContainer) {
+            moveWrappersToContainer()
+          } else {
+            // 直接使用 containerElement 作为容器
+            moveWrappersDirectly(containerElement)
+          }
+        }, 100)
+        return
+      }
+      moveWrappersDirectly(containerContentArea)
+    }
+    
+    const moveWrappersDirectly = (targetContainer: HTMLElement) => {
+      // 将选中的控件移动到 Container 中
+      // 注意：Grid 和 Container 本身也可以被选中并添加到新的 Flex 容器中
+      selectedInstances.forEach((instance, index) => {
+        const wrapper = selectedWrappers[index]
+        if (!wrapper) return
+        
+        // 如果是 Grid 或 Container 实例，需要特殊处理
+        const isGridOrContainer = instance instanceof NhaiGridCommand || instance instanceof NhaiContainerCommand
+        
+        if (isGridOrContainer) {
+          // 对于 Grid 或 Container，wrapper 就是元素本身
+          const elementToMove = wrapper
+          
+          // 如果元素还在父节点中，先移除
+          if (elementToMove.parentNode && elementToMove.parentNode !== targetContainer) {
+            elementToMove.parentNode.removeChild(elementToMove)
+          }
+          
+          // 移除可能影响 Flex 布局的样式
+          elementToMove.style.position = ''
+          elementToMove.style.left = ''
+          elementToMove.style.top = ''
+          elementToMove.style.width = 'auto'
+          elementToMove.style.height = 'auto'
+          elementToMove.style.flexShrink = '0'  // 防止 Flex 子项收缩
+          elementToMove.style.flexGrow = '0'    // 防止 Flex 子项扩展
+          // 移除可能存在的 margin，确保间距只由 gap 控制
+          // 特别是第一个子控件不应该有左侧 margin
+          elementToMove.style.margin = '0'
+          elementToMove.style.marginLeft = '0'
+          elementToMove.style.marginRight = '0'
+          elementToMove.style.marginTop = '0'
+          elementToMove.style.marginBottom = '0'
+          elementToMove.style.padding = '0'
+          elementToMove.style.paddingLeft = '0'
+          elementToMove.style.paddingRight = '0'
+          // 使用 setProperty 强制设置，确保优先级
+          elementToMove.style.setProperty('margin', '0', 'important')
+          elementToMove.style.setProperty('margin-left', '0', 'important')
+          elementToMove.style.setProperty('margin-right', '0', 'important')
+          elementToMove.style.setProperty('padding', '0', 'important')
+          elementToMove.style.setProperty('padding-left', '0', 'important')
+          elementToMove.style.setProperty('padding-right', '0', 'important')
+          
+          // 添加到 Flex 容器
+          targetContainer.appendChild(elementToMove)
+          
+          // 将 Grid/Container 实例添加到 Container 实例（用于代码生成）
+          containerInstance.addChild(instance)
+        } else {
+          // 普通子控件的处理（原有逻辑）
+          // 移除绝对定位
+          wrapper.style.position = ''
+          wrapper.style.left = ''
+          wrapper.style.top = ''
+          wrapper.style.width = 'auto'
+          wrapper.style.height = 'auto'
+          wrapper.style.flexShrink = '0'  // 防止 Flex 子项收缩
+          wrapper.style.flexGrow = '0'    // 防止 Flex 子项扩展
+          // 移除可能存在的 margin，确保间距只由 gap 控制
+          // 特别是第一个子控件不应该有左侧 margin
+          wrapper.style.margin = '0'
+          wrapper.style.marginLeft = '0'
+          wrapper.style.marginRight = '0'
+          wrapper.style.marginTop = '0'
+          wrapper.style.marginBottom = '0'
+          wrapper.style.padding = '0'
+          wrapper.style.paddingLeft = '0'
+          wrapper.style.paddingRight = '0'
+          // 使用 setProperty 强制设置，确保优先级
+          wrapper.style.setProperty('margin', '0', 'important')
+          wrapper.style.setProperty('margin-left', '0', 'important')
+          wrapper.style.setProperty('margin-right', '0', 'important')
+          wrapper.style.setProperty('padding', '0', 'important')
+          wrapper.style.setProperty('padding-left', '0', 'important')
+          wrapper.style.setProperty('padding-right', '0', 'important')
+          
+          // 添加到 Container（先检查是否还是父节点的子节点）
+          if (wrapper.parentNode === widgetBody) {
+            widgetBody.removeChild(wrapper)
+          }
+          
+          // 添加到 Container 的内容区域
+          targetContainer.appendChild(wrapper)
+          
+          // 将子组件添加到 Container 实例（用于代码生成）
+          containerInstance.addChild(instance)
+        }
+      })
+      
+      // 将 Container 元素添加到 Widget body
+      widgetBody.appendChild(containerElement)
+      
+      // 重要：将 Container 实例添加到 Widget 实例，以便代码生成器能找到它
+      widgetComp.widgetInstance.addChild(containerInstance)
+      
+      // 重要：将 Container 实例注册到 dialogChildren 中，以便代码生成器能识别它
+      const containerPosition = { x: minX, y: minY }
+      dialogChildren.value.set(containerInstance, {
+        instance: containerInstance,
+        wrapper: containerElement,  // Container 元素本身作为 wrapper
+        dialogId: widgetId || '',
+        position: containerPosition
+      })
+      
+      // 将 Container 实例保存到对应的 wrapper 中，以便后续编辑
+      selectedInstances.forEach((instance) => {
+        const childInfo = dialogChildren.value.get(instance)
+        if (childInfo) {
+          // 更新 wrapper 的标记，表示它在 Container 中
+          childInfo.wrapper.setAttribute('data-in-container', 'true')
+          childInfo.wrapper.setAttribute('data-container-id', containerElement.getAttribute('data-id') || '')
+        }
+      })
+      
+      // 更新代码
+      updateCode()
+      
+      // 关闭布局面板，清除多选
+      closeLayoutPanel()
+    }
+    
+    // 在 nextTick 中尝试移动 wrapper（确保 Vue 组件已渲染）
+    nextTick(() => {
+      moveWrappersToContainer()
+    })
   }
 }
 
@@ -2352,18 +3007,13 @@ const deleteSelectedWidgetChildren = () => {
   instancesToDelete.forEach(instance => {
     const childInfo = dialogChildren.value.get(instance)
     if (childInfo) {
-      // 从 Widget 实例中移除
-      const widgetElement = childInfo.wrapper.closest('[data-id]') as HTMLElement
-      if (widgetElement) {
-        const widgetId = widgetElement.getAttribute('data-id')
-        const widgetComp = canvasComponents.value.find(c => c.id === widgetId && c.type === 'widget')
-        if (widgetComp && widgetComp.widgetInstance) {
-          // 从 Widget 实例中移除子控件
-          if (widgetComp.widgetInstance.removeChild) {
-            widgetComp.widgetInstance.removeChild(instance)
-          }
-        }
-      }
+      // 在可视化编辑器中，Widget 使用占位符，不需要调用 removeChild（因为 Widget 实例没有真实渲染）
+      // const widgetElement = childInfo.wrapper.closest('[data-id]') as HTMLElement
+      // if (widgetElement) {
+      //   const widgetId = widgetElement.getAttribute('data-id')
+      //   const widgetComp = canvasComponents.value.find(c => c.id === widgetId && c.type === 'widget')
+      //   widgetComp?.widgetInstance?.removeChild(instance)  // 注释掉，避免调用真实渲染的 Widget 实例
+      // }
       
       // 从 DOM 中移除
       if (childInfo.wrapper && childInfo.wrapper.parentNode) {
@@ -2393,6 +3043,12 @@ const deleteSelectedWidgetChildren = () => {
 
 // 键盘事件处理
 const handleKeyDown = (event: KeyboardEvent) => {
+  // 如果焦点在输入框或文本区域中，不处理删除控件（让输入框正常处理删除）
+  const target = event.target as HTMLElement
+  if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+    return
+  }
+  
   // Delete 或 Backspace 键删除选中的控件
   if ((event.key === 'Delete' || event.key === 'Backspace') && !event.ctrlKey && !event.metaKey) {
     // 优先删除多选的 Widget 子控件
@@ -2414,12 +3070,14 @@ const handleKeyDown = (event: KeyboardEvent) => {
         if (widgetElement) {
           const widgetId = widgetElement.getAttribute('data-id')
           const widgetComp = canvasComponents.value.find(c => c.id === widgetId && (c.type === 'widget' || c.type === 'dialog'))
-          if (widgetComp && (widgetComp.widgetInstance || widgetComp.dialogInstance)) {
-            const instanceToRemove = widgetComp.widgetInstance || widgetComp.dialogInstance
-            if (instanceToRemove && instanceToRemove.removeChild) {
-              instanceToRemove.removeChild(instance)
+          // Widget 在可视化编辑器中使用占位符，不需要调用 removeChild
+          if (widgetComp && widgetComp.dialogInstance) {
+            // Dialog 实例需要移除子组件
+            if (widgetComp.dialogInstance.removeChild) {
+              widgetComp.dialogInstance.removeChild(instance)
             }
           }
+          // 注意：Widget 实例在可视化编辑器中不真实渲染，不需要调用 removeChild
         }
         
         // 从 DOM 中移除
@@ -2487,22 +3145,94 @@ const handleKeyDown = (event: KeyboardEvent) => {
       return
     }
     
-    // 删除画布组件
+    // 删除画布组件（主控件）
+    // 注意：Widget 类型的主控件不允许通过 Delete 键删除
     if (selectedComponent.value) {
+      // 如果是 Widget 类型，不允许通过 Delete 键删除
+      if (selectedComponent.value.type === 'widget') {
+        return  // Widget 只能通过点击删除按钮删除，不允许通过 Delete 键删除
+      }
+      
       event.preventDefault()
       const index = canvasComponents.value.findIndex(c => c.id === selectedComponent.value?.id)
       if (index >= 0) {
         const comp = canvasComponents.value[index]
-        // 卸载组件
+        const compId = comp.id
+        
+        // 清理该主控件的所有子组件
+        // 1. 清理 dialogChildren 中属于该主控件的子组件
+        const dialogChildrenToDelete: any[] = []
+        dialogChildren.value.forEach((childInfo, instance) => {
+          if (childInfo.dialogId === compId) {
+            dialogChildrenToDelete.push(instance)
+          }
+        })
+        dialogChildrenToDelete.forEach(instance => {
+          const childInfo = dialogChildren.value.get(instance)
+          if (childInfo) {
+            // 从 DOM 中移除
+            if (childInfo.wrapper && childInfo.wrapper.parentNode) {
+              childInfo.wrapper.parentNode.removeChild(childInfo.wrapper)
+            }
+            // 卸载子组件实例
+            if (instance && typeof instance.unmount === 'function') {
+              try {
+                instance.unmount()
+              } catch (e) {
+                console.warn('卸载子控件失败:', e)
+              }
+            }
+            // 从映射中移除
+            dialogChildren.value.delete(instance)
+          }
+        })
+        
+        // 2. 清理 layoutChildren 中属于该主控件的子组件
+        const layoutChildrenToDelete: any[] = []
+        layoutChildren.value.forEach((childInfo, instance) => {
+          if (childInfo.layoutId === compId) {
+            layoutChildrenToDelete.push(instance)
+          }
+        })
+        layoutChildrenToDelete.forEach(instance => {
+          const childInfo = layoutChildren.value.get(instance)
+          if (childInfo) {
+            // 从 DOM 中移除
+            if (childInfo.element && childInfo.element.parentNode) {
+              childInfo.element.parentNode.removeChild(childInfo.element)
+            }
+            // 卸载子组件实例
+            if (instance && typeof instance.unmount === 'function') {
+              try {
+                instance.unmount()
+              } catch (e) {
+                console.warn('卸载布局子控件失败:', e)
+              }
+            }
+            // 从映射中移除
+            layoutChildren.value.delete(instance)
+          }
+        })
+        
+        // 3. 如果主控件有实例，先卸载它
         if (comp.instance && typeof comp.instance.unmount === 'function') {
           try {
             comp.instance.unmount()
           } catch (e) {
-            console.warn('卸载组件失败:', e)
+            console.warn('卸载主控件失败:', e)
           }
         }
+        
+        // 4. 从画布组件数组中移除
         canvasComponents.value.splice(index, 1)
+        
+        // 5. 清除选中状态
         selectedComponent.value = null
+        selectedDialogChild.value = null
+        selectedLayoutChild.value = null
+        selectedWidgetChildren.value.clear()
+        
+        // 6. 更新代码
         updateCode()
       }
     }
@@ -2633,13 +3363,16 @@ const handleDialogChildMouseMove = (event: MouseEvent) => {
     // Dialog 内容区域
     bodyDiv = dialogElement.querySelector('.dialog-content-area') as HTMLElement
   } else {
-    // Widget 内容区域 - 需要查找 Widget 容器内的 .widget-content
-    // Widget 的结构可能是：container > .nhai-widget > .widget-content
+    // Widget 内容区域 - 需要查找 Widget 容器内的内容区域（可视化编辑器中的占位符或真实内容区域）
     const widgetContainer = document.querySelector(`[data-id="${draggedDialogChild.value.dialogId}"]`)
     if (widgetContainer) {
-      // 在容器内查找 .widget-content
-      bodyDiv = widgetContainer.querySelector('.widget-content') as HTMLElement
-      // 如果没找到，可能在更深层的结构中
+      // 优先查找可视化编辑器中的占位符
+      bodyDiv = widgetContainer.querySelector('.widget-window-content') as HTMLElement
+      // 如果没找到，查找真实的 Widget 内容区域
+      if (!bodyDiv) {
+        bodyDiv = widgetContainer.querySelector('.widget-content') as HTMLElement
+      }
+      // 如果还没找到，可能在更深层的结构中
       if (!bodyDiv) {
         const widgetElement = widgetContainer.querySelector('.nhai-widget')
         if (widgetElement) {
@@ -3406,22 +4139,27 @@ const removeComponent = (index: number) => {
 
 /* 多选状态样式 - 确保有明显的选中边框效果 */
 .widget-child-component.multi-selected,
-.dialog-child-component.multi-selected {
+.dialog-child-component.multi-selected,
+.grid-layout-container.multi-selected,
+.flex-layout-container.multi-selected {
   border-color: #409eff !important;
-  border-width: 2px !important;
+  border-width: 3px !important;
   border-style: solid !important;
-  background: rgba(64, 158, 255, 0.15) !important;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.3), 0 4px 8px rgba(64, 158, 255, 0.2) !important;
+  background: rgba(64, 158, 255, 0.2) !important;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.3), 0 4px 8px rgba(64, 158, 255, 0.2) !important;
   z-index: 100 !important;
 }
 
 .widget-child-component.box-selecting,
-.dialog-child-component.box-selecting {
+.dialog-child-component.box-selecting,
+.grid-layout-container.box-selecting,
+.flex-layout-container.box-selecting {
   border-color: #409eff !important;
   border-width: 2px !important;
-  border-style: solid !important;
-  background: rgba(64, 158, 255, 0.1) !important;
+  border-style: dashed !important;
+  background: rgba(64, 158, 255, 0.15) !important;
   box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2) !important;
+  z-index: 100 !important;
 }
 
 /* Widget 子组件样式 - 确保选中时高亮 */
@@ -3441,11 +4179,62 @@ const removeComponent = (index: number) => {
 
 .widget-child-component.selected {
   border-color: #3b82f6 !important;
-  border-width: 2px !important;
+  border-width: 3px !important;
   border-style: solid !important;
-  background: rgba(59, 130, 246, 0.15) !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3), 0 4px 8px rgba(59, 130, 246, 0.2) !important;
+  background: rgba(59, 130, 246, 0.2) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4), 0 4px 12px rgba(59, 130, 246, 0.3) !important;
   z-index: 100 !important;
+  transform: scale(1.02) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Grid 布局容器高亮样式 */
+.grid-layout-container {
+  border: 2px solid #3b82f6 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2), 0 4px 8px rgba(59, 130, 246, 0.15) !important;
+  background: rgba(59, 130, 246, 0.05) !important;
+  position: relative !important;
+}
+
+.grid-layout-container::before {
+  content: 'Grid 布局容器';
+  position: absolute;
+  top: -24px;
+  left: 0;
+  font-size: 11px;
+  color: #3b82f6;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px 4px 0 0;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Flex 布局容器高亮样式 */
+.flex-layout-container {
+  border: 2px solid #10b981 !important;
+  border-width: 2px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2), 0 4px 8px rgba(16, 185, 129, 0.15) !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+  position: relative !important;
+}
+
+.flex-layout-container::before {
+  content: 'Flex 布局容器';
+  position: absolute;
+  top: -24px;
+  left: 0;
+  font-size: 11px;
+  color: #10b981;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px 4px 0 0;
+  pointer-events: none;
+  z-index: 1000;
 }
 
 /* 布局面板样式 */

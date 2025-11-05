@@ -3,14 +3,14 @@
     <!-- 模式切换器 -->
     <div 
       class="mode-switcher"
-      :class="{ expanded: isExpanded }"
+      :class="{ expanded: isExpanded, dragging: isDragging }"
       :style="{ top: position.y + 'px', left: position.x + 'px' }"
       @mouseenter="isExpanded = true"
       @mouseleave="isExpanded = false"
     >
       <button 
         class="toggle-btn"
-        @click.stop="isExpanded = !isExpanded"
+        @click.stop="handleToggleClick"
         @mousedown="startDrag"
       >
         {{ isExpanded ? '⚙️' : (currentMode === 'showcase' ? '📚' : '🎨') }}
@@ -49,6 +49,7 @@ const isExpanded = ref(false)
 const position = ref({ x: 0, y: 0 })
 const isDragging = ref(false)
 const dragOffset = { x: 0, y: 0 }
+let hasDragged = false // 标记是否发生了拖动
 
 // 初始化位置
 onMounted(() => {
@@ -67,24 +68,50 @@ const savePosition = () => {
   localStorage.setItem('mode-switcher-position', JSON.stringify(position.value))
 }
 
+// 处理点击切换
+const handleToggleClick = (event: MouseEvent) => {
+  // 如果发生了拖动，则不触发点击事件
+  if (hasDragged) {
+    event.preventDefault()
+    event.stopPropagation()
+    hasDragged = false
+    return
+  }
+  isExpanded.value = !isExpanded.value
+}
+
 const startDrag = (event: MouseEvent) => {
   if (event.button !== 0) return // 只处理左键
+  
+  event.preventDefault()
+  event.stopPropagation()
+  
   isDragging.value = true
+  hasDragged = false // 重置拖动标志
   
   const target = event.currentTarget as HTMLElement
   const rect = target.getBoundingClientRect()
   dragOffset.x = event.clientX - rect.left
   dragOffset.y = event.clientY - rect.top
   
-  document.addEventListener('mousemove', handleMouseMove)
-  document.addEventListener('mouseup', handleMouseUp)
-  event.preventDefault()
-  event.stopPropagation()
+  // 禁用文本选择，提升拖动体验
+  document.body.style.userSelect = 'none'
+  document.body.style.cursor = 'grabbing'
+  
+  document.addEventListener('mousemove', handleMouseMove, { capture: true, passive: false })
+  document.addEventListener('mouseup', handleMouseUp, { capture: true, passive: false })
 }
 
 const handleMouseMove = (event: MouseEvent) => {
   if (!isDragging.value) return
   
+  event.preventDefault()
+  event.stopPropagation()
+  
+  // 标记发生了拖动
+  hasDragged = true
+  
+  // 直接更新位置，不使用 requestAnimationFrame 以获得更好的响应速度
   let x = event.clientX - dragOffset.x
   let y = event.clientY - dragOffset.y
   
@@ -97,18 +124,26 @@ const handleMouseMove = (event: MouseEvent) => {
   position.value = { x, y }
 }
 
-const handleMouseUp = () => {
-  if (isDragging.value) {
-    isDragging.value = false
-    savePosition()
-  }
-  document.removeEventListener('mousemove', handleMouseMove)
-  document.removeEventListener('mouseup', handleMouseUp)
+const handleMouseUp = (event: MouseEvent) => {
+  if (!isDragging.value) return
+  
+  event.preventDefault()
+  event.stopPropagation()
+  
+  isDragging.value = false
+  savePosition()
+  
+  // 恢复文本选择
+  document.body.style.userSelect = ''
+  document.body.style.cursor = ''
+  
+  document.removeEventListener('mousemove', handleMouseMove, { capture: true })
+  document.removeEventListener('mouseup', handleMouseUp, { capture: true })
 }
 
 onUnmounted(() => {
-  document.removeEventListener('mousemove', handleMouseMove)
-  document.removeEventListener('mouseup', handleMouseUp)
+  document.removeEventListener('mousemove', handleMouseMove, { capture: true })
+  document.removeEventListener('mouseup', handleMouseUp, { capture: true })
 })
 </script>
 
@@ -127,6 +162,11 @@ onUnmounted(() => {
   gap: 8px;
   transition: all 0.3s ease;
   cursor: default;
+  will-change: transform;
+}
+
+.mode-switcher.dragging {
+  transition: none !important;
 }
 
 .toggle-btn {
@@ -143,6 +183,8 @@ onUnmounted(() => {
   justify-content: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
 }
 
 .toggle-btn:hover {

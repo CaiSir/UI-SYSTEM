@@ -1,7 +1,15 @@
 export interface Category {
   name: string
   expanded: boolean
+  children: (Example | SubCategory)[]
+  type?: 'category' | 'subcategory'  // 标识是主分类还是子分类
+}
+
+export interface SubCategory {
+  name: string
+  expanded: boolean
   children: Example[]
+  type: 'subcategory'
 }
 
 export interface Example {
@@ -9,18 +17,24 @@ export interface Example {
   title: string
   description: string
   code: string
+  type?: 'example'
 }
 
 export const showcaseData: Category[] = [
   {
-    name: '表单组件',
+    name: '基础组件',
     expanded: true,
     children: [
       {
-        id: 'button-demo',
-        title: 'Button - 按钮组件',
-        description: '创建不同类型的按钮',
-        code: `const { NhaiButtonCommand } = window
+        name: '表单组件',
+        expanded: true,
+        type: 'subcategory',
+        children: [
+          {
+            id: 'button-demo',
+            title: 'Button - 按钮组件',
+            description: '创建不同类型的按钮',
+            code: `const { NhaiButtonCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -48,12 +62,12 @@ container.appendChild(btn3.render())
 container.appendChild(btn4.render())
 
 return container`
-      },
-      {
-        id: 'input-demo',
-        title: 'Input - 输入框组件',
-        description: '创建不同类型的输入框',
-        code: `const { NhaiInputCommand } = window
+          },
+          {
+            id: 'input-demo',
+            title: 'Input - 输入框组件',
+            description: '创建不同类型的输入框',
+            code: `const { NhaiInputCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -79,12 +93,12 @@ container.appendChild(input2.render())
 container.appendChild(input3.render())
 
 return container`
-      },
-      {
-        id: 'select-demo',
-        title: 'Select - 选择框组件',
-        description: '创建下拉选择框',
-        code: `const { NhaiSelectCommand } = window
+          },
+          {
+            id: 'select-demo',
+            title: 'Select - 选择框组件',
+            description: '创建下拉选择框',
+            code: `const { NhaiSelectCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -113,12 +127,12 @@ container.appendChild(select1.render())
 container.appendChild(select2.render())
 
 return container`
-      },
-      {
-        id: 'switch-demo',
-        title: 'Switch - 开关组件',
-        description: '创建开关组件',
-        code: `const { NhaiSwitchCommand } = window
+          },
+          {
+            id: 'switch-demo',
+            title: 'Switch - 开关组件',
+            description: '创建开关组件',
+            code: `const { NhaiSwitchCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -144,12 +158,12 @@ container.appendChild(switch2.render())
 container.appendChild(switch3.render())
 
 return container`
-      },
-      {
-        id: 'checkbox-demo',
-        title: 'Checkbox - 复选框组件',
-        description: '创建复选框组件',
-        code: `const { NhaiCheckboxCommand } = window
+          },
+          {
+            id: 'checkbox-demo',
+            title: 'Checkbox - 复选框组件',
+            description: '创建复选框组件',
+            code: `const { NhaiCheckboxCommand } = window
 
 const container = document.createElement('div')
 container.style.padding = '20px'
@@ -171,18 +185,105 @@ container.appendChild(checkbox2.render())
 container.appendChild(checkbox3.render())
 
 return container`
-      }
-    ]
-  },
-  {
-    name: '布局组件',
-    expanded: true,
-    children: [
+          }
+        ]
+      },
       {
-        id: 'absolute-panel-basic',
-        title: 'AbsolutePanel - 基础绝对定位',
-        description: '创建绝对定位面板，自由放置组件',
-        code: `const { AbsolutePanelCommand, NhaiButtonCommand } = window
+        name: '布局组件',
+        expanded: true,
+        type: 'subcategory',
+        children: [
+          {
+            id: 'container-demo',
+            title: 'Container - 容器组件',
+            description: '创建响应式容器',
+            code: `const { NhaiContainerCommand } = window
+
+const container = new NhaiContainerCommand()
+container.setMaxWidth('lg')
+container.setFixed(false)
+container.setDisableGutters(false)
+container.setContent('这是一个响应式容器，最大宽度为大尺寸')
+
+return container.render()`
+          },
+          {
+            id: 'grid-demo',
+            title: 'Grid - 网格布局',
+            description: '创建网格布局容器',
+            code: `const { NhaiGridCommand, NhaiButtonCommand } = window
+
+const grid = new NhaiGridCommand({
+  container: true,
+  columns: 1,
+  spacing: 2,
+  autoFlow: 'row'
+})
+grid.setJustifyItems('start')
+grid.setAlignItems('start')
+
+for (let i = 0; i < 6; i++) {
+  const button = new NhaiButtonCommand('按钮 ' + (i + 1))
+  button.setStyle({ width: '200px', height: '100px' })
+  grid.addChild(button)
+}
+
+const container = document.createElement('div')
+container.style.width = '300px'
+container.style.height = '800px'
+container.style.padding = '20px'
+const gridElement = grid.render()
+container.appendChild(gridElement)
+
+return container`
+          },
+          {
+            id: 'row-col-basic',
+            title: 'Row/Col - 基础栅格布局',
+            description: '使用 Row 和 Col 创建基础的 24 列栅格布局',
+            code: `const { NhaiRowCommand, NhaiColCommand, NhaiButtonCommand } = window
+
+const row = new NhaiRowCommand()
+row.setGutter(16)
+row.setJustify('start')
+
+const col1 = new NhaiColCommand({ span: 6 })
+const col2 = new NhaiColCommand({ span: 6 })
+const col3 = new NhaiColCommand({ span: 6 })
+const col4 = new NhaiColCommand({ span: 6 })
+
+const btn1 = new NhaiButtonCommand('按钮 1')
+btn1.setType('primary')
+col1.addChild(btn1)
+
+const btn2 = new NhaiButtonCommand('按钮 2')
+btn2.setType('success')
+col2.addChild(btn2)
+
+const btn3 = new NhaiButtonCommand('按钮 3')
+btn3.setType('warning')
+col3.addChild(btn3)
+
+const btn4 = new NhaiButtonCommand('按钮 4')
+btn4.setType('danger')
+col4.addChild(btn4)
+
+row.addChild(col1)
+row.addChild(col2)
+row.addChild(col3)
+row.addChild(col4)
+
+const container = document.createElement('div')
+container.style.padding = '20px'
+container.appendChild(row.render())
+
+return container`
+          },
+          {
+            id: 'absolute-panel-basic',
+            title: 'AbsolutePanel - 基础绝对定位',
+            description: '创建绝对定位面板，自由放置组件',
+            code: `const { AbsolutePanelCommand, NhaiButtonCommand } = window
 
 const panel = new AbsolutePanelCommand('800px', '600px')
 panel.setBackgroundColor('#f0f0f0')
@@ -200,40 +301,120 @@ button3.setType('warning')
 panel.addWidgetAt('btn3', button3, { x: 50, y: 120 }, { width: 100, height: 40 })
 
 return panel.render()`
+          },
+          {
+            id: 'layout-builder-demo',
+            title: 'LayoutBuilder - 布局构建器',
+            description: '创建动态布局构建器',
+            code: `const { NhaiLayoutBuilderCommand } = window
+
+const layoutBuilder = new NhaiLayoutBuilderCommand()
+layoutBuilder.setEditable(true)
+
+return layoutBuilder.render()`
+          }
+        ]
       },
       {
-        id: 'absolute-panel-multi',
-        title: 'AbsolutePanel - 多组件布局',
-        description: '在一个面板中放置多个不同类型的组件',
-        code: `const { AbsolutePanelCommand, NhaiButtonCommand, NhaiInputCommand, NhaiSelectCommand } = window
+        name: '容器组件',
+        expanded: true,
+        type: 'subcategory',
+        children: [
+          {
+            id: 'dialog-demo',
+            title: 'Dialog - 对话框',
+            description: '创建对话框组件',
+            code: `const { NhaiDialogCommand, NhaiButtonCommand } = window
 
-const panel = new AbsolutePanelCommand('100%', '600px')
-panel.setBackgroundColor('#f5f5f5')
+const container = document.createElement('div')
+container.style.padding = '20px'
 
-const button = new NhaiButtonCommand('主要按钮')
-button.setType('primary')
-panel.addWidgetAt('btn1', button, { x: 50, y: 50 }, { width: 120, height: 40 })
+// 创建对话框
+const dialog = new NhaiDialogCommand('对话框标题', '这是对话框的内容')
+dialog.setWidth('500px')
+dialog.setAppendToBody(true)
+dialog.setModelValue(true) // 设置为显示状态
+
+// 创建按钮来打开/关闭对话框
+const openBtn = new NhaiButtonCommand('打开对话框')
+openBtn.setType('primary')
+openBtn.setOnClick(() => {
+  dialog.setModelValue(true)
+})
+
+const closeBtn = new NhaiButtonCommand('关闭对话框')
+closeBtn.setType('default')
+closeBtn.setOnClick(() => {
+  dialog.setModelValue(false)
+})
+
+container.appendChild(openBtn.render())
+container.appendChild(closeBtn.render())
+container.appendChild(dialog.render())
+
+return container`
+          },
+          {
+            id: 'widget-basic',
+            title: 'Widget - 基础窗口',
+            description: '创建基础窗口组件（默认屏幕居中）',
+            code: `const { NhaiWidgetCommand } = window
+
+const widget = new NhaiWidgetCommand({
+  title: '窗口标题',
+  width: '600px',
+  height: '400px',
+  canMinimize: true,
+  canMaximize: true,
+  canClose: true
+})
+
+return widget.render()`
+          },
+          {
+            id: 'widget-with-content',
+            title: 'Widget - 带内容的窗口',
+            description: '创建带有子控件的窗口（默认屏幕居中）',
+            code: `const { NhaiWidgetCommand, NhaiButtonCommand, NhaiInputCommand } = window
+
+const widget = new NhaiWidgetCommand({
+  title: '用户设置',
+  width: '500px',
+  height: '350px'
+})
+
+const button1 = new NhaiButtonCommand('保存')
+button1.setType('primary')
+widget.addChild(button1)
 
 const input = new NhaiInputCommand()
-input.setPlaceholder('请输入文本...')
-panel.addWidgetAt('input1', input, { x: 50, y: 110 }, { width: 250, height: 40 })
+input.setPlaceholder('请输入用户名')
+widget.addChild(input)
 
-const select = new NhaiSelectCommand()
-select.setOptions([
-  { label: '选项 1', value: '1' },
-  { label: '选项 2', value: '2' },
-  { label: '选项 3', value: '3' }
-])
-select.setPlaceholder('请选择...')
-panel.addWidgetAt('select1', select, { x: 50, y: 170 }, { width: 250, height: 40 })
+const button2 = new NhaiButtonCommand('取消')
+button2.setType('default')
+widget.addChild(button2)
 
-return panel.render()`
-      },
+return widget.render()`
+          }
+        ]
+      }
+    ]
+  },
+  {
+    name: '高级组件',
+    expanded: true,
+    children: [
       {
-        id: 'split-panel-demo',
-        title: 'SplitPanel - 分割面板',
-        description: '创建可调整大小的分割面板',
-        code: `const { NhaiSplitPanelCommand } = window
+        name: '布局组件',
+        expanded: true,
+        type: 'subcategory',
+        children: [
+          {
+            id: 'split-panel-demo',
+            title: 'SplitPanel - 分割面板',
+            description: '创建可调整大小的分割面板',
+            code: `const { NhaiSplitPanelCommand } = window
 
 const splitPanel = new NhaiSplitPanelCommand()
 splitPanel.setOrientation('horizontal')
@@ -245,65 +426,19 @@ splitPanel.setLeftContent('左侧内容区域')
 splitPanel.setRightContent('右侧内容区域')
 
 return splitPanel.render()`
+          }
+        ]
       },
       {
-        id: 'grid-demo',
-        title: 'Grid - 网格布局',
-        description: '创建网格布局容器',
-        code: `const { NhaiGridCommand, NhaiButtonCommand } = window
-
-// 创建垂直布局的 Grid（1 列，垂直堆叠）
-const grid = new NhaiGridCommand({
-  container: true,
-  columns: 1,        // 1 列布局（会自动垂直堆叠）
-  spacing: 2,         // spacing * 8 = 16px
-  autoFlow: 'row'    // 按行排列（默认），单列时自动垂直堆叠
-})
-grid.setJustifyItems('start')
-grid.setAlignItems('start')
-
-// 添加子组件（会垂直排列）
-for (let i = 0; i < 6; i++) {
-  const button = new NhaiButtonCommand('按钮 ' + (i + 1))
-  button.setStyle({ width: '200px', height: '100px' })
-  grid.addChild(button)
-}
-
-// 创建容器并渲染 Grid
-const container = document.createElement('div')
-container.style.width = '300px'
-container.style.height = '800px'  // 确保容器有足够高度
-container.style.padding = '20px'
-const gridElement = grid.render()
-container.appendChild(gridElement)
-
-return container`
-      },
-      {
-        id: 'container-demo',
-        title: 'Container - 容器组件',
-        description: '创建响应式容器',
-        code: `const { NhaiContainerCommand } = window
-
-const container = new NhaiContainerCommand()
-container.setMaxWidth('lg')
-container.setFixed(false)
-container.setDisableGutters(false)
-container.setContent('这是一个响应式容器，最大宽度为大尺寸')
-
-return container.render()`
-      }
-    ]
-  },
-  {
-    name: 'UI 组件',
-    expanded: true,
-    children: [
-      {
-        id: 'card-demo',
-        title: 'Card - 卡片组件',
-        description: '创建卡片组件',
-        code: `const { NhaiCardCommand } = window
+        name: '展示组件',
+        expanded: true,
+        type: 'subcategory',
+        children: [
+          {
+            id: 'card-demo',
+            title: 'Card - 卡片组件',
+            description: '创建卡片组件',
+            code: `const { NhaiCardCommand } = window
 
 const card = new NhaiCardCommand()
 card.setHeader('卡片标题')
@@ -312,12 +447,19 @@ card.setContent('这是卡片的内容区域，可以放置任何内容。')
 card.setBodyStyle({ padding: '20px' })
 
 return card.render()`
+          }
+        ]
       },
       {
-        id: 'breadcrumb-demo',
-        title: 'Breadcrumb - 面包屑',
-        description: '创建面包屑导航',
-        code: `const { NhaiBreadcrumbCommand } = window
+        name: '导航组件',
+        expanded: true,
+        type: 'subcategory',
+        children: [
+          {
+            id: 'breadcrumb-demo',
+            title: 'Breadcrumb - 面包屑',
+            description: '创建面包屑导航',
+            code: `const { NhaiBreadcrumbCommand } = window
 
 const breadcrumb = new NhaiBreadcrumbCommand([
   { label: '首页', href: '/' },
@@ -326,12 +468,12 @@ const breadcrumb = new NhaiBreadcrumbCommand([
 ])
 
 return breadcrumb.render()`
-      },
-      {
-        id: 'tabs-demo',
-        title: 'Tabs - 标签页',
-        description: '创建标签页组件',
-        code: `const { NhaiTabsCommand } = window
+          },
+          {
+            id: 'tabs-demo',
+            title: 'Tabs - 标签页',
+            description: '创建标签页组件',
+            code: `const { NhaiTabsCommand } = window
 
 const tabs = new NhaiTabsCommand([
   { name: 'tab1', label: '标签 1', content: '这是第一个标签页的内容' },
@@ -344,12 +486,12 @@ tabs.setType('card')
 tabs.setTabPosition('top')
 
 return tabs.render()`
-      },
-      {
-        id: 'menubar-demo',
-        title: 'MenuBar - 菜单栏',
-        description: '创建菜单栏组件',
-        code: `const { NhaiMenuBarCommand } = window
+          },
+          {
+            id: 'menubar-demo',
+            title: 'MenuBar - 菜单栏',
+            description: '创建菜单栏组件',
+            code: `const { NhaiMenuBarCommand } = window
 
 const menuBar = new NhaiMenuBarCommand([
   { id: '1', label: '首页', icon: 'el-icon-home' },
@@ -361,127 +503,27 @@ menuBar.setMode('horizontal')
 menuBar.setDefaultActive('1')
 
 return menuBar.render()`
+          }
+        ]
       }
     ]
   },
   {
-    name: '反馈组件',
-    expanded: true,
+    name: '业务组件',
+    expanded: false,
     children: [
       {
-        id: 'widget-basic',
-        title: 'Widget - 基础窗口',
-        description: '创建基础窗口组件（默认屏幕居中）',
-        code: `const { NhaiWidgetCommand } = window
+        id: 'business-placeholder',
+        title: '业务组件',
+        description: '业务组件目录，可用于扩展特定业务场景的组件',
+        code: `// 业务组件可以在此扩展
+// 当前业务组件目录为空
 
-const widget = new NhaiWidgetCommand({
-  title: '窗口标题',
-  width: '600px',
-  height: '400px',
-  canMinimize: true,
-  canMaximize: true,
-  canClose: true
-})
+const container = document.createElement('div')
+container.style.padding = '20px'
+container.innerHTML = '<p>业务组件目录，可用于扩展特定业务场景的组件</p>'
 
-return widget.render()`
-      },
-      {
-        id: 'widget-with-content',
-        title: 'Widget - 带内容的窗口',
-        description: '创建带有子控件的窗口（默认屏幕居中）',
-        code: `const { NhaiWidgetCommand, NhaiButtonCommand, NhaiInputCommand } = window
-
-const widget = new NhaiWidgetCommand({
-  title: '用户设置',
-  width: '500px',
-  height: '350px'
-})
-
-// 添加按钮
-const button1 = new NhaiButtonCommand('保存')
-button1.setType('primary')
-widget.addChild(button1)
-
-// 添加输入框
-const input = new NhaiInputCommand()
-input.setPlaceholder('请输入用户名')
-widget.addChild(input)
-
-// 添加按钮
-const button2 = new NhaiButtonCommand('取消')
-button2.setType('default')
-widget.addChild(button2)
-
-return widget.render()`
-      },
-      {
-        id: 'widget-with-grid',
-        title: 'Widget - 带网格布局的窗口',
-        description: '在窗口中创建网格布局（默认屏幕居中）',
-        code: `const { NhaiWidgetCommand, NhaiGridCommand, NhaiButtonCommand } = window
-
-const widget = new NhaiWidgetCommand({
-  title: '网格布局窗口',
-  width: '700px',
-  height: '500px'
-})
-
-// 在 Widget 中添加 Grid 布局
-const grid = new NhaiGridCommand({
-  container: true,
-  columns: 3,
-  spacing: 2,
-  autoFlow: 'row'
-})
-grid.setJustifyItems('start')
-
-// 添加按钮到 Grid
-for (let i = 0; i < 9; i++) {
-  const button = new NhaiButtonCommand('按钮 ' + (i + 1))
-  button.setType(i % 3 === 0 ? 'primary' : i % 3 === 1 ? 'success' : 'warning')
-  grid.addChild(button)
-}
-
-// 将 Grid 添加到 Widget
-widget.addChild(grid)
-
-return widget.render()`
-      },
-      {
-        id: 'widget-fullscreen',
-        title: 'Widget - 全屏窗口',
-        description: '创建全屏窗口',
-        code: `const { NhaiWidgetCommand } = window
-
-const widget = new NhaiWidgetCommand({
-  title: '全屏窗口',
-  fullscreen: true,
-  canMinimize: false,
-  canMaximize: false,
-  canClose: true
-})
-
-return widget.render()`
-      },
-      {
-        id: 'widget-menu',
-        title: 'Widget - 带菜单栏的窗口',
-        description: '创建带菜单栏的窗口（默认屏幕居中）',
-        code: `const { NhaiWidgetCommand } = window
-
-const widget = new NhaiWidgetCommand({
-  title: '菜单窗口',
-  width: '600px',
-  height: '450px',
-  menuBarVisible: true,
-  menuItems: [
-    { label: '文件', active: false, onClick: () => alert('文件菜单') },
-    { label: '编辑', active: true, onClick: () => alert('编辑菜单') },
-    { label: '视图', active: false, onClick: () => alert('视图菜单') }
-  ]
-})
-
-return widget.render()`
+return container`
       }
     ]
   }

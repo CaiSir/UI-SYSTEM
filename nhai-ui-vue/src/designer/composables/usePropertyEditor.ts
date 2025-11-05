@@ -2,6 +2,7 @@
 import { nextTick } from 'vue'
 import type { CanvasComponent } from '../types/designer'
 import type { Ref } from 'vue'
+import { NhaiGridCommand, NhaiContainerCommand } from '../../components'
 
 // 辅助函数：恢复子控件到 Grid 容器
 function restoreChildrenToGrid(
@@ -74,7 +75,7 @@ function updateGridElement(
     nextTick(() => {
       const canvasWrapper = document.querySelector(`[data-component-id="${comp.id}"]`)
       if (canvasWrapper) {
-        const actualGridContainer = canvasWrapper.querySelector('.vue-grid') as HTMLElement
+        const actualGridContainer = canvasWrapper.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
         if (actualGridContainer) {
           const gridAutoFlow = window.getComputedStyle(actualGridContainer).gridAutoFlow || ''
           const gridOuterElement = comp.element as HTMLElement
@@ -152,8 +153,47 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
         return childInfo?.position?.[key] || 0
       }
       
+      // Grid 实例的属性获取
+      if (instance instanceof NhaiGridCommand) {
+        if (key === 'container') return (instance as any).container ?? true
+        if (key === 'columns') return (instance as any).columns ?? 12
+        if (key === 'rows') return (instance as any).rows ?? ''
+        if (key === 'templateAreas') return (instance as any).templateAreas ?? ''
+        if (key === 'autoFlow') return (instance as any).autoFlow ?? 'row'
+        if (key === 'justifyItems') return (instance as any).justifyItems ?? 'start'
+        if (key === 'alignItems') return (instance as any).alignItems ?? 'stretch'
+        if (key === 'justifyContent') return (instance as any).justifyContent ?? ''
+        if (key === 'alignContent') return (instance as any).alignContent ?? ''
+        if (key === 'spacing') return (instance as any).spacing ?? 2
+        if (key === 'gap') return (instance as any).gap ?? ''
+        if (key === 'layoutLeftMargin') return (instance as any).layoutLeftMargin ?? 0
+        if (key === 'topMargin') return (instance as any).topMargin ?? 0
+        if (key === 'rightMargin') return (instance as any).rightMargin ?? 0
+        if (key === 'bottomMargin') return (instance as any).bottomMargin ?? 0
+        if (key === 'layoutSpacing') return (instance as any).layoutSpacing ?? (instance as any).spacing ?? 2
+        if (key === 'layoutStretch') return (instance as any).layoutStretch ?? false
+      }
+      
+      // Container 实例的属性获取
+      if (instance instanceof NhaiContainerCommand) {
+        if (key === 'maxWidth') return (instance as any).maxWidth ?? 'lg'
+        if (key === 'fixed') return (instance as any).fixed ?? false
+        if (key === 'disableGutters') return (instance as any).disableGutters ?? false
+        if (key === 'layoutLeftMargin') return (instance as any).layoutLeftMargin ?? 0
+        if (key === 'topMargin') return (instance as any).topMargin ?? 0
+        if (key === 'rightMargin') return (instance as any).rightMargin ?? 0
+        if (key === 'bottomMargin') return (instance as any).bottomMargin ?? 0
+        if (key === 'layoutSpacing') return (instance as any).layoutSpacing ?? ''
+        if (key === 'layoutStretch') return (instance as any).layoutStretch ?? false
+        // Flex 布局样式属性
+        const containerStyle = (instance as any).getProperty?.('style') || (instance as any)?._props?.style || {}
+        if (key === 'display') return containerStyle.display ?? ''
+        if (key === 'flexDirection') return containerStyle.flexDirection ?? ''
+        if (key === 'gap') return containerStyle.gap ?? ''
+        if (key === 'alignItems') return containerStyle.alignItems ?? ''
+      }
+      
       // 根据组件类型获取属性
-      // TODO: 实现完整的属性获取逻辑（从原文件复制，约100行）
       return (instance as any)?.[key] ?? (instance as any)?._options?.[key] ?? ''
     }
     
@@ -247,7 +287,7 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
         const element = comp.element as HTMLElement
         if (element && element.style) {
           const containerElement = element.querySelector('.vue-container') || 
-                                   element.querySelector('.vue-grid') || 
+                                   element.querySelector('.qt-grid-layout, .vue-grid') || 
                                    element
           if (containerElement && (containerElement as HTMLElement).style) {
             (containerElement as HTMLElement).style[key as any] = value
@@ -402,12 +442,12 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
           // 使用 nextTick 确保 Vue 组件已经挂载，然后立即添加子控件
           nextTick(() => {
             // 同步查找，因为 Vue 组件应该已经挂载
-            let actualGridContainer = newElement.querySelector('.vue-grid') as HTMLElement
+            let actualGridContainer = newElement.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
             
             // 如果找不到，等待一下再尝试（Vue 组件可能需要更多时间渲染）
             if (!actualGridContainer) {
               setTimeout(() => {
-                actualGridContainer = newElement.querySelector('.vue-grid') as HTMLElement
+                actualGridContainer = newElement.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
                 if (actualGridContainer) {
                   restoreChildrenToGrid(actualGridContainer, savedChildMappings, gridInstance, comp.id, comp.type, layoutChildren)
                   // 子控件已添加，现在更新 element
@@ -419,7 +459,7 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
                   nextTick(() => {
                     const canvasWrapper = document.querySelector(`[data-component-id="${comp.id}"]`)
                     if (canvasWrapper) {
-                      const gridContainer = canvasWrapper.querySelector('.vue-grid') as HTMLElement
+                      const gridContainer = canvasWrapper.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
                       if (gridContainer) {
                         restoreChildrenToGrid(gridContainer, savedChildMappings, gridInstance, comp.id, comp.type, layoutChildren)
                       }
@@ -465,7 +505,180 @@ export function usePropertyEditor(deps: PropertyEditorDependencies) {
   const updateSelectedDynamicProp = (key: string, value: any) => {
     // 优先处理对话框内控件
     if (selectedDialogChild.value) {
-      // TODO: 实现对话框子控件的属性更新
+      const instance = selectedDialogChild.value
+      
+      // Grid 实例的属性更新
+      if (instance instanceof NhaiGridCommand) {
+        try {
+          if (key === 'container') {
+            instance.setContainer(Boolean(value))
+          } else if (key === 'columns') {
+            // columns 可以是数字或字符串
+            const numValue = typeof value === 'string' ? (value.match(/^\d+$/) ? parseInt(value) : value) : value
+            instance.setColumns(numValue)
+          } else if (key === 'rows') {
+            // rows 可以是数字或字符串
+            const numValue = typeof value === 'string' ? (value.match(/^\d+$/) ? parseInt(value) : value) : value
+            instance.setRows(numValue)
+          } else if (key === 'templateAreas') {
+            instance.setTemplateAreas(String(value))
+          } else if (key === 'autoFlow') {
+            instance.setAutoFlow(value as 'row' | 'column' | 'row dense' | 'column dense')
+          } else if (key === 'justifyItems') {
+            instance.setJustifyItems(value as 'start' | 'end' | 'center' | 'stretch')
+          } else if (key === 'alignItems') {
+            instance.setAlignItems(value as 'start' | 'end' | 'center' | 'stretch')
+          } else if (key === 'justifyContent') {
+            instance.setJustifyContent(value as 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly')
+          } else if (key === 'alignContent') {
+            instance.setAlignContent(value as 'start' | 'end' | 'center' | 'stretch' | 'space-around' | 'space-between' | 'space-evenly')
+          } else if (key === 'spacing') {
+            instance.setSpacing(typeof value === 'number' ? value : parseInt(value) || 2)
+          } else if (key === 'gap') {
+            instance.setGap(String(value))
+          } else if (key === 'layoutLeftMargin') {
+            instance.setLayoutLeftMargin(typeof value === 'number' ? value : (typeof value === 'string' ? parseInt(value) || 0 : 0))
+          } else if (key === 'topMargin') {
+            instance.setTopMargin(typeof value === 'number' ? value : (typeof value === 'string' ? parseInt(value) || 0 : 0))
+          } else if (key === 'rightMargin') {
+            instance.setRightMargin(typeof value === 'number' ? value : (typeof value === 'string' ? parseInt(value) || 0 : 0))
+          } else if (key === 'bottomMargin') {
+            instance.setBottomMargin(typeof value === 'number' ? value : (typeof value === 'string' ? parseInt(value) || 0 : 0))
+          } else if (key === 'layoutSpacing') {
+            instance.setLayoutSpacing(typeof value === 'number' ? value : parseInt(value) || 2)
+          } else if (key === 'layoutStretch') {
+            instance.setLayoutStretch(Boolean(value))
+          }
+          
+          // 更新 Grid 元素在 Widget 中的显示
+          // Grid 的 setter 方法会自动触发 scheduleUpdate，无需手动调用
+          // 等待 Vue 更新后，确保 Grid 内部结构正确，并更新内部 .vue-grid 的边距（padding）
+          const childInfo = dialogChildren.value.get(instance)
+          if (childInfo && childInfo.wrapper) {
+            setTimeout(() => {
+              // 更新布局拉伸（应用到外层容器）
+              if ((instance as any).layoutStretch) {
+                childInfo.wrapper.style.width = '100%'
+              } else {
+                childInfo.wrapper.style.width = 'fit-content'
+              }
+              
+              // 更新内部 .qt-grid-layout 的边距（作为 padding，这样子控件相对于 Grid 就有边距了）
+              const vueGrid = childInfo.wrapper.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
+              if (vueGrid) {
+                const formatMargin = (value: number | string | undefined): string => {
+                  if (value === undefined || value === null || value === 0) return '0'
+                  if (typeof value === 'number') {
+                    return `${value}px`
+                  }
+                  return value as string
+                }
+                
+                // 将边距应用到 .qt-grid-layout 的 padding（子控件相对于 Grid 的边距）
+                vueGrid.style.paddingLeft = formatMargin((instance as any).layoutLeftMargin)
+                vueGrid.style.paddingTop = formatMargin((instance as any).topMargin)
+                vueGrid.style.paddingRight = formatMargin((instance as any).rightMargin)
+                vueGrid.style.paddingBottom = formatMargin((instance as any).bottomMargin)
+                
+                // 确保 .qt-grid-layout 容器保持正确的显示样式
+                vueGrid.style.display = 'grid'
+                vueGrid.style.minWidth = 'fit-content'
+                vueGrid.style.minHeight = 'fit-content'
+              }
+            }, 50)
+          }
+        } catch (e) {
+          console.error('更新 Grid 属性失败:', e)
+        }
+        updateCode()
+        return
+      }
+      
+      // Container 实例的属性更新（用于 Flex 布局）
+      if (instance instanceof NhaiContainerCommand) {
+        try {
+          if (key === 'maxWidth') {
+            instance.setMaxWidth(value === false || value === 'false' ? false : value as 'xs' | 'sm' | 'md' | 'lg' | 'xl')
+          } else if (key === 'fixed') {
+            instance.setFixed(Boolean(value))
+          } else if (key === 'disableGutters') {
+            instance.setDisableGutters(Boolean(value))
+          } else if (key === 'layoutLeftMargin') {
+            instance.setLayoutLeftMargin(typeof value === 'number' ? value : (typeof value === 'string' ? parseInt(value) || 0 : 0))
+          } else if (key === 'topMargin') {
+            instance.setTopMargin(typeof value === 'number' ? value : (typeof value === 'string' ? parseInt(value) || 0 : 0))
+          } else if (key === 'rightMargin') {
+            instance.setRightMargin(typeof value === 'number' ? value : (typeof value === 'string' ? parseInt(value) || 0 : 0))
+          } else if (key === 'bottomMargin') {
+            instance.setBottomMargin(typeof value === 'number' ? value : (typeof value === 'string' ? parseInt(value) || 0 : 0))
+          } else if (key === 'layoutSpacing') {
+            instance.setLayoutSpacing(typeof value === 'number' ? value : parseInt(value) || 2)
+          } else if (key === 'layoutStretch') {
+            instance.setLayoutStretch(Boolean(value))
+          } else if (key === 'display' || key === 'flexDirection' || key === 'gap' || key === 'alignItems') {
+            // Flex 布局样式通过 setStyle 更新
+            const currentStyle = (instance as any).getProperty?.('style') || (instance as any)?._props?.style || {}
+            instance.setStyle({
+              ...currentStyle,
+              [key]: value
+            })
+          }
+          
+          // 更新 Container 元素在 Widget 中的显示
+          // Container 的 setter 方法会自动触发 scheduleUpdate，无需手动调用
+          // 等待更新后，确保 Flex 布局样式正确，并更新内部边距（padding）
+          const childInfo = dialogChildren.value.get(instance)
+          if (childInfo && childInfo.wrapper) {
+            setTimeout(() => {
+              // 更新布局拉伸（应用到外层容器）
+              if ((instance as any).layoutStretch) {
+                childInfo.wrapper.style.width = '100%'
+              } else {
+                childInfo.wrapper.style.width = 'fit-content'
+              }
+              
+              // 更新容器的边距（作为 padding，这样子控件相对于 Container 有边距）
+              const formatMargin = (value: number | string | undefined): string => {
+                if (value === undefined || value === null || value === 0) return '0'
+                if (typeof value === 'number') {
+                  return `${value}px`
+                }
+                return value as string
+              }
+              
+              // 将边距应用到容器的 padding（子控件相对于 Container 的边距）
+              childInfo.wrapper.style.paddingLeft = formatMargin((instance as any).layoutLeftMargin)
+              childInfo.wrapper.style.paddingTop = formatMargin((instance as any).topMargin)
+              childInfo.wrapper.style.paddingRight = formatMargin((instance as any).rightMargin)
+              childInfo.wrapper.style.paddingBottom = formatMargin((instance as any).bottomMargin)
+              
+              const containerStyle = (instance as any).getProperty?.('style') || (instance as any)?._props?.style || {}
+              if (containerStyle.display === 'flex') {
+                childInfo.wrapper.style.display = 'flex'
+                if (containerStyle.flexDirection) {
+                  childInfo.wrapper.style.flexDirection = containerStyle.flexDirection
+                }
+                // 应用布局间距（如果设置了）
+                if ((instance as any).layoutSpacing !== undefined && (instance as any).layoutSpacing !== null) {
+                  const gapValue = (instance as any).layoutSpacing * 8
+                  childInfo.wrapper.style.gap = `${gapValue}px`
+                } else if (containerStyle.gap) {
+                  childInfo.wrapper.style.gap = containerStyle.gap
+                }
+                if (containerStyle.alignItems) {
+                  childInfo.wrapper.style.alignItems = containerStyle.alignItems
+                }
+              }
+            }, 50)
+          }
+        } catch (e) {
+          console.error('更新 Container 属性失败:', e)
+        }
+        updateCode()
+        return
+      }
+      
+      // 其他对话框子控件的属性更新
       updateCode()
       return
     }

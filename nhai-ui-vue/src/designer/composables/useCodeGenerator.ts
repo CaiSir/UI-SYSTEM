@@ -8,11 +8,8 @@ import {
   NhaiSwitchCommand,
   NhaiCheckboxCommand,
   NhaiCardCommand,
-  NhaiDialogCommand,
   NhaiGridCommand,
   NhaiContainerCommand,
-  NhaiSplitPanelCommand,
-  NhaiWidgetCommand,
 } from '../../components'
 
 interface CodeGeneratorDependencies {
@@ -718,55 +715,321 @@ export function useCodeGenerator(deps: CodeGeneratorDependencies) {
                   }
                 } else if (child instanceof NhaiGridCommand) {
                   childVarName = `widgetChild${index}_grid${childIndex}`
-                  const gridProps = (child as any).getProperties?.() || (child as any)._props || {}
-                  childCode = `  const ${childVarName} = new NhaiGridCommand()\n`
-                  if (gridProps.container !== undefined && gridProps.container !== true) {
-                    childCode += `  ${childVarName}.setContainer(false)\n`
+                  // 直接从 Grid 实例属性获取
+                  const container = (child as any).container !== undefined ? (child as any).container : false
+                  const columns = (child as any).columns !== undefined ? (child as any).columns : 12
+                  const rows = (child as any).rows
+                  const spacing = (child as any).spacing !== undefined ? (child as any).spacing : 2
+                  const autoFlow = (child as any).autoFlow || 'row'
+                  const justifyItems = (child as any).justifyItems || 'start'
+                  const alignItems = (child as any).alignItems || 'stretch'
+                  const justifyContent = (child as any).justifyContent
+                  const alignContent = (child as any).alignContent
+                  const templateAreas = (child as any).templateAreas
+                  const gap = (child as any).gap
+                  
+                  // 构建 Grid 选项对象（包含所有设置的属性，便于查看明细）
+                  const gridOptions: string[] = []
+                  gridOptions.push(`container: ${container}`)
+                  // 总是包含 columns（即使等于默认值 12，也显示出来）
+                  gridOptions.push(`columns: ${typeof columns === 'number' ? columns : `'${columns}'`}`)
+                  if (rows !== undefined) {
+                    gridOptions.push(`rows: ${typeof rows === 'number' ? rows : `'${rows}'`}`)
                   }
-                  if (gridProps.columns !== undefined && gridProps.columns !== 12) {
-                    if (typeof gridProps.columns === 'number') {
-                      childCode += `  ${childVarName}.setColumns(${gridProps.columns})\n`
-                    } else {
-                      childCode += `  ${childVarName}.setColumns('${gridProps.columns}')\n`
-                    }
+                  // 总是包含 spacing（即使等于默认值 2，也显示出来）
+                  gridOptions.push(`spacing: ${typeof spacing === 'number' ? spacing : `'${spacing}'`}`)
+                  if (autoFlow && autoFlow !== 'row') {
+                    gridOptions.push(`autoFlow: '${autoFlow}'`)
                   }
-                  if (gridProps.rows !== undefined) {
-                    if (typeof gridProps.rows === 'number') {
-                      childCode += `  ${childVarName}.setRows(${gridProps.rows})\n`
-                    } else {
-                      childCode += `  ${childVarName}.setRows('${gridProps.rows}')\n`
-                    }
+                  // 总是包含 justifyItems（显示明细）
+                  gridOptions.push(`justifyItems: '${justifyItems}'`)
+                  if (alignItems && alignItems !== 'stretch') {
+                    gridOptions.push(`alignItems: '${alignItems}'`)
                   }
-                  if (gridProps.templateAreas) childCode += `  ${childVarName}.setTemplateAreas('${gridProps.templateAreas}')\n`
-                  if (gridProps.autoFlow && gridProps.autoFlow !== 'row') childCode += `  ${childVarName}.setAutoFlow('${gridProps.autoFlow}')\n`
-                  if (gridProps.justifyItems && gridProps.justifyItems !== 'stretch') childCode += `  ${childVarName}.setJustifyItems('${gridProps.justifyItems}')\n`
-                  if (gridProps.alignItems && gridProps.alignItems !== 'stretch') childCode += `  ${childVarName}.setAlignItems('${gridProps.alignItems}')\n`
-                  if (gridProps.justifyContent) childCode += `  ${childVarName}.setJustifyContent('${gridProps.justifyContent}')\n`
-                  if (gridProps.alignContent) childCode += `  ${childVarName}.setAlignContent('${gridProps.alignContent}')\n`
-                  if (gridProps.spacing !== undefined && gridProps.spacing !== 2) {
-                    if (typeof gridProps.spacing === 'number') {
-                      childCode += `  ${childVarName}.setSpacing(${gridProps.spacing})\n`
-                    } else {
-                      childCode += `  ${childVarName}.setSpacing('${gridProps.spacing}')\n`
-                    }
+                  if (justifyContent) {
+                    gridOptions.push(`justifyContent: '${justifyContent}'`)
                   }
-                  if (gridProps.gap) childCode += `  ${childVarName}.setGap('${gridProps.gap}')\n`
-                  childCode += `  ${childVarName}.render()\n`
+                  if (alignContent) {
+                    gridOptions.push(`alignContent: '${alignContent}'`)
+                  }
+                  if (templateAreas) {
+                    gridOptions.push(`templateAreas: '${templateAreas}'`)
+                  }
+                  if (gap) {
+                    gridOptions.push(`gap: '${gap}'`)
+                  }
+                  // 添加布局边距和拉伸属性
+                  const layoutLeftMargin = (child as any).layoutLeftMargin ?? 0
+                  const topMargin = (child as any).topMargin ?? 0
+                  const rightMargin = (child as any).rightMargin ?? 0
+                  const bottomMargin = (child as any).bottomMargin ?? 0
+                  const layoutSpacing = (child as any).layoutSpacing
+                  const layoutStretch = (child as any).layoutStretch ?? false
+                  if (layoutLeftMargin !== 0) {
+                    gridOptions.push(`layoutLeftMargin: ${typeof layoutLeftMargin === 'number' ? layoutLeftMargin : `'${layoutLeftMargin}'`}`)
+                  }
+                  if (topMargin !== 0) {
+                    gridOptions.push(`topMargin: ${typeof topMargin === 'number' ? topMargin : `'${topMargin}'`}`)
+                  }
+                  if (rightMargin !== 0) {
+                    gridOptions.push(`rightMargin: ${typeof rightMargin === 'number' ? rightMargin : `'${rightMargin}'`}`)
+                  }
+                  if (bottomMargin !== 0) {
+                    gridOptions.push(`bottomMargin: ${typeof bottomMargin === 'number' ? bottomMargin : `'${bottomMargin}'`}`)
+                  }
+                  if (layoutSpacing !== undefined) {
+                    gridOptions.push(`layoutSpacing: ${layoutSpacing}`)
+                  }
+                  if (layoutStretch) {
+                    gridOptions.push(`layoutStretch: ${layoutStretch}`)
+                  }
+                  
+                  childCode = `  const ${childVarName} = new NhaiGridCommand({\n    ${gridOptions.join(',\n    ')}\n  })\n`
+                  
+                  // Grid 在 Widget 中需要生成 Grid 内部的子组件代码
+                  const gridChildren = (child as any).getChildren?.() || []
+                  if (gridChildren.length > 0) {
+                    childCode += `  ${childVarName}.render()\n`
+                    // 生成 Grid 内部的子组件
+                    gridChildren.forEach((gridChild: any, gridChildIndex: number) => {
+                      const gridChildVarName = `${childVarName}_child${gridChildIndex}`
+                      let gridChildCode = ''
+                      
+                      if (gridChild instanceof NhaiButtonCommand) {
+                        const text = gridChild.getText?.() || (gridChild as any).text || '按钮'
+                        const type = (gridChild as any).type || 'primary'
+                        gridChildCode = `  const ${gridChildVarName} = new NhaiButtonCommand('${text}')\n`
+                        if (type !== 'primary') gridChildCode += `  ${gridChildVarName}.setType('${type}')\n`
+                        gridChildCode += `  ${gridChildVarName}.render()\n`
+                        gridChildCode += `  ${childVarName}.addChild(${gridChildVarName})\n`
+                        if (!usedTypes.has('button')) {
+                          imports.push('NhaiButtonCommand')
+                          usedTypes.add('button')
+                        }
+                      } else if (gridChild instanceof NhaiInputCommand) {
+                        const placeholder = (gridChild as any)._options?.placeholder || '请输入'
+                        gridChildCode = `  const ${gridChildVarName} = new NhaiInputCommand()\n`
+                        if (placeholder) gridChildCode += `  ${gridChildVarName}.setPlaceholder('${placeholder}')\n`
+                        gridChildCode += `  ${gridChildVarName}.render()\n`
+                        gridChildCode += `  ${childVarName}.addChild(${gridChildVarName})\n`
+                        if (!usedTypes.has('input')) {
+                          imports.push('NhaiInputCommand')
+                          usedTypes.add('input')
+                        }
+                      } else if (gridChild instanceof NhaiSelectCommand) {
+                        gridChildCode = `  const ${gridChildVarName} = new NhaiSelectCommand()\n`
+                        gridChildCode += `  ${gridChildVarName}.render()\n`
+                        gridChildCode += `  ${childVarName}.addChild(${gridChildVarName})\n`
+                        if (!usedTypes.has('select')) {
+                          imports.push('NhaiSelectCommand')
+                          usedTypes.add('select')
+                        }
+                      } else if (gridChild instanceof NhaiSwitchCommand) {
+                        const value = (gridChild as any).value ?? false
+                        gridChildCode = `  const ${gridChildVarName} = new NhaiSwitchCommand(${value})\n`
+                        gridChildCode += `  ${gridChildVarName}.render()\n`
+                        gridChildCode += `  ${childVarName}.addChild(${gridChildVarName})\n`
+                        if (!usedTypes.has('switch')) {
+                          imports.push('NhaiSwitchCommand')
+                          usedTypes.add('switch')
+                        }
+                      } else if (gridChild instanceof NhaiCheckboxCommand) {
+                        const text = (gridChild as any).text || '复选框'
+                        gridChildCode = `  const ${gridChildVarName} = new NhaiCheckboxCommand('${text}')\n`
+                        if ((gridChild as any).value) gridChildCode += `  ${gridChildVarName}.setValue(true)\n`
+                        gridChildCode += `  ${gridChildVarName}.render()\n`
+                        gridChildCode += `  ${childVarName}.addChild(${gridChildVarName})\n`
+                        if (!usedTypes.has('checkbox')) {
+                          imports.push('NhaiCheckboxCommand')
+                          usedTypes.add('checkbox')
+                        }
+                      } else if (gridChild instanceof NhaiCardCommand) {
+                        const header = (gridChild as any).header || '卡片标题'
+                        const content = (gridChild as any).content || '卡片内容'
+                        gridChildCode = `  const ${gridChildVarName} = new NhaiCardCommand('${header}', '${content}')\n`
+                        gridChildCode += `  ${gridChildVarName}.render()\n`
+                        gridChildCode += `  ${childVarName}.addChild(${gridChildVarName})\n`
+                        if (!usedTypes.has('card')) {
+                          imports.push('NhaiCardCommand')
+                          usedTypes.add('card')
+                        }
+                      }
+                      // 可以继续添加其他组件类型
+                      
+                      if (gridChildCode) {
+                        childCode += gridChildCode
+                      }
+                    })
+                  } else {
+                    childCode += `  ${childVarName}.render()\n`
+                  }
+                  
+                  // 设置 Grid 在 Widget 中的位置和样式
+                  const posX = childInfo.position.x
+                  const posY = childInfo.position.y
                   childCode += `  ${childVarName}.getElement().style.position = 'absolute'\n`
-                  childCode += `  ${childVarName}.getElement().style.left = '0'\n`
-                  childCode += `  ${childVarName}.getElement().style.top = '0'\n`
-                  childCode += `  ${childVarName}.getElement().style.right = '0'\n`
-                  childCode += `  ${childVarName}.getElement().style.bottom = '0'\n`
-                  childCode += `  ${childVarName}.getElement().style.width = '100%'\n`
-                  childCode += `  ${childVarName}.getElement().style.height = '100%'\n`
-                  childCode += `  const gridRoot${childIndex} = ${childVarName}.getElement().querySelector('.vue-grid')\n`
-                  childCode += `  if (gridRoot${childIndex}) {\n`
-                  childCode += `    gridRoot${childIndex}.style.width = '100%'\n`
-                  childCode += `    gridRoot${childIndex}.style.height = '100%'\n`
-                  childCode += `  }\n`
+                  childCode += `  ${childVarName}.getElement().style.left = '${posX}px'\n`
+                  childCode += `  ${childVarName}.getElement().style.top = '${posY}px'\n`
+                  childCode += `  ${childVarName}.getElement().style.width = 'fit-content'\n`
+                  childCode += `  ${childVarName}.getElement().style.height = 'fit-content'\n`
+                  
                   if (!usedTypes.has('grid')) {
                     imports.push('NhaiGridCommand')
                     usedTypes.add('grid')
+                  }
+                } else if (child instanceof NhaiContainerCommand) {
+                  childVarName = `widgetChild${index}_container${childIndex}`
+                  // 直接从 Container 实例属性获取
+                  const maxWidth = (child as any).maxWidth !== undefined ? (child as any).maxWidth : 'lg'
+                  const fixed = (child as any).fixed || false
+                  const disableGutters = (child as any).disableGutters !== undefined ? (child as any).disableGutters : false
+                  
+                  // 构建 Container 选项对象
+                  const containerOptions: string[] = []
+                  if (maxWidth !== 'lg' && maxWidth !== false) {
+                    containerOptions.push(`maxWidth: '${maxWidth}'`)
+                  } else if (maxWidth === false) {
+                    containerOptions.push(`maxWidth: false`)
+                  }
+                  if (fixed) {
+                    containerOptions.push(`fixed: true`)
+                  }
+                  if (disableGutters) {
+                    containerOptions.push(`disableGutters: true`)
+                  }
+                  
+                  // 添加布局边距和拉伸属性
+                  const layoutLeftMargin = (child as any).layoutLeftMargin ?? 0
+                  const topMargin = (child as any).topMargin ?? 0
+                  const rightMargin = (child as any).rightMargin ?? 0
+                  const bottomMargin = (child as any).bottomMargin ?? 0
+                  const layoutSpacing = (child as any).layoutSpacing
+                  const layoutStretch = (child as any).layoutStretch ?? false
+                  if (layoutLeftMargin !== 0) {
+                    containerOptions.push(`layoutLeftMargin: ${typeof layoutLeftMargin === 'number' ? layoutLeftMargin : `'${layoutLeftMargin}'`}`)
+                  }
+                  if (topMargin !== 0) {
+                    containerOptions.push(`topMargin: ${typeof topMargin === 'number' ? topMargin : `'${topMargin}'`}`)
+                  }
+                  if (rightMargin !== 0) {
+                    containerOptions.push(`rightMargin: ${typeof rightMargin === 'number' ? rightMargin : `'${rightMargin}'`}`)
+                  }
+                  if (bottomMargin !== 0) {
+                    containerOptions.push(`bottomMargin: ${typeof bottomMargin === 'number' ? bottomMargin : `'${bottomMargin}'`}`)
+                  }
+                  if (layoutSpacing !== undefined && layoutSpacing !== null) {
+                    containerOptions.push(`layoutSpacing: ${layoutSpacing}`)
+                  }
+                  if (layoutStretch) {
+                    containerOptions.push(`layoutStretch: ${layoutStretch}`)
+                  }
+                  
+                  if (containerOptions.length > 0) {
+                    childCode = `  const ${childVarName} = new NhaiContainerCommand({\n    ${containerOptions.join(',\n    ')}\n  })\n`
+                  } else {
+                    childCode = `  const ${childVarName} = new NhaiContainerCommand()\n`
+                  }
+                  
+                  // Container 在 Widget 中需要生成 Container 内部的子组件代码
+                  const containerChildren = (child as any).getChildren?.() || []
+                  if (containerChildren.length > 0) {
+                    childCode += `  ${childVarName}.render()\n`
+                    // 生成 Container 内部的子组件
+                    containerChildren.forEach((containerChild: any, containerChildIndex: number) => {
+                      const containerChildVarName = `${childVarName}_child${containerChildIndex}`
+                      let containerChildCode = ''
+                      
+                      if (containerChild instanceof NhaiButtonCommand) {
+                        const text = containerChild.getText?.() || (containerChild as any).text || '按钮'
+                        const type = (containerChild as any).type || 'primary'
+                        containerChildCode = `  const ${containerChildVarName} = new NhaiButtonCommand('${text}')\n`
+                        if (type !== 'primary') containerChildCode += `  ${containerChildVarName}.setType('${type}')\n`
+                        containerChildCode += `  ${containerChildVarName}.render()\n`
+                        containerChildCode += `  ${childVarName}.addChild(${containerChildVarName})\n`
+                        if (!usedTypes.has('button')) {
+                          imports.push('NhaiButtonCommand')
+                          usedTypes.add('button')
+                        }
+                      } else if (containerChild instanceof NhaiInputCommand) {
+                        const placeholder = (containerChild as any)._options?.placeholder || '请输入'
+                        containerChildCode = `  const ${containerChildVarName} = new NhaiInputCommand()\n`
+                        if (placeholder) containerChildCode += `  ${containerChildVarName}.setPlaceholder('${placeholder}')\n`
+                        containerChildCode += `  ${containerChildVarName}.render()\n`
+                        containerChildCode += `  ${childVarName}.addChild(${containerChildVarName})\n`
+                        if (!usedTypes.has('input')) {
+                          imports.push('NhaiInputCommand')
+                          usedTypes.add('input')
+                        }
+                      } else if (containerChild instanceof NhaiSelectCommand) {
+                        containerChildCode = `  const ${containerChildVarName} = new NhaiSelectCommand()\n`
+                        containerChildCode += `  ${containerChildVarName}.render()\n`
+                        containerChildCode += `  ${childVarName}.addChild(${containerChildVarName})\n`
+                        if (!usedTypes.has('select')) {
+                          imports.push('NhaiSelectCommand')
+                          usedTypes.add('select')
+                        }
+                      } else if (containerChild instanceof NhaiSwitchCommand) {
+                        const value = (containerChild as any).value ?? false
+                        containerChildCode = `  const ${containerChildVarName} = new NhaiSwitchCommand(${value})\n`
+                        containerChildCode += `  ${containerChildVarName}.render()\n`
+                        containerChildCode += `  ${childVarName}.addChild(${containerChildVarName})\n`
+                        if (!usedTypes.has('switch')) {
+                          imports.push('NhaiSwitchCommand')
+                          usedTypes.add('switch')
+                        }
+                      } else if (containerChild instanceof NhaiCheckboxCommand) {
+                        const text = (containerChild as any).text || '复选框'
+                        containerChildCode = `  const ${containerChildVarName} = new NhaiCheckboxCommand('${text}')\n`
+                        if ((containerChild as any).value) containerChildCode += `  ${containerChildVarName}.setValue(true)\n`
+                        containerChildCode += `  ${containerChildVarName}.render()\n`
+                        containerChildCode += `  ${childVarName}.addChild(${containerChildVarName})\n`
+                        if (!usedTypes.has('checkbox')) {
+                          imports.push('NhaiCheckboxCommand')
+                          usedTypes.add('checkbox')
+                        }
+                      } else if (containerChild instanceof NhaiCardCommand) {
+                        const header = (containerChild as any).header || '卡片标题'
+                        const content = (containerChild as any).content || '卡片内容'
+                        containerChildCode = `  const ${containerChildVarName} = new NhaiCardCommand('${header}', '${content}')\n`
+                        containerChildCode += `  ${containerChildVarName}.render()\n`
+                        containerChildCode += `  ${childVarName}.addChild(${containerChildVarName})\n`
+                        if (!usedTypes.has('card')) {
+                          imports.push('NhaiCardCommand')
+                          usedTypes.add('card')
+                        }
+                      }
+                      
+                      if (containerChildCode) {
+                        childCode += containerChildCode
+                      }
+                    })
+                  } else {
+                    childCode += `  ${childVarName}.render()\n`
+                  }
+                  
+                  // 设置 Container 在 Widget 中的位置和样式（包含 Flex 布局样式）
+                  const posX = childInfo.position.x
+                  const posY = childInfo.position.y
+                  const containerStyle = (child as any).getProperty?.('style') || (child as any)?._props?.style || {}
+                  
+                  childCode += `  ${childVarName}.getElement().style.position = 'absolute'\n`
+                  childCode += `  ${childVarName}.getElement().style.left = '${posX}px'\n`
+                  childCode += `  ${childVarName}.getElement().style.top = '${posY}px'\n`
+                  
+                  // 如果 Container 有 Flex 布局样式，生成这些样式代码
+                  if (containerStyle.display === 'flex' || containerStyle.flexDirection) {
+                    if (containerStyle.display) childCode += `  ${childVarName}.getElement().style.display = '${containerStyle.display}'\n`
+                    if (containerStyle.flexDirection) childCode += `  ${childVarName}.getElement().style.flexDirection = '${containerStyle.flexDirection}'\n`
+                    if (containerStyle.gap) childCode += `  ${childVarName}.getElement().style.gap = '${containerStyle.gap}'\n`
+                    if (containerStyle.alignItems) childCode += `  ${childVarName}.getElement().style.alignItems = '${containerStyle.alignItems}'\n`
+                  }
+                  
+                  if (containerStyle.width) childCode += `  ${childVarName}.getElement().style.width = '${containerStyle.width}'\n`
+                  if (containerStyle.height) childCode += `  ${childVarName}.getElement().style.height = '${containerStyle.height}'\n`
+                  
+                  if (!usedTypes.has('container')) {
+                    imports.push('NhaiContainerCommand')
+                    usedTypes.add('container')
                   }
                 }
                 

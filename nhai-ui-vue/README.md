@@ -87,13 +87,11 @@ interface ButtonProps {
 
 ## 🚀 快速开始
 
-### 安装
+### 方式 1: NPM 安装（推荐）
 
 ```bash
 npm install nhai-ui-vue
 ```
-
-### 使用
 
 ```typescript
 import { Button, VBox, Input } from 'nhai-ui-vue'
@@ -114,6 +112,42 @@ layout.addChild(button)
 const element = layout.render()
 document.body.appendChild(element)
 ```
+
+### 方式 2: 不使用 NPM（外部使用）
+
+如果不通过 npm 安装，有多种方式可以使用组件库：
+
+#### ES Module 方式（推荐，不需要绑定到 window）
+
+```html
+<script type="module">
+  import { NhaiButtonCommand, NhaiRowCommand, NhaiColCommand } from './dist/index.es.js'
+  
+  const button = new NhaiButtonCommand('按钮')
+  button.setType('primary')
+  document.body.appendChild(button.render())
+</script>
+```
+
+#### UMD 方式（绑定到 window）
+
+```html
+<script src="./dist/index.umd.js"></script>
+<script>
+  const { NhaiButtonCommand } = window.NHAIUIVue
+  const button = new NhaiButtonCommand('按钮')
+  button.setType('primary')
+  document.body.appendChild(button.render())
+</script>
+```
+
+**📖 详细的外部使用指南请查看：** [外部使用指南](./docs/EXTERNAL-USAGE-GUIDE.md)
+
+**🌐 分布式/微前端项目：** 如果您的项目是分布式架构，请查看 [分布式项目使用指南](./docs/DISTRIBUTED-USAGE-GUIDE.md)，了解如何避免多份加载的问题。
+
+**示例文件：**
+- [ES Module 使用示例](./examples/external-usage-esm.html)
+- [UMD 使用示例](./examples/external-usage-umd.html)
 
 ## 💡 示例
 
@@ -181,6 +215,9 @@ const children = layout.getChildren()
 - [命令式 API 指南](./COMMAND-API-GUIDE.md)
 - [布局系统指南](./LAYOUT-SYSTEM-GUIDE.md)
 - [迁移完成总结](./MIGRATION-COMPLETE.md)
+- [外部使用指南](./docs/EXTERNAL-USAGE-GUIDE.md) - 不使用 NPM 的多种集成方式
+- [分布式项目使用指南](./docs/DISTRIBUTED-USAGE-GUIDE.md) - 微前端/分布式架构优化方案
+- [命名空间使用指南](./docs/NAMESPACE-GUIDE.md) - 命名空间组织和分类使用
 
 ## 🔧 开发
 

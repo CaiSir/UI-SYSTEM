@@ -168,6 +168,12 @@ export function usePropertyPanel() {
       ]},
       { key: 'spacing', label: '间距', type: 'number', placeholder: '如：2（表示 2*8=16px）' },
       { key: 'gap', label: '间距（自定义）', type: 'text', placeholder: '如：16px 或 1rem' },
+      { key: 'layoutLeftMargin', label: '左边距', type: 'number', placeholder: '如：0 或 16（单位：px）' },
+      { key: 'topMargin', label: '上边距', type: 'number', placeholder: '如：0 或 16（单位：px）' },
+      { key: 'rightMargin', label: '右边距', type: 'number', placeholder: '如：0 或 16（单位：px）' },
+      { key: 'bottomMargin', label: '下边距', type: 'number', placeholder: '如：0 或 16（单位：px）' },
+      { key: 'layoutSpacing', label: '布局间距', type: 'number', placeholder: '等同于 spacing，如：2' },
+      { key: 'layoutStretch', label: '布局拉伸', type: 'boolean' },
       { key: 'width', label: '宽度', type: 'text', placeholder: '如：800px' },
       { key: 'height', label: '高度', type: 'text', placeholder: '如：600px' }
     ],
@@ -182,6 +188,27 @@ export function usePropertyPanel() {
       ]},
       { key: 'fixed', label: '固定宽度', type: 'boolean' },
       { key: 'disableGutters', label: '禁用间距', type: 'boolean' },
+      { key: 'display', label: '显示方式', type: 'select', options: [
+        { value: 'flex', label: 'flex（弹性布局）' },
+        { value: 'block', label: 'block（块级）' }
+      ]},
+      { key: 'flexDirection', label: 'Flex 方向', type: 'select', options: [
+        { value: 'row', label: 'row（水平）' },
+        { value: 'column', label: 'column（垂直）' }
+      ]},
+      { key: 'gap', label: '间距', type: 'text', placeholder: '如：16px 或 2rem' },
+      { key: 'alignItems', label: '垂直对齐', type: 'select', options: [
+        { value: 'start', label: 'start（起始）' },
+        { value: 'center', label: 'center（居中）' },
+        { value: 'end', label: 'end（末尾）' },
+        { value: 'stretch', label: 'stretch（拉伸）' }
+      ]},
+      { key: 'layoutLeftMargin', label: '左边距', type: 'number', placeholder: '如：0 或 16（单位：px）' },
+      { key: 'topMargin', label: '上边距', type: 'number', placeholder: '如：0 或 16（单位：px）' },
+      { key: 'rightMargin', label: '右边距', type: 'number', placeholder: '如：0 或 16（单位：px）' },
+      { key: 'bottomMargin', label: '下边距', type: 'number', placeholder: '如：0 或 16（单位：px）' },
+      { key: 'layoutSpacing', label: '布局间距', type: 'number', placeholder: 'Flex 布局间距，如：2（即 16px）' },
+      { key: 'layoutStretch', label: '布局拉伸', type: 'boolean' },
       { key: 'width', label: '宽度', type: 'text', placeholder: '如：800px' },
       { key: 'height', label: '高度', type: 'text', placeholder: '如：600px' }
     ],

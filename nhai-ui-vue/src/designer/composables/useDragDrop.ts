@@ -103,10 +103,10 @@ export function useDragDrop(deps: DragDropDependencies) {
       if (layoutId) {
         const layoutComp = canvasComponents.value.find(c => c.id === layoutId && (c.type === 'grid' || c.type === 'container'))
         if (layoutComp) {
-          // 查找实际的布局容器元素（.vue-grid 或 .vue-container）
+          // 查找实际的布局容器元素（.qt-grid-layout 或 .vue-container）
           let layoutContainer: HTMLElement | null = null
           if (layoutComp.type === 'grid') {
-            layoutContainer = layoutElementWithId.querySelector('.vue-grid') as HTMLElement
+            layoutContainer = layoutElementWithId.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
           } else if (layoutComp.type === 'container') {
             layoutContainer = layoutElementWithId.querySelector('.vue-container') as HTMLElement
           }
@@ -122,10 +122,11 @@ export function useDragDrop(deps: DragDropDependencies) {
             if (!childInstance) return
             
             // 确保 layoutContainer 是实际的容器元素（.vue-grid 或 .vue-container）
-            const actualContainer = layoutContainer.classList.contains('vue-grid') || 
+            const actualContainer = layoutContainer.classList.contains('qt-grid-layout') || 
+                                    layoutContainer.classList.contains('vue-grid') || 
                                     layoutContainer.classList.contains('vue-container')
               ? layoutContainer
-              : (layoutContainer.querySelector('.vue-grid, .vue-container') as HTMLElement) || layoutContainer
+              : (layoutContainer.querySelector('.qt-grid-layout, .vue-grid, .vue-container') as HTMLElement) || layoutContainer
             
             // 创建包装器用于定位和交互（类似 Widget/Dialog）
             const wrapper = document.createElement('div')
@@ -239,7 +240,7 @@ export function useDragDrop(deps: DragDropDependencies) {
     }
     
     // 方法2：检查是否放置到了 .vue-grid 或 .vue-container 内部
-    const layoutContainer = (event.target as Element).closest('.vue-grid, .vue-container') as HTMLElement
+    const layoutContainer = (event.target as Element).closest('.qt-grid-layout, .vue-grid, .vue-container') as HTMLElement
     if (layoutContainer) {
       // 向上查找带有 data-id 的父元素
       let parentWithId: Element | null = layoutContainer.parentElement
@@ -479,7 +480,7 @@ export function useDragDrop(deps: DragDropDependencies) {
               childElement.style.width = '100%'
               childElement.style.height = '100%'
               // 查找 Grid 的根元素（.vue-grid）并填充
-              const gridRoot = childElement.querySelector('.vue-grid') as HTMLElement
+              const gridRoot = childElement.querySelector('.qt-grid-layout, .vue-grid') as HTMLElement
               if (gridRoot) {
                 gridRoot.style.width = '100%'
                 gridRoot.style.height = '100%'
@@ -612,7 +613,7 @@ export function useDragDrop(deps: DragDropDependencies) {
       // 如果是 Grid，设置 Grid 元素填充 wrapper
       if (isGrid && childElement instanceof HTMLElement) {
         // 查找 Grid 的根元素（.vue-grid）
-        const gridRoot = childElement.querySelector('.vue-grid') || childElement
+        const gridRoot = childElement.querySelector('.qt-grid-layout, .vue-grid') || childElement
         if (gridRoot instanceof HTMLElement) {
           gridRoot.style.width = '100%'
           gridRoot.style.height = '100%'

@@ -33,6 +33,7 @@
   "author": "NHAI Team",
   "license": "MIT",
   "dependencies": {
+    "@codemirror/lint": "^6.9.2",
     "element-plus": "^2.8.0",
     "vue": "^3.0.0"
   },
@@ -42,8 +43,10 @@
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.38.6",
+    "@types/node": "^24.10.0",
     "@vitejs/plugin-vue": "^5.0.0",
     "@vitejs/plugin-vue-jsx": "^4.0.0",
+    "acorn": "^8.15.0",
     "codemirror": "^6.0.2",
     "codemirror-editor-vue3": "^2.8.0",
     "typescript": "^5.3.0",

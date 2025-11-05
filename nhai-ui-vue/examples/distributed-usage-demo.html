@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分布式项目使用示例</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+    }
+    
+    .app-container {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .app-container h2 {
+      margin-top: 0;
+      color: #1890ff;
+      border-bottom: 2px solid #1890ff;
+      padding-bottom: 8px;
+    }
+    
+    .demo-area {
+      margin-top: 16px;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 4px;
+      min-height: 100px;
+    }
+    
+    .info-box {
+      background: #e6f7ff;
+      border-left: 4px solid #1890ff;
+      padding: 12px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    
+    .info-box code {
+      background: #fff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+  </style>
+  <!-- 引入 Element Plus 样式 -->
+  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+  <!-- 引入 NHAI UI Vue 样式（构建后） -->
+  <!-- <link rel="stylesheet" href="../dist/index.css"> -->
+</head>
+<body>
+  <h1>分布式前端项目使用示例</h1>
+  
+  <div class="info-box">
+    <h3 style="margin-top: 0;">💡 关键点</h3>
+    <p><strong>主应用加载一次组件库</strong>，所有子应用通过 <code>window.NHAIUIVue</code> 共享使用，避免内存中存在多份副本。</p>
+    <p><strong>内存占用：</strong> 单份 ✅ | <strong>实现方式：</strong> UMD + 全局变量</p>
+  </div>
+  
+  <!-- 主应用 -->
+  <div class="app-container">
+    <h2>主应用 (Main App)</h2>
+    <p>主应用负责加载组件库到全局变量 <code>window.NHAIUIVue</code></p>
+    <div class="demo-area" id="main-app">
+      <p style="color: #8c8c8c;">主应用区域</p>
+    </div>
+  </div>
+  
+  <!-- 子应用 A -->
+  <div class="app-container">
+    <h2>子应用 A (Sub App A)</h2>
+    <p>使用 <code>window.NHAIUIVue</code> 访问组件库（不重复加载）</p>
+    <div class="demo-area" id="sub-app-a">
+      <p style="color: #8c8c8c;">子应用 A 区域</p>
+    </div>
+  </div>
+  
+  <!-- 子应用 B -->
+  <div class="app-container">
+    <h2>子应用 B (Sub App B)</h2>
+    <p>同样使用 <code>window.NHAIUIVue</code> 访问组件库（共享同一份）</p>
+    <div class="demo-area" id="sub-app-b">
+      <p style="color: #8c8c8c;">子应用 B 区域</p>
+    </div>
+  </div>
+  
+  <!-- 子应用 C -->
+  <div class="app-container">
+    <h2>子应用 C (Sub App C)</h2>
+    <p>所有子应用共享同一份组件库实例</p>
+    <div class="demo-area" id="sub-app-c">
+      <p style="color: #8c8c8c;">子应用 C 区域</p>
+    </div>
+  </div>
+
+  <!-- 1. 引入依赖 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/element-plus/dist/index.full.js"></script>
+  
+  <!-- 2. 主应用：加载组件库（只加载一次） -->
+  <!-- 注意：需要先构建项目 (npm run build) -->
+  <!-- <script src="../dist/index.umd.js"></script> -->
+  
+  <script>
+    // 模拟主应用加载组件库
+    console.log('📦 主应用：加载 NHAI UI Vue 组件库...')
+    
+    // 检查组件库是否已加载
+    function checkNHAIUIVue() {
+      if (window.NHAIUIVue) {
+        console.log('✅ 组件库已加载到 window.NHAIUIVue')
+        return true
+      } else {
+        console.warn('⚠️ 组件库未加载，请确保已构建并引入 dist/index.umd.js')
+        return false
+      }
+    }
+    
+    // 主应用初始化
+    function initMainApp() {
+      if (!checkNHAIUIVue()) {
+        document.getElementById('main-app').innerHTML = 
+          '<p style="color: #ff4d4f;">请先构建项目 (npm run build) 并引入 dist/index.umd.js</p>'
+        return
+      }
+      
+      const { NhaiButtonCommand } = window.NHAIUIVue
+      const btn = new NhaiButtonCommand('主应用按钮')
+      btn.setType('primary')
+      document.getElementById('main-app').appendChild(btn.render())
+    }
+    
+    // 子应用 A
+    function initSubAppA() {
+      if (!checkNHAIUIVue()) return
+      
+      const { NhaiRowCommand, NhaiColCommand, NhaiButtonCommand } = window.NHAIUIVue
+      
+      const row = new NhaiRowCommand()
+      row.setGutter(16)
+      
+      const col1 = new NhaiColCommand({ span: 12 })
+      const col2 = new NhaiColCommand({ span: 12 })
+      
+      const btn1 = new NhaiButtonCommand('子应用 A - 按钮 1')
+      btn1.setType('primary')
+      btn1.setStyle({ width: '100%' })
+      col1.addChild(btn1)
+      
+      const btn2 = new NhaiButtonCommand('子应用 A - 按钮 2')
+      btn2.setType('success')
+      btn2.setStyle({ width: '100%' })
+      col2.addChild(btn2)
+      
+      row.addChild(col1)
+      row.addChild(col2)
+      
+      document.getElementById('sub-app-a').innerHTML = ''
+      document.getElementById('sub-app-a').appendChild(row.render())
+    }
+    
+    // 子应用 B
+    function initSubAppB() {
+      if (!checkNHAIUIVue()) return
+      
+      const { NhaiButtonCommand } = window.NHAIUIVue
+      
+      const btn1 = new NhaiButtonCommand('子应用 B - 按钮 1')
+      btn1.setType('warning')
+      
+      const btn2 = new NhaiButtonCommand('子应用 B - 按钮 2')
+      btn2.setType('danger')
+      
+      const container = document.getElementById('sub-app-b')
+      container.innerHTML = ''
+      container.style.display = 'flex'
+      container.style.gap = '10px'
+      container.appendChild(btn1.render())
+      container.appendChild(btn2.render())
+    }
+    
+    // 子应用 C
+    function initSubAppC() {
+      if (!checkNHAIUIVue()) return
+      
+      const { NhaiRowCommand, NhaiColCommand, NhaiButtonCommand } = window.NHAIUIVue
+      
+      const row = new NhaiRowCommand()
+      row.setGutter(16)
+      
+      for (let i = 1; i <= 3; i++) {
+        const col = new NhaiColCommand({ span: 8 })
+        const btn = new NhaiButtonCommand(`子应用 C - 按钮 ${i}`)
+        btn.setType(i === 1 ? 'primary' : i === 2 ? 'success' : 'warning')
+        btn.setStyle({ width: '100%' })
+        col.addChild(btn)
+        row.addChild(col)
+      }
+      
+      document.getElementById('sub-app-c').innerHTML = ''
+      document.getElementById('sub-app-c').appendChild(row.render())
+    }
+    
+    // 初始化所有应用
+    function initAllApps() {
+      initMainApp()
+      initSubAppA()
+      initSubAppB()
+      initSubAppC()
+      
+      // 验证内存占用
+      console.log('📊 内存验证：')
+      console.log('  - window.NHAIUIVue 引用:', window.NHAIUIVue ? '✅ 存在' : '❌ 不存在')
+      console.log('  - 所有子应用共享同一份组件库实例')
+      console.log('  - 内存占用：单份 ✅')
+    }
+    
+    // 延迟执行，确保 UMD 文件已加载
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAllApps)
+    } else {
+      window.addEventListener('load', initAllApps)
+      setTimeout(initAllApps, 100)
+    }
+  </script>
+</body>
+</html>
+
