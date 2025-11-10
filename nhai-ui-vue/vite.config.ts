@@ -5,7 +5,7 @@ import dts from 'vite-plugin-dts'
 import { resolve } from 'path'
 import type { PluginOptions } from 'vite-plugin-dts'
 import type { Plugin } from 'vite'
-import { existsSync, rmSync, readdirSync, statSync, unlinkSync } from 'fs'
+import { existsSync, rmSync, readdirSync, statSync, unlinkSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 // 清理 dyexports 目录插件
@@ -13,14 +13,14 @@ function cleanDyexportsPlugin(): Plugin {
   return {
     name: 'clean-dyexports',
     buildStart() {
-      const dyexportsDir = resolve(process.cwd(), 'dyexports')
+      const dyexportsDir = resolve(process.cwd(), 'dyexports/nhaiui')
       if (existsSync(dyexportsDir)) {
         rmSync(dyexportsDir, { recursive: true, force: true })
       }
     },
     writeBundle() {
       // 构建完成后删除所有 .map 文件和冗余的 index.d.ts 文件
-      const dyexportsDir = resolve(process.cwd(), 'dyexports')
+      const dyexportsDir = resolve(process.cwd(), 'dyexports/nhaiui')
       if (existsSync(dyexportsDir)) {
         const deleteFiles = (dir: string, isRoot: boolean = false) => {
           const files = readdirSync(dir)
@@ -94,26 +94,22 @@ export default defineConfig({
         'src/components/**/*Command.ts',
         'src/components/**/types.ts',
         'src/components/index.ts',
+        'src/index.ts',
       ],
       exclude: [
         'src/**/*.test.ts',
         'src/**/*.spec.ts',
         'src/designer/**',
         'src/showcase/**',
-        'src/main.ts',
-        'src/App.vue',
-        'src/MainApp.vue',
-        'src/DesignerApp.vue',
-        'src/ShowcaseApp.vue'
+        'src/main.ts'
       ],
-      outDir: resolve(process.cwd(), 'dyexports'), // 使用 outDir 而不是 outputDir
-      rollupTypes: false, // 禁用 rollupTypes，避免 api-extractor 配置问题
-      copyDtsFiles: true, // 复制原始文件
-      skipDiagnostics: true, // 跳过类型诊断，避免 TS4023 错误（Vue 组件类型无法在声明文件中命名）
+      outDir: resolve(process.cwd(), 'dyexports/nhaiui'),
+      rollupTypes: false,
+      copyDtsFiles: true,
+      skipDiagnostics: true,
       compilerOptions: {
         skipLibCheck: true,
       },
-      logLevel: 'silent', // 减少日志输出
       beforeWriteFile: (filePath: string, content: string) => {
         let filteredContent = content
         
@@ -123,43 +119,101 @@ export default defineConfig({
         // 移除所有来自 'vue' 的导入（包括类型导入）
         filteredContent = filteredContent.replace(/^import\s+.*from\s+['"]vue['"];?\s*$/gm, '')
         
-        // 移除所有 Vue 组件的导出（包括 export { default as VueXXX } 格式）
-        filteredContent = filteredContent.replace(/export\s+\{\s*default\s+as\s+Vue\w+\s*\}\s+from\s+['"]\.\/.*\.vue['"];?\s*/g, '')
-        
-        // 先收集所有被声明的 Vue 组件名称（在移除声明之前）
-        const vueComponentNames = new Set<string>()
-        const declareMatches = Array.from(filteredContent.matchAll(/^declare\s+const\s+(\w+):\s*import\('vue'\)\.DefineComponent<[^>]*>;?\s*$/gm))
-        for (const match of declareMatches) {
-          vueComponentNames.add(match[1])
+        // 如果是主 index.d.ts，替换中间层导入为直接导入具体文件
+        if (filePath.replace(/\\/g, '/').endsWith('/dyexports/nhaiui/index.d.ts')) {
+          // 移除所有中间层导入
+          filteredContent = filteredContent.replace(
+            /import\s+\*\s+as\s+\w+\s+from\s+['"]\.\/components[^'"]*['"];?\s*/g,
+            ''
+          )
+          filteredContent = filteredContent.replace(
+            /import\s+\*\s+as\s+\w+\s+from\s+['"]\.\/lib['"];?\s*/g,
+            ''
+          )
+          
+          // 从源文件扫描并生成组件导入
+          const srcDir = resolve(process.cwd(), 'src')
+          const componentImports: string[] = []
+          const libImports: string[] = []
+          
+          // 扫描组件源文件
+          const scanComponents = (dir: string, basePath: string = '') => {
+            if (!existsSync(dir)) return
+            const files = readdirSync(dir)
+            for (const file of files) {
+              const filePath = join(dir, file)
+              const stat = statSync(filePath)
+              if (stat.isDirectory()) {
+                scanComponents(filePath, join(basePath, file))
+              } else if (file.endsWith('Command.ts')) {
+                try {
+                  const fileContent = readFileSync(filePath, 'utf-8')
+                  const classMatch = fileContent.match(/export\s+class\s+(\w+)/)
+                  if (classMatch) {
+                    const className = classMatch[1]
+                    const importPath = `./components/${basePath.replace(/\\/g, '/')}/${file.replace(/\.ts$/, '')}`
+                    if (file.includes('customButton')) {
+                      componentImports.push(`import type { customButtonCommand as LightweightButtonCommand } from '${importPath}';`)
+                    } else {
+                      componentImports.push(`import type { ${className} } from '${importPath}';`)
+                    }
+                  }
+                } catch (e) {
+                  // 忽略读取错误
+                }
+              }
+            }
+          }
+          
+          // 不导入 lib 文件（用户不需要 Core 内容）
+          
+          // 扫描 components 源目录
+          const componentsDir = join(srcDir, 'components')
+          if (existsSync(componentsDir)) {
+            scanComponents(componentsDir, '')
+          }
+          
+          // 生成导入语句
+          const allImports = [
+            '// 自动生成的组件和库导入',
+            ...componentImports.sort(),
+            ...libImports.sort(),
+            ''
+          ].join('\n')
+          
+          // 替换类型定义中的命名空间引用为直接引用
+          filteredContent = filteredContent.replace(/typeof\s+\w+Components\.(\w+)/g, 'typeof $1')
+          filteredContent = filteredContent.replace(/typeof\s+Components\.(\w+)/g, 'typeof $1')
+          filteredContent = filteredContent.replace(/typeof\s+Lib\.(\w+)/g, 'typeof $1')
+          
+          // 在 export interface 之前插入导入
+          filteredContent = filteredContent.replace(
+            /(export\s+interface\s+NHAIUIVueNamespace)/,
+            allImports + '$1'
+          )
+          
+          // 移除命名空间结构（Basic, Advanced, Components, Layout, Navigation, Container, Core），只保留平铺导出
+          filteredContent = filteredContent.replace(/\s+Basic:\s*\{[^}]*\};\s*/g, '')
+          filteredContent = filteredContent.replace(/\s+Advanced:\s*\{[^}]*\};\s*/g, '')
+          filteredContent = filteredContent.replace(/\s+Business:\s*\{\};?\s*/g, '')
+          filteredContent = filteredContent.replace(/\s+Components:\s*\{[^}]*\};\s*/g, '')
+          filteredContent = filteredContent.replace(/\s+Layout:\s*\{[^}]*\};\s*/g, '')
+          filteredContent = filteredContent.replace(/\s+Navigation:\s*\{[^}]*\};\s*/g, '')
+          filteredContent = filteredContent.replace(/\s+Container:\s*\{[^}]*\};\s*/g, '')
+          filteredContent = filteredContent.replace(/\s+Core:\s*\{[^}]*\};\s*/g, '')
+          
+          // 移除 BaseCommand 和 ComponentRegistry 的平铺导出（不需要 Core 内容）
+          filteredContent = filteredContent.replace(/\s+BaseCommand:\s*typeof\s+BaseCommand;\s*/g, '')
+          filteredContent = filteredContent.replace(/\s+ComponentRegistry:\s*typeof\s+ComponentRegistry;\s*/g, '')
+          
+          // 移除 export * from './components' 和 export * from './lib'（因为中间层 index.d.ts 已被删除）
+          filteredContent = filteredContent.replace(/export\s+\*\s+from\s+['"]\.\/components['"];?\s*/g, '')
+          filteredContent = filteredContent.replace(/export\s+\*\s+from\s+['"]\.\/lib['"];?\s*/g, '')
         }
-        
-        // 移除所有包含 import('vue').DefineComponent 的 declare const 声明（不依赖组件名称）
-        filteredContent = filteredContent.replace(/^declare\s+const\s+\w+:\s*import\('vue'\)\.DefineComponent<[^>]*>;?\s*$/gm, '')
-        
-        // 移除包含 Vue 组件名称的 export 语句（单个导出）
-        if (vueComponentNames.size > 0) {
-          const vueNamesArray = Array.from(vueComponentNames)
-          // 转义特殊字符，防止正则表达式错误
-          const escapedNames = vueNamesArray.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-          // 匹配 export { VueXXX } 或 export { Widget } 这样的单行导出
-          const exportPattern = new RegExp(`^export\\s+\\{\\s*(${escapedNames.join('|')})\\s*\\}\\s*$`, 'gm')
-          filteredContent = filteredContent.replace(exportPattern, '')
-        }
-        
-        // 移除 NHAIUIVue 对象中的 Vue 属性（通过匹配对象字面量中的 Vue 属性）
-        filteredContent = filteredContent.replace(/Vue:\s*\{[^}]*\},?\s*/g, '')
         
         // 移除所有私有方法和私有成员变量
-        // 匹配 private 成员（包括 static、readonly 等修饰符）
-        // 格式：private [static] [readonly] propertyName[?]: type;
-        // 或：private [static] methodName(...): returnType;
         filteredContent = filteredContent.replace(/^\s+private\s+(?:static\s+)?(?:readonly\s+)?\w+(?:\?)?(?::\s*[^;=]+)?;?\s*$/gm, '')
-        // 匹配 private 方法（包括 static）
         filteredContent = filteredContent.replace(/^\s+private\s+(?:static\s+)?\w+\([^)]*\)(?::\s*[^;]+)?;?\s*$/gm, '')
-        
-        // 移除所有组件 index.d.ts 中的全局类型声明（避免重复和类型错误）
-        // 匹配从 "declare global" 到 "}" 的整个块
-        filteredContent = filteredContent.replace(/\n\/\*\*[\s\S]*?全局类型声明[\s\S]*?\*\/\s*declare\s+global\s*\{[\s\S]*?interface\s+Window\s*\{[\s\S]*?NHAIUIVue:\s*NHAIUIVueNamespace[\s\S]*?\}\s*\}/g, '')
         
         // 移除 source map 注释
         filteredContent = filteredContent.replace(/\/\/# sourceMappingURL=.*\.d\.ts\.map\s*/g, '')
@@ -167,25 +221,14 @@ export default defineConfig({
         // 清理多余的空行（3个或更多连续空行替换为2个）
         filteredContent = filteredContent.replace(/\n{3,}/g, '\n\n')
         
-        // 只在根目录的主类型定义文件中添加全局类型声明
-        const isRootIndex = filePath.replace(/\\/g, '/').endsWith('/dyexports/index.d.ts')
-        if (isRootIndex) {
+        // 在根目录的 index.d.ts 中添加全局类型声明
+        const isRootIndex = filePath.replace(/\\/g, '/').endsWith('/dyexports/nhaiui/index.d.ts')
+        if (isRootIndex && filteredContent.includes('export interface NHAIUIVueNamespace')) {
           filteredContent += `
 
-/**
- * 全局类型声明：为 UMD 格式的全局变量提供类型支持
- * 
- * 使用方式：
- * - 命名空间方式: new window.NHAIUIVue.Components.Button('按钮')
- * - 平铺导出方式: new window.NHAIUIVue.NhaiButtonCommand('按钮')
- */
 declare global {
   interface Window {
-    /**
-     * NHAI UI Vue 全局变量（UMD 格式）
-     * 包含命名空间和平铺导出的所有组件
-     */
-    NHAIUIVue: any
+    NHAIUIVue: NHAIUIVueNamespace
   }
 }`
         }
