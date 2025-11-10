@@ -4,11 +4,48 @@ import vueJsx from '@vitejs/plugin-vue-jsx'
 import dts from 'vite-plugin-dts'
 import { resolve } from 'path'
 import type { PluginOptions } from 'vite-plugin-dts'
+import type { Plugin } from 'vite'
+
+// UMD 构建后处理插件：让 window.NHAIUIVue 直接指向命名空间对象
+function umdNamespacePlugin(): Plugin {
+  return {
+    name: 'umd-namespace',
+    generateBundle(options, bundle) {
+      // 只处理 UMD 格式
+      if (options.format === 'umd') {
+        const umdFile = Object.keys(bundle).find(key => key.endsWith('.umd.js'))
+        if (umdFile && bundle[umdFile].type === 'chunk') {
+          const chunk = bundle[umdFile] as { code: string }
+          // 在文件末尾添加代码，让 window.NHAIUIVue 直接指向命名空间对象
+          // 由于命名空间对象已经包含了所有平铺导出的组件，所以直接合并即可
+          chunk.code += `
+            // 统一导出：让 window.NHAIUIVue 直接指向命名空间对象
+            // 由于命名空间对象已经包含了所有组件（包括平铺导出的），所以直接使用命名空间对象
+            if (typeof window !== 'undefined' && window.NHAIUIVue) {
+              // 如果存在默认导出（命名空间对象），则将其属性合并到 window.NHAIUIVue
+              if (window.NHAIUIVue.default) {
+                const namespace = window.NHAIUIVue.default
+                // 将命名空间对象的所有属性合并到 window.NHAIUIVue（覆盖现有属性）
+                Object.assign(window.NHAIUIVue, namespace)
+                // 确保 window.NHAIUIVue 本身也是命名空间对象（用于命名空间访问方式）
+                // 这样 window.NHAIUIVue.Components.Button 和 window.NHAIUIVue.NhaiButtonCommand 都可以使用
+              } else if (window.NHAIUIVue.NHAIUIVue) {
+                // 如果存在命名导出 NHAIUIVue，则合并它
+                const namespace = window.NHAIUIVue.NHAIUIVue
+                Object.assign(window.NHAIUIVue, namespace)
+              }
+            }`
+        }
+      }
+    }
+  }
+}
 
 export default defineConfig({
   plugins: [
     vue(),
     vueJsx(),
+    umdNamespacePlugin(),
     dts({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
