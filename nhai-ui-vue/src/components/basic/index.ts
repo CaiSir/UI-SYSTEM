@@ -3,24 +3,24 @@
  * 最基础的表单和展示组件，提供最核心的功能
  */
 
-// 表单组件
-export { VueButton, NhaiButtonCommand, LightweightButtonCommand } from './Button'
-export { VueInput, NhaiInputCommand } from './Input'
-export { VueSelect, NhaiSelectCommand } from './Select'
-export { VueSwitch, NhaiSwitchCommand } from './Switch'
-export { VueCheckbox, NhaiCheckboxCommand } from './Checkbox'
+// 表单组件（只导出命令式 API）
+export { NhaiButtonCommand, LightweightButtonCommand } from './Button'
+export { NhaiInputCommand } from './Input'
+export { NhaiSelectCommand } from './Select'
+export { NhaiSwitchCommand } from './Switch'
+export { NhaiCheckboxCommand } from './Checkbox'
 
-// 布局组件（基础）
-export { VueGrid, NhaiGridCommand } from './Grid'
-export { VueRow, NhaiRowCommand } from './Row'
-export { VueCol, NhaiColCommand } from './Col'
-export { VueContainer, NhaiContainerCommand } from './Container'
-export { VueAbsolutePanel, AbsolutePanelCommand } from './AbsolutePanel'
-export { VueLayoutBuilder, NhaiLayoutBuilderCommand } from './LayoutBuilder'
+// 布局组件（基础，只导出命令式 API）
+export { NhaiGridCommand } from './Grid'
+export { NhaiRowCommand } from './Row'
+export { NhaiColCommand } from './Col'
+export { NhaiContainerCommand } from './Container'
+export { AbsolutePanelCommand } from './AbsolutePanel'
+export { NhaiLayoutBuilderCommand } from './LayoutBuilder'
 
-// 容器组件（基础）
-export { VueDialog, NhaiDialogCommand } from './Dialog'
-export { Widget, NhaiWidgetCommand } from './Widget'
+// 容器组件（基础，只导出命令式 API）
+export { NhaiDialogCommand } from './Dialog'
+export { NhaiWidgetCommand } from './Widget'
 
 // 重新导出类型
 export type { SelectOption } from './Select'
