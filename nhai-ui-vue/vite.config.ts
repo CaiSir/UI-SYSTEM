@@ -5,6 +5,47 @@ import dts from 'vite-plugin-dts'
 import { resolve } from 'path'
 import type { PluginOptions } from 'vite-plugin-dts'
 import type { Plugin } from 'vite'
+import { existsSync, rmSync, readdirSync, statSync, unlinkSync } from 'fs'
+import { join } from 'path'
+
+// 清理 dyexports 目录插件
+function cleanDyexportsPlugin(): Plugin {
+  return {
+    name: 'clean-dyexports',
+    buildStart() {
+      const dyexportsDir = resolve(process.cwd(), 'dyexports')
+      if (existsSync(dyexportsDir)) {
+        rmSync(dyexportsDir, { recursive: true, force: true })
+      }
+    },
+    writeBundle() {
+      // 构建完成后删除所有 .map 文件和冗余的 index.d.ts 文件
+      const dyexportsDir = resolve(process.cwd(), 'dyexports')
+      if (existsSync(dyexportsDir)) {
+        const deleteFiles = (dir: string, isRoot: boolean = false) => {
+          const files = readdirSync(dir)
+          for (const file of files) {
+            const filePath = join(dir, file)
+            const stat = statSync(filePath)
+            if (stat.isDirectory()) {
+              deleteFiles(filePath, false)
+            } else {
+              // 删除 .map 文件
+              if (file.endsWith('.d.ts.map')) {
+                unlinkSync(filePath)
+              }
+              // 删除中间层的 index.d.ts 文件（保留根目录的）
+              if (file === 'index.d.ts' && !isRoot) {
+                unlinkSync(filePath)
+              }
+            }
+          }
+        }
+        deleteFiles(dyexportsDir, true)
+      }
+    }
+  }
+}
 
 // UMD 构建后处理插件：让 window.NHAIUIVue 直接指向命名空间对象
 function umdNamespacePlugin(): Plugin {
@@ -43,18 +84,36 @@ function umdNamespacePlugin(): Plugin {
 
 export default defineConfig({
   plugins: [
+    cleanDyexportsPlugin(),
     vue(),
     vueJsx(),
     umdNamespacePlugin(),
     dts({
-      include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
-      outputDir: 'dist',
-      rollupTypes: true,
+      include: [
+        'src/lib/**/*.ts',
+        'src/components/**/*Command.ts',
+        'src/components/**/types.ts',
+        'src/components/index.ts',
+      ],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.spec.ts',
+        'src/designer/**',
+        'src/showcase/**',
+        'src/main.ts',
+        'src/App.vue',
+        'src/MainApp.vue',
+        'src/DesignerApp.vue',
+        'src/ShowcaseApp.vue'
+      ],
+      outDir: resolve(process.cwd(), 'dyexports'), // 使用 outDir 而不是 outputDir
+      rollupTypes: false, // 禁用 rollupTypes，避免 api-extractor 配置问题
+      copyDtsFiles: true, // 复制原始文件
       skipDiagnostics: true, // 跳过类型诊断，避免 TS4023 错误（Vue 组件类型无法在声明文件中命名）
       compilerOptions: {
         skipLibCheck: true,
       },
+      logLevel: 'silent', // 减少日志输出
       beforeWriteFile: (filePath: string, content: string) => {
         let filteredContent = content
         
@@ -63,6 +122,9 @@ export default defineConfig({
         
         // 移除所有来自 'vue' 的导入（包括类型导入）
         filteredContent = filteredContent.replace(/^import\s+.*from\s+['"]vue['"];?\s*$/gm, '')
+        
+        // 移除所有 Vue 组件的导出（包括 export { default as VueXXX } 格式）
+        filteredContent = filteredContent.replace(/export\s+\{\s*default\s+as\s+Vue\w+\s*\}\s+from\s+['"]\.\/.*\.vue['"];?\s*/g, '')
         
         // 先收集所有被声明的 Vue 组件名称（在移除声明之前）
         const vueComponentNames = new Set<string>()
@@ -95,11 +157,19 @@ export default defineConfig({
         // 匹配 private 方法（包括 static）
         filteredContent = filteredContent.replace(/^\s+private\s+(?:static\s+)?\w+\([^)]*\)(?::\s*[^;]+)?;?\s*$/gm, '')
         
+        // 移除所有组件 index.d.ts 中的全局类型声明（避免重复和类型错误）
+        // 匹配从 "declare global" 到 "}" 的整个块
+        filteredContent = filteredContent.replace(/\n\/\*\*[\s\S]*?全局类型声明[\s\S]*?\*\/\s*declare\s+global\s*\{[\s\S]*?interface\s+Window\s*\{[\s\S]*?NHAIUIVue:\s*NHAIUIVueNamespace[\s\S]*?\}\s*\}/g, '')
+        
+        // 移除 source map 注释
+        filteredContent = filteredContent.replace(/\/\/# sourceMappingURL=.*\.d\.ts\.map\s*/g, '')
+        
         // 清理多余的空行（3个或更多连续空行替换为2个）
         filteredContent = filteredContent.replace(/\n{3,}/g, '\n\n')
         
-        // 如果是主类型定义文件，添加全局类型声明
-        if (filePath.endsWith('index.d.ts')) {
+        // 只在根目录的主类型定义文件中添加全局类型声明
+        const isRootIndex = filePath.replace(/\\/g, '/').endsWith('/dyexports/index.d.ts')
+        if (isRootIndex) {
           filteredContent += `
 
 /**
@@ -115,7 +185,7 @@ declare global {
      * NHAI UI Vue 全局变量（UMD 格式）
      * 包含命名空间和平铺导出的所有组件
      */
-    NHAIUIVue: NHAIUIVueNamespace
+    NHAIUIVue: any
   }
 }`
         }
@@ -128,6 +198,7 @@ declare global {
     } as PluginOptions)
   ],
   build: {
+    outDir: resolve(__dirname, '../build/dev/NhaiUi'),
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'NHAIUIVue',
