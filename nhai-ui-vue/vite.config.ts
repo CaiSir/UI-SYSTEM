@@ -98,6 +98,28 @@ export default defineConfig({
         // 清理多余的空行（3个或更多连续空行替换为2个）
         filteredContent = filteredContent.replace(/\n{3,}/g, '\n\n')
         
+        // 如果是主类型定义文件，添加全局类型声明
+        if (filePath.endsWith('index.d.ts')) {
+          filteredContent += `
+
+/**
+ * 全局类型声明：为 UMD 格式的全局变量提供类型支持
+ * 
+ * 使用方式：
+ * - 命名空间方式: new window.NHAIUIVue.Components.Button('按钮')
+ * - 平铺导出方式: new window.NHAIUIVue.NhaiButtonCommand('按钮')
+ */
+declare global {
+  interface Window {
+    /**
+     * NHAI UI Vue 全局变量（UMD 格式）
+     * 包含命名空间和平铺导出的所有组件
+     */
+    NHAIUIVue: NHAIUIVueNamespace
+  }
+}`
+        }
+        
         return {
           filePath,
           content: filteredContent.trim()
