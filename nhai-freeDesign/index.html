@@ -4,34 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NHAI Free Design</title>
-  <!-- 先加载 Vue 3 (UMD 文件需要 Vue 作为全局变量) -->
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <script>
-    // Vue 3 的 UMD 版本导出为 window.Vue，确保可用
-    if (typeof window.Vue === 'undefined') {
-      const VueObj = window.Vue || window.Vue3 || (window.Vue && window.Vue.default)
-      if (VueObj) {
-        window.Vue = VueObj
-      }
-    }
-  </script>
-  <!-- Element Plus 样式和 JS -->
-  <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
-  <script src="https://unpkg.com/element-plus/dist/index.full.min.js"></script>
-  <script>
-    // Element Plus 的 UMD 版本可能导出为 window.ElementPlus 或 window.El
-    if (typeof window.ElementPlus === 'undefined') {
-      if (typeof window.El !== 'undefined') {
-        window.ElementPlus = window.El
-      } else {
-        // 创建占位符对象，避免 UMD 文件报错
-        window.ElementPlus = { ElButton: class {}, ElInput: class {} }
-      }
-    }
-  </script>
-  <!-- 引入 NHAI UI Vue 组件库的 UMD 文件 -->
-  <script src="/nhaiui/index.umd.js"></script>
-  <link rel="stylesheet" href="/nhaiui/index.css">
 </head>
 <body>
   <div id="app"></div>

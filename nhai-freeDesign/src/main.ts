@@ -1,30 +1,107 @@
 import 'element-plus/dist/index.css'
 /// <reference path="../imports/nhaiui/index.d.ts" />
 
+// 动态加载 NHAI UI Vue 组件库
+async function loadNHAIUIVue(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    // 如果已经加载，直接返回
+    if (typeof window !== 'undefined' && window.NHAIUIVue) {
+      resolve()
+      return
+    }
+
+    // 加载 Vue 3
+    const loadVue = (): Promise<void> => {
+      if (window.Vue) {
+        return Promise.resolve()
+      }
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = 'https://unpkg.com/vue@3/dist/vue.global.js'
+        script.onload = () => {
+          if (typeof window.Vue === 'undefined') {
+            const VueObj = window.Vue || window.Vue3 || (window.Vue && (window.Vue as any).default)
+            if (VueObj) {
+              window.Vue = VueObj
+            }
+          }
+          resolve()
+        }
+        script.onerror = () => reject(new Error('Failed to load Vue 3'))
+        document.head.appendChild(script)
+      })
+    }
+
+    // 加载 Element Plus
+    const loadElementPlus = (): Promise<void> => {
+      if (window.ElementPlus) {
+        return Promise.resolve()
+      }
+      return new Promise((resolve, reject) => {
+        // 加载样式
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = 'https://unpkg.com/element-plus/dist/index.css'
+        document.head.appendChild(link)
+
+        // 加载 JS
+        const script = document.createElement('script')
+        script.src = 'https://unpkg.com/element-plus/dist/index.full.min.js'
+        script.onload = () => {
+          if (typeof window.ElementPlus === 'undefined') {
+            if (typeof window.El !== 'undefined') {
+              window.ElementPlus = window.El
+            } else {
+              window.ElementPlus = { ElButton: class {}, ElInput: class {} }
+            }
+          }
+          resolve()
+        }
+        script.onerror = () => reject(new Error('Failed to load Element Plus'))
+        document.head.appendChild(script)
+      })
+    }
+
+    // 加载 NHAI UI Vue
+    const loadNHAIUI = (): Promise<void> => {
+      if (window.NHAIUIVue) {
+        return Promise.resolve()
+      }
+      return new Promise((resolve, reject) => {
+        // 加载样式
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = '/nhaiui/index.css'
+        document.head.appendChild(link)
+
+        // 加载 JS
+        const script = document.createElement('script')
+        script.src = '/nhaiui/index.umd.js'
+        script.onload = () => {
+          if (window.NHAIUIVue) {
+            resolve()
+          } else {
+            reject(new Error('NHAI UI Vue loaded but window.NHAIUIVue is undefined'))
+          }
+        }
+        script.onerror = () => reject(new Error('Failed to load NHAI UI Vue'))
+        document.head.appendChild(script)
+      })
+    }
+
+    // 按顺序加载
+    loadVue()
+      .then(() => loadElementPlus())
+      .then(() => loadNHAIUI())
+      .then(() => resolve())
+      .catch((error) => reject(error))
+  })
+}
+
 // 初始化应用
 class FreeDesignApp {
   constructor() {
-    // 等待 NHAIUIVue 加载完成
-    if (typeof window !== 'undefined' && !window.NHAIUIVue) {
-      // 如果 UMD 文件还未加载，等待一下
-      const checkInterval = setInterval(() => {
-        if (window.NHAIUIVue) {
-          clearInterval(checkInterval)
-          this.init()
-        }
-      }, 100)
-      // 最多等待 5 秒
-      setTimeout(() => {
-        clearInterval(checkInterval)
-        if (window.NHAIUIVue) {
-          this.init()
-        } else {
-          console.error('NHAI UI Vue library failed to load')
-        }
-      }, 5000)
-    } else {
-      this.init()
-    }
+    this.init()
   }
   
   private init(): void {
@@ -361,6 +438,13 @@ class FreeDesignApp {
 //   }
 
 // 启动应用
-document.addEventListener('DOMContentLoaded', () => {
-  new FreeDesignApp()
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    // 动态加载 NHAI UI Vue 组件库
+    await loadNHAIUIVue()
+    // 加载完成后初始化应用
+    new FreeDesignApp()
+  } catch (error) {
+    console.error('Failed to load NHAI UI Vue:', error)
+  }
 })
