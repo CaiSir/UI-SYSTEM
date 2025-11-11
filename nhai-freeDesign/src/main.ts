@@ -1,13 +1,34 @@
 import 'element-plus/dist/index.css'
-import { NhaiMenuBarCommand } from 'nhai-ui-vue'
+/// <reference path="../imports/nhaiui/index.d.ts" />
 
 // 初始化应用
 class FreeDesignApp {
   constructor() {
-    this.init()
+    // 等待 NHAIUIVue 加载完成
+    if (typeof window !== 'undefined' && !window.NHAIUIVue) {
+      // 如果 UMD 文件还未加载，等待一下
+      const checkInterval = setInterval(() => {
+        if (window.NHAIUIVue) {
+          clearInterval(checkInterval)
+          this.init()
+        }
+      }, 100)
+      // 最多等待 5 秒
+      setTimeout(() => {
+        clearInterval(checkInterval)
+        if (window.NHAIUIVue) {
+          this.init()
+        } else {
+          console.error('NHAI UI Vue library failed to load')
+        }
+      }, 5000)
+    } else {
+      this.init()
+    }
   }
   
   private init(): void {
+    
     // 注册并设置 Vanilla 适配器
     // const adapter = new VanillaAdapter()
     // NHAIFrameworkRegistry.register(adapter)
@@ -34,7 +55,7 @@ class FreeDesignApp {
   // disabled?: boolean;
   // children?: MenuItem[];
   private CreateVueComponent(): void {
-    const menuBar = new NhaiMenuBarCommand()
+    const menuBar = new window.NHAIUIVue.NhaiMenuBarCommand()
     
     // 创建完整的菜单结构
     menuBar.setItems([

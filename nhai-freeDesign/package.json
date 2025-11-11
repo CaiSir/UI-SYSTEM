@@ -12,7 +12,6 @@
   "dependencies": {
     "element-plus": "^2.11.5",
     "nhai-framework": "file:../nhai-framework",
-    "nhai-ui-vue": "file:../nhai-ui-vue",
     "vue": "^3.0.0"
   },
   "devDependencies": {
